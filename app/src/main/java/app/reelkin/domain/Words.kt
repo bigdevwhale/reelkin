@@ -110,7 +110,7 @@ object Words {
             else "Nothing from the ${d}s yet. " + (w?.let { "${it.title} is on the bill." } ?: "They say films were good then.")
         }
         c.nearTrait?.let { g -> l += if (ru) "${oneMore(g, true)} — и ${willGet(g.trait!!, true)}." else "${oneMore(g, false)} and ${willGet(g.trait!!, false)}." }
-        c.scenes.lastOrNull()?.let { l += if (ru) "Ты досидел до конца титров «${it.title}». Я тоже." else "You sat through the credits of ${it.title}. So did I." }
+        c.scenes.lastOrNull()?.let { l += if (ru) "Ты досидел до конца титров «${it.title}». Я тоже." else "You sat through the credits of ${it.title.trimEnd('.')}. So did I." }
         if (c.seats.isNotEmpty()) l += if (ru) "Я пересчитал кадры: ${fmt(c.frames)}. Сбился два раза." else "I counted the frames: ${fmt(c.frames)}. Lost count twice."
         l += if (ru) "Сегодня можно ничего не смотреть. Я протру объектив." else "We don't have to watch anything today. I'll polish the lens."
         if (c.seats.size > 3) l += if (ru) "В зале занято ${c.seats.size.coerceAtMost(100)} мест. Кто-то опять шуршит фантиком." else "${c.seats.size.coerceAtMost(100)} seats taken. Someone's rustling a wrapper again."

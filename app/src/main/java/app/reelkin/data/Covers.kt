@@ -50,6 +50,7 @@ object Covers {
     }
 
     fun fromBytes(bytes: ByteArray): CoverArt? {
+        val keep = bytes
         val b = decode(bytes, 160) ?: return null
         val s = 120.0 / maxOf(b.width, b.height)
         val w = maxOf(8, (b.width * s).toInt()); val h = maxOf(8, (b.height * s).toInt())
@@ -57,6 +58,6 @@ object Covers {
         val buf = Buf(w, h)
         small.getPixels(buf.d, 0, w, 0, 0, w, h)
         for (i in buf.d.indices) buf.d[i] = buf.d[i] or Buf.OPAQUE
-        return CoverArt(buf)
+        return CoverArt(buf) { decode(keep, 360) }
     }
 }

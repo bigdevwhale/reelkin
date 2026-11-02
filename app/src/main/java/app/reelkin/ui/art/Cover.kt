@@ -6,7 +6,10 @@ import kotlin.math.max
  * A cover picture, kept small, and its pixel versions at every size asked for: shrunk, a little
  * more saturated, and brought down to a dozen colours so it sits with the drawn art.
  */
-class CoverArt(val src: Buf) {
+class CoverArt(val src: Buf, private val load: () -> android.graphics.Bitmap? = { null }) {
+    /** The picture at a size fit for showing as it is, decoded the first time it's asked for. */
+    val full: android.graphics.Bitmap? by lazy { load() }
+
     private val cache = HashMap<Long, Buf>()
     private val smooth = HashMap<Long, Buf>()
 

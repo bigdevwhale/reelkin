@@ -137,7 +137,11 @@ val LocalPixelCovers = androidx.compose.runtime.staticCompositionLocalOf { true 
 
 @Composable
 fun PosterBuf(title: String, genre: app.reelkin.data.Genre, art: app.reelkin.ui.art.CoverArt?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) {
-    if (art != null && !LocalPixelCovers.current) BufImage(art.plain(w * 4, h * 4), modifier, scale / 4, smooth = true)
+    val full = if (art != null && !LocalPixelCovers.current) art.full else null
+    if (full != null) {
+        val image = remember(full) { full.asImageBitmap() }
+        androidx.compose.foundation.Image(image, null, modifier.size(scale * w, scale * h), contentScale = androidx.compose.ui.layout.ContentScale.Crop, filterQuality = FilterQuality.Medium)
+    }
     else BufImage(app.reelkin.ui.art.Posters.of(title, genre, w, h, art), modifier, scale)
 }
 
