@@ -126,6 +126,12 @@ object Catalog {
         }
     }
 
+    /** A poster address for a known title, trying the usual Wikipedia article names. */
+    fun posterFor(title: String, year: Int?, series: Boolean): String? {
+        val kind = if (series) "TV series" else "film"
+        return listOfNotNull(year?.let { "$title ($it $kind)" }, "$title ($kind)", title).firstNotNullOfOrNull { poster(it, "en") }
+    }
+
     private fun poster(title: String?, lang: String): String? {
         title ?: return null
         val body = get("https://$lang.wikipedia.org/api/rest_v1/page/summary/${enc(title.replace(' ', '_')).replace("+", "%20")}") ?: return null

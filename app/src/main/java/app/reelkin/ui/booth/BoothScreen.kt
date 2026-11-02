@@ -47,6 +47,7 @@ import app.reelkin.ui.art.hex
 import app.reelkin.ui.components.Bar
 import app.reelkin.ui.components.Btn
 import app.reelkin.ui.components.BufImage
+import app.reelkin.ui.components.PosterImage
 import app.reelkin.ui.components.Kind
 import app.reelkin.ui.components.Says
 import app.reelkin.ui.components.Section
@@ -209,7 +210,7 @@ fun SeriesRow(s: Title, nav: Nav) {
     val ru = LocalRu.current
     Row(Modifier.fillMaxWidth().clip(R8.Lg).background(C.surface).border(1.dp, C.line, R8.Lg).clickable { nav.go(Overlay.Series(s.id)) }.padding(12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        BufImage(poster(ctx, s.title, s.genre, s.cover, 24, 34), Modifier.clip(R8.Sm), scale = 1.6.dp)
+        PosterImage(s.title, s.genre, s.cover, 24, 34, Modifier.clip(R8.Sm), scale = 1.6.dp)
         Column(Modifier.weight(1f)) {
             Text(s.title, style = T.Name, maxLines = 1)
             Text(t("сезон ${s.season} · серия ${s.episode} из ${s.perSeason}", "season ${s.season} · episode ${s.episode} of ${s.perSeason}"), style = T.Muted)

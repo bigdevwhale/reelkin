@@ -145,7 +145,7 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
             })
         }
 
-        CompositionLocalProvider(LocalNav provides nav) {
+        CompositionLocalProvider(LocalNav provides nav, app.reelkin.ui.components.LocalPixelCovers provides s.pixelCovers) {
             Box(Modifier.fillMaxSize().background(C.bg)) {
                 Column(Modifier.fillMaxSize()) {
                     Header(cin, onSign = { tab = Tab.HALL }, onPop = { overlay = Overlay.Shop }, onFrames = { overlay = Overlay.Pet }, onSettings = { overlay = Overlay.Settings })

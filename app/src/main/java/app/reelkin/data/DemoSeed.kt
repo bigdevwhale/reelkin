@@ -2,6 +2,9 @@ package app.reelkin.data
 
 import android.content.Context
 import app.reelkin.AppContainer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /** The demo build's cinema (`-Pdemo`): a year of real classics, three series and a bill of films to come. */
 object DemoSeed {
@@ -64,6 +67,37 @@ object DemoSeed {
             w(r("Мой сосед Тоторо", "My Neighbor Totoro"), 1988, japan, Genre.ANIMATION, 86, 15),
             w(r("Город Бога", "City of God"), 2002, r("Бразилия", "Brazil"), Genre.DRAMA, 130, 10),
         ))
-        c.settings.update { it.copy(onboarded = true, species = Species.CAT, cinema = r("МЕЧТА", "MAGIC"), bought = setOf("GARLAND")) }
+        if (app.reelkin.BuildConfig.DEMO) c.scope.launch(Dispatchers.IO) { posters(ctx, c) }
+        c.settings.update { it.copy(onboarded = false, species = Species.CAT, cinema = r("МЕЧТА", "MAGIC"), bought = setOf("GARLAND")) }
     }
+
+    /** Real posters from English Wikipedia for the demo, fetched once in the background. */
+    private suspend fun posters(ctx: Context, c: AppContainer) {
+        val dao = c.db.dao()
+        val names = HashMap<String, String?>()
+        suspend fun cover(en: String, year: Int?, series: Boolean): String? = names.getOrPut(en) {
+            Catalog.posterFor(en, year, series)?.let { Catalog.download(it) }?.let { Covers.save(ctx, it) }
+        }
+        for (t in dao.ticketList()) {
+            val en = EN[t.title.substringBefore(" · ")] ?: t.title.substringBefore(" · ")
+            cover(en, if (t.season) null else t.year, t.season)?.let { dao.update(t.copy(cover = it)) }
+        }
+        for (t in dao.titles().first()) {
+            val en = EN[t.title] ?: t.title
+            cover(en, if (t.kind == Kind.SERIES) null else t.year, t.kind == Kind.SERIES)?.let { dao.update(t.copy(cover = it)) }
+        }
+    }
+
+    private val EN = mapOf(
+        "Метрополис" to "Metropolis", "Человек с киноаппаратом" to "Man with a Movie Camera", "Мальтийский сокол" to "The Maltese Falcon",
+        "Двойная страховка" to "Double Indemnity", "Третий человек" to "The Third Man", "Семь самураев" to "Seven Samurai",
+        "В джазе только девушки" to "Some Like It Hot", "Хороший, плохой, злой" to "The Good, the Bad and the Ugly",
+        "Иван Васильевич меняет профессию" to "Ivan Vasilievich Changes Profession", "Сталкер" to "Stalker", "Нечто" to "The Thing",
+        "Бегущий по лезвию" to "Blade Runner", "Вкус вишни" to "Taste of Cherry", "Амели" to "Amélie", "Унесённые призраками" to "Spirited Away",
+        "Корпорация монстров" to "Monsters, Inc.", "Ла-Ла Ленд" to "La La Land", "Прочь" to "Get Out", "Паразиты" to "Parasite",
+        "Достать ножи" to "Knives Out", "Чернобыль" to "Chernobyl", "Твин Пикс" to "Twin Peaks", "Дюна" to "Dune", "Ёжик в тумане" to "Hedgehog in the Fog",
+        "Тед Лассо" to "Ted Lasso", "Остаться в живых" to "Lost", "Огни большого города" to "City Lights", "Касабланка" to "Casablanca",
+        "Поющие под дождём" to "Singin' in the Rain", "Окно во двор" to "Rear Window", "Бриллиантовая рука" to "The Diamond Arm", "Солярис" to "Solaris",
+        "Крёстный отец" to "The Godfather", "Сияние" to "The Shining", "Кин-дза-дза!" to "Kin-dza-dza!", "Мой сосед Тоторо" to "My Neighbor Totoro", "Город Бога" to "City of God",
+    )
 }

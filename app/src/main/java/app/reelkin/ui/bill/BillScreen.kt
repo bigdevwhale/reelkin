@@ -50,6 +50,7 @@ import app.reelkin.ui.booth.episode
 import app.reelkin.ui.components.Bar
 import app.reelkin.ui.components.Btn
 import app.reelkin.ui.components.BufImage
+import app.reelkin.ui.components.PosterImage
 import app.reelkin.ui.components.Field
 import app.reelkin.ui.components.Flow
 import app.reelkin.ui.components.Kind
@@ -102,7 +103,7 @@ private fun PosterTile(f: Title, modifier: Modifier, onClick: () -> Unit) {
     val ctx = LocalContext.current
     Column(modifier.clip(R8.Md).clickable(onClick = onClick).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.fillMaxWidth().aspectRatio(30f / 44f).clip(R8.Sm).background(C.surface2)) {
-            BufImage(poster(ctx, f.title, f.genre, f.cover, 30, 44), Modifier.fillMaxSize(), scale = 3.6.dp)
+            PosterImage(f.title, f.genre, f.cover, 30, 44, Modifier.fillMaxSize(), scale = 3.6.dp)
         }
         Text(f.title, style = T.Small.copy(color = C.ink), textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(listOfNotNull(f.year?.toString(), f.minutes.takeIf { it > 0 }?.let { Words.hm(it) }).joinToString(" · "), style = T.Small)
@@ -116,7 +117,7 @@ fun SeriesCard(s: Title, nav: Nav) {
     val co = ctx.container
     Column(Modifier.fillMaxWidth().clip(R8.Lg).background(C.surface).border(1.dp, C.line, R8.Lg).clickable { nav.go(Overlay.Series(s.id)) }.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BufImage(poster(ctx, s.title, s.genre, s.cover, 24, 34), Modifier.clip(R8.Sm), scale = 1.8.dp)
+            PosterImage(s.title, s.genre, s.cover, 24, 34, Modifier.clip(R8.Sm), scale = 1.8.dp)
             Column(Modifier.weight(1f)) {
                 Text(s.title, style = T.Name)
                 Text(t("сезон ${s.season} · серия ${s.episode} из ${s.perSeason} · ${s.minutes} мин", "season ${s.season} · episode ${s.episode} of ${s.perSeason} · ${s.minutes} min"), style = T.Muted)
@@ -185,7 +186,7 @@ fun Stub(tk: Ticket, seat: Int, ru: Boolean, onClick: () -> Unit) {
     val ctx = LocalContext.current
     val shape = RoundedCornerShape(14.dp)
     Row(Modifier.fillMaxWidth().clip(shape).background(C.paper).clickable(onClick = onClick)) {
-        Box(Modifier.padding(10.dp)) { BufImage(poster(ctx, tk.title, tk.genre, tk.cover, 24, 34), Modifier.clip(R8.Sm), scale = 1.9.dp) }
+        Box(Modifier.padding(10.dp)) { PosterImage(tk.title, tk.genre, tk.cover, 24, 34, Modifier.clip(R8.Sm), scale = 1.9.dp) }
         Canvas(Modifier.width(2.dp).height(84.dp).padding(vertical = 8.dp)) {
             drawLine(C.paperMuted.copy(alpha = .5f), Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f)))
         }

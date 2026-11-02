@@ -47,7 +47,7 @@ abstract class ScreensBase {
 
     private fun seed(change: (Settings) -> Settings = { it }): Settings = runBlocking {
         DemoSeed.seedIfEmpty(app, app.container)
-        app.container.settings.update { change(it.copy(seance = null, bought = setOf("GARLAND"))) }
+        app.container.settings.update { change(it.copy(seance = null, bought = setOf("GARLAND"), onboarded = true)) }
         app.container.settings.now()
     }
 

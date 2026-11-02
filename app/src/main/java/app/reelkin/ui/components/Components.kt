@@ -124,13 +124,26 @@ fun Flow(modifier: Modifier = Modifier, gap: Dp = 6.dp, content: @Composable Flo
 
 /** A pixel picture with hard pixels, [scale] dp per art pixel. */
 @Composable
-fun BufImage(buf: Buf, modifier: Modifier = Modifier, scale: Dp = 2.dp) {
+fun BufImage(buf: Buf, modifier: Modifier = Modifier, scale: Dp = 2.dp, smooth: Boolean = false) {
     val image = remember(buf) { buf.toBitmap().asImageBitmap() }
     Canvas(modifier.size(scale * buf.w, scale * buf.h)) {
         drawImage(image, srcOffset = IntOffset.Zero, srcSize = IntSize(buf.w, buf.h), dstOffset = IntOffset.Zero,
-            dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()), filterQuality = FilterQuality.None)
+            dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()), filterQuality = if (smooth) FilterQuality.Medium else FilterQuality.None)
     }
 }
+
+/** Posters in lists and sheets: in pixels, or the real picture when the setting says so. Scenes always stay pixel. */
+val LocalPixelCovers = androidx.compose.runtime.staticCompositionLocalOf { true }
+
+@Composable
+fun PosterBuf(title: String, genre: app.reelkin.data.Genre, art: app.reelkin.ui.art.CoverArt?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) {
+    if (art != null && !LocalPixelCovers.current) BufImage(art.plain(w * 4, h * 4), modifier, scale / 4, smooth = true)
+    else BufImage(app.reelkin.ui.art.Posters.of(title, genre, w, h, art), modifier, scale)
+}
+
+@Composable
+fun PosterImage(title: String, genre: app.reelkin.data.Genre, cover: String?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) =
+    PosterBuf(title, genre, app.reelkin.data.Covers.art(androidx.compose.ui.platform.LocalContext.current, cover), w, h, modifier, scale)
 
 @Composable
 fun Field(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, style: TextStyle = T.Body, single: Boolean = true, number: Boolean = false, onDone: (() -> Unit)? = null) {

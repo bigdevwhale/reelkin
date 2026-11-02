@@ -57,6 +57,8 @@ data class Settings(
     val off: Set<Trait> = emptySet(),
     val awards: List<Award> = emptyList(),
     val goal: Int = 52,
+    /** Posters in lists redrawn in pixels, or shown as they are. */
+    val pixelCovers: Boolean = true,
     val seance: Seance? = null,
 )
 
@@ -76,6 +78,7 @@ class SettingsStore(context: Context) {
         off = this[OFF]?.split(',')?.mapNotNull { s -> runCatching { Trait.valueOf(s) }.getOrNull() }?.toSet() ?: emptySet(),
         awards = this[AWARDS]?.lines()?.mapNotNull { l -> l.split('\t').takeIf { it.size == 3 }?.let { Award(it[0].toInt(), it[1].toInt(), it[2]) } } ?: emptyList(),
         goal = this[GOAL] ?: 52,
+        pixelCovers = this[PIXEL] ?: true,
         seance = Seance.of(this[SEANCE]),
     )
 
@@ -94,6 +97,7 @@ class SettingsStore(context: Context) {
             it[OFF] = s.off.map { t -> t.name }.sorted().joinToString(",")
             it[AWARDS] = s.awards.joinToString("\n") { a -> "${a.year}\t${a.cat}\t${a.title.replace('\t', ' ').replace('\n', ' ')}" }
             it[GOAL] = s.goal
+            it[PIXEL] = s.pixelCovers
             if (s.seance != null) it[SEANCE] = s.seance.json() else it.remove(SEANCE)
         }
     }
@@ -109,6 +113,7 @@ class SettingsStore(context: Context) {
         val OFF = stringPreferencesKey("off")
         val AWARDS = stringPreferencesKey("awards")
         val GOAL = intPreferencesKey("goal")
+        val PIXEL = booleanPreferencesKey("pixel")
         val SEANCE = stringPreferencesKey("seance")
     }
 }

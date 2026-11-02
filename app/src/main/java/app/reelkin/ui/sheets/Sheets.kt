@@ -58,6 +58,7 @@ import app.reelkin.ui.art.hash
 import app.reelkin.ui.booth.episode
 import app.reelkin.ui.components.Btn
 import app.reelkin.ui.components.BufImage
+import app.reelkin.ui.components.PosterImage
 import app.reelkin.ui.components.Chip
 import app.reelkin.ui.components.Field
 import app.reelkin.ui.components.Flow
@@ -81,7 +82,7 @@ fun Ticket.seance() = Seance(title, minutes, genre, year, country, cover, -1, tr
 @Composable
 fun BigPoster(title: String, genre: app.reelkin.data.Genre, cover: String?, scale: Float = 3.4f) {
     val ctx = LocalContext.current
-    BufImage(poster(ctx, title, genre, cover, 30, 44), Modifier.clip(R8.Md), scale = scale.dp)
+    PosterImage(title, genre, cover, 30, 44, Modifier.clip(R8.Md), scale = scale.dp)
 }
 
 @Composable
@@ -316,12 +317,12 @@ fun ChooseSheet(c: Cinema, log: Boolean, nav: Nav) {
         for (f in films) Row(Modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).clickable {
             if (log) nav.go(Overlay.Log(f.seance())) else { co.write { office.startSeance(f.seance()) }; nav.close(); nav.tab(Tab.BOOTH); nav.say(if (ru) "Гасим свет. Я сяду поближе к окошку." else "Lights down. I'll sit by the port.") }
         }.padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BufImage(poster(ctx, f.title, f.genre, f.cover, 24, 34), Modifier.clip(R8.Sm), scale = 1.4.dp)
+            PosterImage(f.title, f.genre, f.cover, 24, 34, Modifier.clip(R8.Sm), scale = 1.4.dp)
             Column(Modifier.weight(1f)) { Text(f.title, style = T.Name); Facts(f.year, f.country, f.minutes) }
         }
         if (log) for (s in c.running) Row(Modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).clickable { episode(s, nav, ctx, ru); nav.close() }.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BufImage(poster(ctx, s.title, s.genre, s.cover, 24, 34), Modifier.clip(R8.Sm), scale = 1.4.dp)
+            PosterImage(s.title, s.genre, s.cover, 24, 34, Modifier.clip(R8.Sm), scale = 1.4.dp)
             Column(Modifier.weight(1f)) { Text(s.title, style = T.Name); Text(t("серия ${s.episode + 1} · сезон ${s.season}", "episode ${s.episode + 1} · season ${s.season}"), style = T.Muted) }
         }
         Btn(t("Найти другой", "Find another"), { nav.go(Overlay.Add()) }, Modifier.fillMaxWidth(), kind = Kind.GOLD)
@@ -357,7 +358,7 @@ fun PickSheet(c: Cinema, nav: Nav) {
                     Text(p.why, style = T.Body)
                 }
                 else -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { for (f in p.films) BufImage(poster(ctx, f.title, f.genre, f.cover, 30, 44), Modifier.clip(R8.Sm), scale = 2.dp) }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { for (f in p.films) PosterImage(f.title, f.genre, f.cover, 30, 44, Modifier.clip(R8.Sm), scale = 2.dp) }
                     Text(p.films.joinToString(" + ") { if (ru) "«${it.title}»" else it.title }, style = T.Name)
                     Text(p.why, style = T.Body)
                 }

@@ -67,6 +67,14 @@ fun SettingsPage(c: Cinema, nav: Nav) {
             }
         }
 
+        Section(t("Обложки", "Posters"))
+        Text(t("Пиксели в тон будке; «как есть» показывает настоящую картинку в афише и корешках. Будка и зал остаются пиксельными.",
+            "Pixels match the booth; «as they are» shows the real picture on the bill and the stubs. The booth and the hall stay pixel."), style = T.Muted)
+        Flow {
+            Chip(t("в пикселях", "in pixels"), c.s.pixelCovers, { co.write { settings.update { it.copy(pixelCovers = true) } } })
+            Chip(t("как есть", "as they are"), !c.s.pixelCovers, { co.write { settings.update { it.copy(pixelCovers = false) } } })
+        }
+
         Section(t("Цель на год", "A goal for the year"))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Btn("−", { co.write { settings.update { it.copy(goal = (it.goal - 4).coerceAtLeast(4)) } } }, kind = Kind.SOFT, small = true)
@@ -80,6 +88,8 @@ fun SettingsPage(c: Cinema, nav: Nav) {
             for ((tag, l) in listOf("" to t("как в телефоне", "as the phone"), "ru" to "Русский", "en" to "English"))
                 Chip(l, cur == tag, { AppCompatDelegate.setApplicationLocales(if (tag.isEmpty()) LocaleListCompat.getEmptyLocaleList() else LocaleListCompat.forLanguageTags(tag)) })
         }
+
+        Btn(t("Как это устроено", "How it works"), { co.write { settings.update { it.copy(onboarded = false) } }; nav.close() }, Modifier.fillMaxWidth(), kind = Kind.SOFT)
 
         Section("StillCraft")
         Text(t("Бобина — одно из приложений StillCraft. Расскажи, что сломалось или чего не хватает.", "Reelkin is one of the StillCraft apps. Tell us what's broken or what's missing."), style = T.Muted)

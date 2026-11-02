@@ -45,6 +45,7 @@ import app.reelkin.ui.art.CoverArt
 import app.reelkin.ui.art.Posters
 import app.reelkin.ui.components.Btn
 import app.reelkin.ui.components.BufImage
+import app.reelkin.ui.components.PosterBuf
 import app.reelkin.ui.components.Chip
 import app.reelkin.ui.components.Field
 import app.reelkin.ui.components.Flow
@@ -96,7 +97,7 @@ fun AddSheet(q0: String, nav: Nav) {
         }, style = T.Muted)
         for (d in results.orEmpty()) Row(Modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).clickable { nav.go(Overlay.NewTitle(d)) }.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BufImage(Posters.of(d.title, d.genre, 24, 34, d.coverUrl?.let { arts[it] }), Modifier.clip(R8.Sm), scale = 1.4.dp)
+            PosterBuf(d.title, d.genre, d.coverUrl?.let { arts[it] }, 24, 34, Modifier.clip(R8.Sm), scale = 1.4.dp)
             Column(Modifier.weight(1f)) {
                 Text(d.title, style = T.Name)
                 Text(listOfNotNull(if (d.kind == TKind.SERIES) t("сериал", "series") else t("фильм", "film"), d.year?.toString(), d.country.ifBlank { null }, d.about.ifBlank { null }).joinToString(" · "), style = T.Muted)
@@ -134,7 +135,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     Sheet(nav::close) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                BufImage(Posters.of(title.ifBlank { "?" }, genre, 30, 44, art), Modifier.clip(R8.Md), scale = 3.dp)
+                PosterBuf(title.ifBlank { "?" }, genre, art, 30, 44, Modifier.clip(R8.Md), scale = 3.dp)
                 Text(t("сменить афишу", "change poster"), style = T.Small.copy(color = C.gold), modifier = Modifier.clickable { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }.padding(6.dp))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
