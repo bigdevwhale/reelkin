@@ -111,7 +111,7 @@ object Words {
         }
         c.nearTrait?.let { g -> l += if (ru) "${oneMore(g, true)} — и ${willGet(g.trait!!, true)}." else "${oneMore(g, false)} and ${willGet(g.trait!!, false)}." }
         c.scenes.lastOrNull()?.let { l += if (ru) "Ты досидел до конца титров «${it.title}». Я тоже." else "You sat through the credits of ${it.title.trimEnd('.')}. So did I." }
-        if (c.seats.isNotEmpty()) l += if (ru) "Мы вместе просмотрели ${minutes(c.minutes, true)}. Я считал." else "We've watched ${minutes(c.minutes, false)} together. I counted."
+        if (c.seats.isNotEmpty()) l += if (ru) "Мы вместе просмотрели кино на ${minutes(c.minutes, true).substringBeforeLast(' ')} мин. Я считал." else "We've watched ${minutes(c.minutes, false)} together. I counted."
         l += if (ru) "Сегодня можно ничего не смотреть. Я протру объектив." else "We don't have to watch anything today. I'll polish the lens."
         if (c.seats.size > 3) l += if (ru) "В зале занято ${c.seats.size.coerceAtMost(100)} мест. Кто-то опять шуршит фантиком." else "${c.seats.size.coerceAtMost(100)} seats taken. Someone's rustling a wrapper again."
         return l[rnd.nextInt(l.size)]
@@ -125,6 +125,6 @@ object Words {
         val m10 = n % 10; val m100 = n % 100
         return when { m10 == 1 && m100 != 11 -> one; m10 in 2..4 && m100 !in 12..14 -> few; else -> many }
     }
-    fun minutes(n: Long, ru: Boolean) = fmt(n) + " " + if (ru) plural((n % 100).toInt(), "минуту", "минуты", "минут") else if (n == 1L) "minute" else "minutes"
+    fun minutes(n: Long, ru: Boolean) = fmt(n) + " " + if (ru) plural((n % 100).toInt(), "минута", "минуты", "минут") else if (n == 1L) "minute" else "minutes"
     fun films(n: Int, ru: Boolean) = if (ru) "$n " + plural(n, "фильм", "фильма", "фильмов") else "$n film" + if (n == 1) "" else "s"
 }
