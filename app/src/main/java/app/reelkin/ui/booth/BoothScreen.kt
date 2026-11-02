@@ -198,8 +198,8 @@ private fun PetLine(c: Cinema, onClick: () -> Unit) {
         } else {
             Text("${c.s.pet(ru)} · ${Words.stage(c.stage, ru)}", style = T.Strong)
             val nx = Cinema.STEPS.getOrNull(c.stage + 1)
-            Bar(if (nx == null) 1f else ((c.frames - Cinema.STEPS[c.stage]).toFloat() / (nx - Cinema.STEPS[c.stage])), Modifier.weight(1f))
-            if (nx != null) Text(t("ещё ${"%.1f".format((nx - c.frames) / 1e6).replace('.', ',')} млн кадров", "${"%.1f".format((nx - c.frames) / 1e6)}M frames to go"), style = T.Small)
+            Bar(if (nx == null) 1f else ((c.minutes - Cinema.STEPS[c.stage]).toFloat() / (nx - Cinema.STEPS[c.stage])), Modifier.weight(1f))
+            if (nx != null) Text(if (ru) "ещё ${Words.minutes(nx - c.minutes, true)}" else "${Words.minutes(nx - c.minutes, false)} to go", style = T.Small)
         }
     }
 }

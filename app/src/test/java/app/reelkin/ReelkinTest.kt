@@ -23,9 +23,9 @@ class ReelkinTest {
         Ticket(id = at + 1, title = t, genre = g, year = y, country = cn, minutes = m, at = at, credits = cr)
     private fun cin(t: List<Ticket>, titles: List<Title> = emptyList()) = Cinema(titles, t, emptyList(), Settings(), 0)
 
-    @Test fun framesAndPopcorn() {
+    @Test fun minutesAndPopcorn() {
         val c = cin(listOf(tk("A", Genre.NOIR, m = 100), tk("B", Genre.NOIR, m = 50, at = 1, cr = Credits.SCENE)))
-        assertEquals(150 * 1440L, c.frames)
+        assertEquals(150L, c.minutes)
         assertEquals(25, c.earned)
     }
 

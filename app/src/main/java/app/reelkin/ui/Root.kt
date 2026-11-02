@@ -148,7 +148,7 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
         CompositionLocalProvider(LocalNav provides nav, app.reelkin.ui.components.LocalPixelCovers provides s.pixelCovers) {
             Box(Modifier.fillMaxSize().background(C.bg)) {
                 Column(Modifier.fillMaxSize()) {
-                    Header(cin, onSign = { tab = Tab.HALL }, onPop = { overlay = Overlay.Shop }, onFrames = { overlay = Overlay.Pet }, onSettings = { overlay = Overlay.Settings })
+                    Header(cin, onSign = { tab = Tab.HALL }, onPop = { overlay = Overlay.Shop }, onMinutes = { overlay = Overlay.Pet }, onSettings = { overlay = Overlay.Settings })
                     Box(Modifier.weight(1f)) {
                         when (tab) {
                             Tab.BOOTH -> BoothScreen(cin, nav)
@@ -182,11 +182,11 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
 }
 
 @Composable
-private fun Header(c: Cinema, onSign: () -> Unit, onPop: () -> Unit, onFrames: () -> Unit, onSettings: () -> Unit) {
+private fun Header(c: Cinema, onSign: () -> Unit, onPop: () -> Unit, onMinutes: () -> Unit, onSettings: () -> Unit) {
     Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.weight(1f)) { Marquee(c.s.cinema, onClick = onSign) }
         Column(horizontalAlignment = Alignment.End) {
-            Row(Modifier.clickable(onClick = onFrames)) { Text(t("кадров ", "frames "), style = T.Small); Text(Words.fmt(c.frames), style = T.Small.copy(color = C.gold)) }
+            Row(Modifier.clickable(onClick = onMinutes)) { Text(t("минут ", "minutes "), style = T.Small); Text(Words.fmt(c.minutes), style = T.Small.copy(color = C.gold)) }
             Row(Modifier.clickable(onClick = onPop)) { Text(t("попкорна ", "popcorn "), style = T.Small); Text("${c.popcorn}", style = T.Small.copy(color = C.gold)) }
         }
         val label = t("Настройки", "Settings")

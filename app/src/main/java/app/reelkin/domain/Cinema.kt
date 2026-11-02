@@ -13,9 +13,6 @@ import app.reelkin.data.Trait
 import app.reelkin.ui.art.hash
 import java.util.Calendar
 
-/** Every minute is 24 frames a second for 60 seconds. */
-const val FRAMES_PER_MINUTE = 1440L
-
 /** The shop: what each thing costs in popcorn. */
 enum class Decor(val price: Int) { GARLAND(40), CHAIR(60), NEON(50), POPCORN(80) }
 
@@ -24,7 +21,8 @@ class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: L
     /** Seat i belongs to the i-th stub, in the order they were torn. */
     val seats = tickets.sortedBy { it.at }
 
-    val frames: Long = seats.filter { !it.season }.sumOf { it.minutes.toLong() } * FRAMES_PER_MINUTE + episodes.sumOf { it.minutes.toLong() } * FRAMES_PER_MINUTE
+    /** Minutes watched: films and every episode (season stubs aren't counted twice). */
+    val minutes: Long = seats.filter { !it.season }.sumOf { it.minutes.toLong() } + episodes.sumOf { it.minutes.toLong() }
 
     val earned: Int = seats.sumOf { if (it.season) 15 else 10 + (if (it.credits == Credits.SCENE) 5 else 0) + (if (it.rewatch) 5 else 0) } + episodes.size * 3
     val popcorn: Int = earned - s.spent
@@ -33,7 +31,7 @@ class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: L
     val traits: Set<Trait> = byGenre.filter { it.value >= TRAIT_AT }.keys.mapNotNull { it.trait }.toSet()
     val worn: Set<Trait> = traits - s.off
 
-    val stage: Int = stageOf(frames)
+    val stage: Int = stageOf(minutes)
 
     /** How many of each first letter you own, for the sign. */
     val letters: Map<Char, Int> = seats.mapNotNull { letterOf(it.title) }.groupingBy { it }.eachCount()
@@ -77,11 +75,11 @@ class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: L
     companion object {
         const val TRAIT_AT = 3
         const val HATCH_AT = 3
-        val STEPS = longArrayOf(0, 0, 3_000_000, 12_000_000)
+        val STEPS = longArrayOf(0, 0, 2_000, 8_000)
         const val SEATS = 100
         val DECADES = (1900..2020 step 10).toList()
 
-        fun stageOf(frames: Long) = if (frames >= STEPS[3]) 3 else if (frames >= STEPS[2]) 2 else 1
+        fun stageOf(minutes: Long) = if (minutes >= STEPS[3]) 3 else if (minutes >= STEPS[2]) 2 else 1
         fun decade(y: Int) = y / 10 * 10
         fun letterOf(t: String): Char? = t.trim().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.let { if (it == 'Ё') 'Е' else it }?.takeIf { it.isLetter() }
 
@@ -114,7 +112,7 @@ data class Gains(
     val grew: Int?,
     val scene: Boolean,
     val popcorn: Int,
-    val frames: Long,
+    val minutes: Long,
 )
 
 fun gains(before: Cinema, after: Cinema, t: Ticket): Gains = Gains(
@@ -126,5 +124,5 @@ fun gains(before: Cinema, after: Cinema, t: Ticket): Gains = Gains(
     grew = after.stage.takeIf { it > before.stage },
     scene = t.credits == Credits.SCENE,
     popcorn = after.earned - before.earned,
-    frames = after.frames - before.frames,
+    minutes = after.minutes - before.minutes,
 )

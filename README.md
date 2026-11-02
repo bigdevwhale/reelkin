@@ -3,8 +3,8 @@
 **Films and series raise a small pet in a projectionist's booth.** · [Русская версия](README.ru.md)
 
 Something sleeps in a film can. Log three films and the can opens: the genres decide who climbs
-out (noir gives a cat, horror a bat, animation a fox…). Every minute you watch is 24 frames a second
-of light for the pet, and every film is a ticket stub and a spectator in a hundred-seat hall.
+out (noir gives a cat, horror a bat, animation a fox…). Every minute you watch helps the pet grow,
+and every film is a ticket stub and a spectator in a hundred-seat hall.
 
 - **The booth.** Put a film on the projector: the lights go down, the reels turn and the pet watches
   from the port, jumping at horror and laughing at comedy. When the credits roll you tear a stub:

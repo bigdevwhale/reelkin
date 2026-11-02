@@ -66,8 +66,8 @@ fun Onboarding() {
                 }
                 1 -> {
                     Says(t("Ставь фильм на проектор — я буду смотреть с тобой из окошка.", "Put a film on the projector and I'll watch it with you from the port."), t("питомец", "the pet"))
-                    Text(t("Каждая минута — 24 кадра в секунду для питомца. Каждый фильм — корешок билета и зритель в зале на сто мест. Первая буква названия идёт на вывеску, страна — в кругосветку, десятилетие — в машину времени.",
-                        "Each minute is 24 frames a second for the pet. Each film is a ticket stub and a spectator in a hundred-seat hall. Its first letter goes on the sign, its country on the map, its decade into the time machine."), style = T.Body)
+                    Text(t("Каждая просмотренная минута растит питомца. Каждый фильм — корешок билета и зритель в зале на сто мест. Первая буква названия идёт на вывеску, страна — в кругосветку, десятилетие — в машину времени.",
+                        "Every minute you watch helps the pet grow. Each film is a ticket stub and a spectator in a hundred-seat hall. Its first letter goes on the sign, its country on the map, its decade into the time machine."), style = T.Body)
                 }
                 else -> {
                     Says(t("Третий нуар — и у меня шляпа. Третья комедия — красный нос.", "A third noir and I get a hat. A third comedy, a red nose."), t("питомец", "the pet"))

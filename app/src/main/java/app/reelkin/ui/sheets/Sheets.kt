@@ -274,7 +274,7 @@ fun RewardSheet(c: Cinema, tk: Ticket, g: Gains, nav: Nav) {
         Column(Modifier.fillMaxWidth().rotate(-1.5f).clip(R8.Md).background(C.gold).padding(vertical = 14.dp, horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(tk.title, style = T.Small.copy(color = C.onGold), textAlign = TextAlign.Center)
             Text(Words.seat(g.seat, ru).uppercase(), style = T.Stamp.copy(color = C.onGold))
-            Text(listOfNotNull(if (g.frames > 0) (if (ru) "+${Words.fmt(g.frames)} кадров" else "+${Words.fmt(g.frames)} frames") else null,
+            Text(listOfNotNull(if (g.minutes > 0) "+" + Words.minutes(g.minutes, ru) else null,
                 if (ru) "+${g.popcorn} попкорна" else "+${g.popcorn} popcorn").joinToString(" · "), style = T.Small.copy(color = C.onGold))
         }
         val rows = ArrayList<@Composable () -> Unit>()
@@ -397,7 +397,7 @@ fun PetSheet(c: Cinema, nav: Nav) {
             }
         }
         Text(c.s.pet(ru), style = T.Display, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-        Text(listOf(Words.species(c.species, ru) + if (c.s.shiny) (if (ru) " · техниколор" else " · technicolor") else "", Words.stage(c.stage, ru), (if (ru) "${Words.fmt(c.frames)} кадров" else "${Words.fmt(c.frames)} frames")).joinToString(" · "),
+        Text(listOf(Words.species(c.species, ru) + if (c.s.shiny) (if (ru) " · техниколор" else " · technicolor") else "", Words.stage(c.stage, ru), Words.minutes(c.minutes, ru)).joinToString(" · "),
             style = T.Muted, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         Text(t("Черты — третий фильм жанра дарит свою", "Traits: the third film of a genre gives one").uppercase(), style = T.Eyebrow)
         for (g in app.reelkin.data.Genre.entries.filter { it.trait != null }) {
