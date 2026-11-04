@@ -96,6 +96,7 @@ sealed class Overlay {
     data object Sign : Overlay()
     data object Award : Overlay()
     data object Settings : Overlay()
+    data object Stats : Overlay()
 }
 
 /** Ways screens move around and talk to each other. */
@@ -145,8 +146,10 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
             })
         }
 
-        CompositionLocalProvider(LocalNav provides nav, app.reelkin.ui.components.LocalPixelCovers provides s.pixelCovers) {
-            Box(Modifier.fillMaxSize().background(C.bg)) {
+        val backdrop = rememberBackdrop(s.backdrop, Backdrops.nowOn(cin), s.backdropStamp)
+        CompositionLocalProvider(LocalNav provides nav, app.reelkin.ui.components.LocalPixelCovers provides s.pixelCovers, LocalBackdrop provides backdrop) {
+            Box(Modifier.fillMaxSize()) {
+                BackdropLayer()
                 Column(Modifier.fillMaxSize()) {
                     Header(cin, onSign = { tab = Tab.HALL }, onPop = { overlay = Overlay.Shop }, onMinutes = { overlay = Overlay.Pet }, onSettings = { overlay = Overlay.Settings })
                     Box(Modifier.weight(1f)) {
@@ -173,6 +176,7 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
                     Overlay.Sign -> SignSheet(cin, nav)
                     Overlay.Award -> AwardSheet(cin, nav)
                     Overlay.Settings -> SettingsPage(cin, nav)
+                    Overlay.Stats -> app.reelkin.ui.bill.StatsPage(cin, nav)
                     null -> Unit
                 }
                 Toast(nav, Modifier.align(Alignment.TopCenter))

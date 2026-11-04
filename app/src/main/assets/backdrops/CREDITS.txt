@@ -1,0 +1,15 @@
+Backgrounds: photos from Openverse (openverse.org), each in the public domain under CC0 1.0.
+
+adventure.jpg: "Serene mountain sunrise landscape" by unknown, https://creativecommons.org/publicdomain/zero/1.0/, https://www.rawpixel.com/image/6077012/_dsc0885
+animation.jpg: "Abstract painting, coloring, modern art" by unknown, https://creativecommons.org/publicdomain/zero/1.0/, https://www.rawpixel.com/image/5909692/image-public-domain-art-abstract
+cinema.jpg: "Free movie theatre image" by unknown, https://creativecommons.org/publicdomain/zero/1.0/, https://www.rawpixel.com/image/5904067/photo-image-public-domain-room-red
+comedy.jpg: "Balloons arranged for target practice. Colorful balloons on newspaper-covered surface." by Satyam Vishwakarma (Satya), https://creativecommons.org/publicdomain/zero/1.0/, https://wordpress.org/photos/photo/228661bc30/
+doc.jpg: "Dusty old word processor" by deborah.soltesz, https://creativecommons.org/publicdomain/zero/1.0/, https://www.flickr.com/photos/10836653@N05/3021537658
+drama.jpg: "Girl Sad" by Milada Vigerova, https://creativecommons.org/publicdomain/zero/1.0/, https://stocksnap.io/photo/girl-sad-XB78WQK09O
+horror.jpg: "Dirt Road" by Bara Cross, https://creativecommons.org/publicdomain/zero/1.0/, https://stocksnap.io/photo/dirt-road-IRMMWF0933
+musical.jpg: "Massimo Ranieri Concert Taormina - Creative Commons by gnuckx" by gnuckx, https://creativecommons.org/publicdomain/zero/1.0/, https://www.flickr.com/photos/34409164@N06/5031074747
+noir.jpg: "lights urban center city viewed" by unknown, https://creativecommons.org/publicdomain/zero/1.0/, https://www.rawpixel.com/image/5918882/photo-image-public-domain-glass-free
+reality.jpg: "Concert Show" by Nainoa Shizuru, https://creativecommons.org/publicdomain/zero/1.0/, https://stocksnap.io/photo/concert-show-5FGWJW4Z5D
+romance.jpg: "Cherry Blossom" by Bonnie Moreland, https://creativecommons.org/publicdomain/zero/1.0/, https://stocksnap.io/photo/cherry-blossom-NFZY0LCRS6
+scifi.jpg: "NASA’s Hubble Dazzles With Young Stars in Trifid Nebula" by NASA Hubble, https://creativecommons.org/publicdomain/zero/1.0/, https://www.flickr.com/photos/144614754@N02/55219878599
+western.jpg: "A scenic view of a winding dirt road through a rugged desert canyon, with red and orange rocky cliffs under a clear blue sky. Sparse vegetation covers the landscape." by Álvaro Dallas, https://creativecommons.org/publicdomain/zero/1.0/, https://wordpress.org/photos/photo/41567cb131/

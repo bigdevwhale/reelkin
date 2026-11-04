@@ -16,14 +16,17 @@ and every film is a ticket stub and a spectator in a hundred-seat hall.
 - **The sign.** Each film gives the first letter of its title, and the cinema's name can only be built
   from the letters you own.
 - **The time machine and the map.** Decades fill the booth with new gear; countries leave stamps.
-- **Series** run on a season ticket: an episode tears a ticket, «cliffhanger!» marks the worst moment,
-  a finale seats a spectator. A dropped series is simply taken off, no guilt.
+- **Series** run on a season ticket from any season: an episode tears a ticket, «cliffhanger!» marks the
+  worst moment, a finale seats a spectator. A dropped series is simply taken off, no guilt.
+- **The bill** keeps what's waiting, what's running and every stub, with a filter by genre, popcorn,
+  year and company, and stats: films by month, genres, decades, countries and more.
 - **What's on?** Say how much time you have and what you're in the mood for, and the pet picks from
   the bill what fits, favouring a decade or a country you don't have yet. There's a double bill too.
 - **The year's awards** you hand out yourself; the statuettes stay on the shelf.
 - **The buffet** sells string lights, a velvet armchair, a «HUSH» neon and a popcorn machine for popcorn.
 
-Only the booth, the hall, the pet and the posters are pixel art; the rest of the app is soft and plain.
+Only the booth, the hall and the pet are pixel art; the rest of the app is soft and plain, with a
+dimmed photo behind it if you like.
 Everything stays on the phone. The internet is used only for the film search (Wikidata and Wikipedia posters).
 
 | | | |

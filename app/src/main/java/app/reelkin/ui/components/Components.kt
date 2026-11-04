@@ -58,6 +58,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import app.reelkin.ui.LocalRu
 import app.reelkin.ui.art.Buf
 import app.reelkin.ui.art.Icons
@@ -133,7 +135,7 @@ fun BufImage(buf: Buf, modifier: Modifier = Modifier, scale: Dp = 2.dp, smooth: 
 }
 
 /** Posters in lists and sheets: in pixels, or the real picture when the setting says so. Scenes always stay pixel. */
-val LocalPixelCovers = androidx.compose.runtime.staticCompositionLocalOf { true }
+val LocalPixelCovers = androidx.compose.runtime.staticCompositionLocalOf { false }
 
 @Composable
 fun PosterBuf(title: String, genre: app.reelkin.data.Genre, art: app.reelkin.ui.art.CoverArt?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) {
@@ -190,20 +192,23 @@ fun Sheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
 @Composable
 fun Page(title: String, onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     BackHandler(onBack = onBack)
-    Column(Modifier.fillMaxSize().background(C.bg).clickable(remember { MutableInteractionSource() }, null) {}.imePadding()) {
-        Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 6.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
-                Canvas(Modifier.size(18.dp)) {
-                    val w = 2.2.dp.toPx(); val m = size.height / 2
-                    drawLine(C.ink, Offset(size.width * .65f, 0f), Offset(size.width * .2f, m), w, StrokeCap.Round)
-                    drawLine(C.ink, Offset(size.width * .2f, m), Offset(size.width * .65f, size.height), w, StrokeCap.Round)
+    Box(Modifier.fillMaxSize()) {
+        app.reelkin.ui.BackdropLayer()
+        Column(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null) {}.imePadding()) {
+            Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 6.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
+                    Canvas(Modifier.size(18.dp)) {
+                        val w = 2.2.dp.toPx(); val m = size.height / 2
+                        drawLine(C.ink, Offset(size.width * .65f, 0f), Offset(size.width * .2f, m), w, StrokeCap.Round)
+                        drawLine(C.ink, Offset(size.width * .2f, m), Offset(size.width * .65f, size.height), w, StrokeCap.Round)
+                    }
                 }
+                Spacer(Modifier.width(4.dp))
+                Text(title, style = T.Title, modifier = Modifier.weight(1f), maxLines = 1)
             }
-            Spacer(Modifier.width(4.dp))
-            Text(title, style = T.Title, modifier = Modifier.weight(1f), maxLines = 1)
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 8.dp).navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(14.dp), content = content)
         }
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 8.dp).navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(14.dp), content = content)
     }
 }
 
@@ -244,5 +249,38 @@ fun Popcorn(rating: Int, modifier: Modifier = Modifier, size: Dp = 18.dp, onRate
 fun Bar(p: Float, modifier: Modifier = Modifier, color: Color = C.gold) {
     Box(modifier.height(6.dp).clip(CircleShape).background(C.surface2)) {
         Box(Modifier.fillMaxWidth(p.coerceIn(0f, 1f)).height(6.dp).clip(CircleShape).background(color))
+    }
+}
+
+/**
+ * Pages of one screen, a tap away at the top: plain words, the open one gold and underlined, so
+ * they never look like the filter chips below. [counts] go beside the names when given.
+ */
+@Composable
+fun Tabs(names: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, counts: List<Int?> = emptyList()) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        names.forEachIndexed { i, name ->
+            val on = i == selected
+            Column(Modifier.weight(1f).clip(R8.Sm).clickable { onSelect(i) }.padding(top = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                // One line, whatever the width: the count is the first thing to give way.
+                val count = counts.getOrNull(i)
+                Text(androidx.compose.ui.text.buildAnnotatedString {
+                    append(name)
+                    if (count != null) withStyle(androidx.compose.ui.text.SpanStyle(fontSize = T.Small.fontSize, color = if (on) C.gold.copy(alpha = .8f) else C.faint)) { append(" $count") }
+                }, style = T.Strong.copy(color = if (on) C.gold else C.muted), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                Spacer(Modifier.height(8.dp))
+                Box(Modifier.fillMaxWidth().height(2.dp).clip(CircleShape).background(if (on) C.gold else C.line))
+            }
+        }
+    }
+}
+
+/** A small square way into another part of the cinema: what it is and how it stands. */
+@Composable
+fun Tile(title: String, note: String, modifier: Modifier = Modifier, accent: Color = C.gold, onClick: () -> Unit) {
+    Column(modifier.clip(R8.Lg).background(C.surface).border(1.dp, C.line, R8.Lg).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title, style = T.Strong, maxLines = 1)
+        Text(note, style = T.Small.copy(color = accent), maxLines = 1)
     }
 }

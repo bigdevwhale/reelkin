@@ -5,8 +5,8 @@ import app.reelkin.data.Title
 import app.reelkin.ui.art.hash
 
 enum class Mood(val ru: String, val en: String, val genres: Set<Genre>) {
-    LAUGH("посмеяться", "a laugh", setOf(Genre.COMEDY, Genre.ANIMATION, Genre.MUSICAL)),
-    COSY("уютно", "cosy", setOf(Genre.ANIMATION, Genre.ROMANCE, Genre.MUSICAL, Genre.COMEDY)),
+    LAUGH("посмеяться", "a laugh", setOf(Genre.COMEDY, Genre.ANIMATION, Genre.MUSICAL, Genre.REALITY)),
+    COSY("уютно", "cosy", setOf(Genre.ANIMATION, Genre.ROMANCE, Genre.MUSICAL, Genre.COMEDY, Genre.REALITY)),
     THINK("подумать", "to think", setOf(Genre.DRAMA, Genre.SCIFI, Genre.DOC)),
     FEAR("испугаться", "a scare", setOf(Genre.HORROR)),
     MYSTERY("загадка", "a mystery", setOf(Genre.NOIR)),
@@ -49,7 +49,7 @@ object Picker {
         val top = fit.firstOrNull()
         if (top == null) {
             val ep = c.running.firstOrNull { it.minutes <= minutes } ?: return null
-            return Pick(emptyList(), if (ru) "За это время влезет только серия." + (if (ep.cliff) " Тем более она оборвалась на самом интересном." else " Тебя там ждут.")
+            return Pick(emptyList(), if (ru) "За это время влезет только серия." + (if (ep.cliff) " Тем более она закончилась на самом интересном." else " Тебя там ждут.")
                 else "Only an episode fits." + (if (ep.cliff) " And it stopped at the worst moment." else " It's waiting for you."), ep)
         }
         val (f, _, why) = top

@@ -92,7 +92,7 @@ class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: L
                 Genre.NOIR -> Species.CAT
                 Genre.HORROR, Genre.SCIFI -> Species.BAT
                 Genre.ANIMATION, Genre.ROMANCE, Genre.MUSICAL -> Species.FOX
-                Genre.COMEDY, Genre.WESTERN, Genre.ADVENTURE -> Species.COON
+                Genre.COMEDY, Genre.WESTERN, Genre.ADVENTURE, Genre.REALITY -> Species.COON
                 Genre.DOC, Genre.DRAMA -> Species.OWL
             }
         }

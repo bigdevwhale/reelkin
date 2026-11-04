@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 const val DAY = 86_400_000L
 
 /** What a spectator in the hall wears: you see them from behind, so mostly hats. */
-enum class Who { DETECTIVE, ASTRO, LADY, CLOWN, PROF, GHOST, COWBOY, MOUSE, TOPHAT, BERET, PITH }
+enum class Who { DETECTIVE, ASTRO, LADY, CLOWN, PROF, GHOST, COWBOY, MOUSE, TOPHAT, BERET, PITH, SELFIE }
 
 /** Something the pet picks up from the third film of a genre. */
 enum class Trait { HAT, ANTENNA, BLUSH, NOSE, GLASSES, BOLTS, BANDANA, GLOVES, BOW }
@@ -25,6 +25,7 @@ enum class Genre(val color: Int, val trait: Trait?, val who: Who) {
     MUSICAL(0xB83A8A, Trait.BOW, Who.TOPHAT),
     DRAMA(0x4E6284, null, Who.BERET),
     ADVENTURE(0x4E8A3A, null, Who.PITH),
+    REALITY(0x8A5AD0, null, Who.SELFIE),
 }
 
 /** What hatched from the film can, decided by the first three films. */

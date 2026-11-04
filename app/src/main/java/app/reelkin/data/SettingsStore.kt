@@ -58,8 +58,14 @@ data class Settings(
     val awards: List<Award> = emptyList(),
     val goal: Int = 52,
     /** Posters in lists redrawn in pixels, or shown as they are. */
-    val pixelCovers: Boolean = true,
+    val pixelCovers: Boolean = false,
     val seance: Seance? = null,
+    /** The picture behind the screens: see Backdrops. Empty for none. */
+    val backdrop: String = "",
+    /** Changes when a picture of one's own is picked, so it's read again. */
+    val backdropStamp: Long = 0,
+    /** How the stubs are ordered on the bill: a Browse.Sort name. */
+    val stubSort: String = "",
 )
 
 class SettingsStore(context: Context) {
@@ -78,8 +84,11 @@ class SettingsStore(context: Context) {
         off = this[OFF]?.split(',')?.mapNotNull { s -> runCatching { Trait.valueOf(s) }.getOrNull() }?.toSet() ?: emptySet(),
         awards = this[AWARDS]?.lines()?.mapNotNull { l -> l.split('\t').takeIf { it.size == 3 }?.let { Award(it[0].toInt(), it[1].toInt(), it[2]) } } ?: emptyList(),
         goal = this[GOAL] ?: 52,
-        pixelCovers = this[PIXEL] ?: true,
+        pixelCovers = this[PIXEL] ?: false,
         seance = Seance.of(this[SEANCE]),
+        backdrop = this[BACKDROP] ?: "",
+        backdropStamp = this[BACKDROP_STAMP] ?: 0L,
+        stubSort = this[STUB_SORT] ?: "",
     )
 
     suspend fun now(): Settings = settings.first()
@@ -99,6 +108,9 @@ class SettingsStore(context: Context) {
             it[GOAL] = s.goal
             it[PIXEL] = s.pixelCovers
             if (s.seance != null) it[SEANCE] = s.seance.json() else it.remove(SEANCE)
+            it[BACKDROP] = s.backdrop
+            it[BACKDROP_STAMP] = s.backdropStamp
+            it[STUB_SORT] = s.stubSort
         }
     }
 
@@ -113,7 +125,11 @@ class SettingsStore(context: Context) {
         val OFF = stringPreferencesKey("off")
         val AWARDS = stringPreferencesKey("awards")
         val GOAL = intPreferencesKey("goal")
-        val PIXEL = booleanPreferencesKey("pixel")
+        // "pixel" was written by every save while pixels were the default, so the choice starts afresh under a new key.
+        val PIXEL = booleanPreferencesKey("pixel_covers")
         val SEANCE = stringPreferencesKey("seance")
+        val BACKDROP = stringPreferencesKey("backdrop")
+        val BACKDROP_STAMP = androidx.datastore.preferences.core.longPreferencesKey("backdrop_stamp")
+        val STUB_SORT = stringPreferencesKey("stub_sort")
     }
 }

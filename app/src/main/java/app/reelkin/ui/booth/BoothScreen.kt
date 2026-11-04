@@ -52,6 +52,7 @@ import app.reelkin.ui.components.Kind
 import app.reelkin.ui.components.Says
 import app.reelkin.ui.components.Section
 import app.reelkin.ui.components.t
+import app.reelkin.ui.components.Tile
 import app.reelkin.ui.pet
 import app.reelkin.ui.poster
 import app.reelkin.ui.theme.C
@@ -119,6 +120,18 @@ fun BoothScreen(c: Cinema, nav: Nav) {
             Btn(t("Что ставим?", "What's on?"), { nav.go(Overlay.Pick) }, Modifier.weight(1f), kind = Kind.SOFT, small = true)
         }
         PetLine(c) { nav.go(Overlay.Pet) }
+        // The rest of the cinema, a tap away instead of behind the numbers in the header.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Tile(t("Буфет", "Buffet"), if (ru) "${c.popcorn} попкорна" else "${c.popcorn} popcorn", Modifier.weight(1f)) { nav.go(Overlay.Shop) }
+            Tile(t("Вывеска", "The sign"), if (ru) "букв: ${c.letters.values.sum()}" else "${c.letters.values.sum()} letters", Modifier.weight(1f)) { nav.go(Overlay.Sign) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val films = c.thisYear.count { !it.season }
+            Tile(t("Статистика", "Stats"), if (ru) "${Words.films(films, true)} в ${c.year}" else "${Words.films(films, false)} in ${c.year}", Modifier.weight(1f)) { nav.go(Overlay.Stats) }
+            Tile(t("Премия года", "The awards"), if (c.s.awards.any { it.year == c.year }) t("вручена", "handed out") else t("вручить ${c.year}", "hand out ${c.year}"), Modifier.weight(1f), accent = C.velvet) {
+                if (c.thisYear.isEmpty()) nav.say(if (ru) "Сначала посмотрим что-нибудь в этом году — потом вручим." else "Let's watch something this year first, then we'll hand them out.") else nav.go(Overlay.Award)
+            }
+        }
         if (c.running.isNotEmpty()) {
             Section(t("Сейчас идёт", "Now running"), t("сериалы", "series"))
             for (s in c.running) SeriesRow(s, nav)
@@ -214,7 +227,7 @@ fun SeriesRow(s: Title, nav: Nav) {
         Column(Modifier.weight(1f)) {
             Text(s.title, style = T.Name, maxLines = 1)
             Text(t("сезон ${s.season} · серия ${s.episode} из ${s.perSeason}", "season ${s.season} · episode ${s.episode} of ${s.perSeason}"), style = T.Muted)
-            if (s.cliff) Text(t("оборвалось на самом интересном", "stopped at the worst moment"), style = T.Small.copy(color = C.velvet))
+            if (s.cliff) Text(t("на самом интересном", "at the worst moment"), style = T.Small.copy(color = C.velvet))
         }
         Btn(t("+1 серия", "+1 ep"), { episode(s, nav, ctx, ru) }, small = true)
     }

@@ -56,6 +56,7 @@ object Catalog {
             "anim" in t || "anime" in t || "cartoon" in t -> Genre.ANIMATION
             "musical" in t || "music" in t -> Genre.MUSICAL
             "western" in t -> Genre.WESTERN
+            "reality" in t || "game show" in t || "talent show" in t || "dating show" in t -> Genre.REALITY
             "documentary" in t -> Genre.DOC
             "comedy" in t || "sitcom" in t || "parody" in t -> Genre.COMEDY
             "romance" in t || "romantic" in t || "melodrama" in t -> Genre.ROMANCE

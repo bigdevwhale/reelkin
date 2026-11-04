@@ -121,17 +121,23 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     var genre by remember { mutableStateOf(d.genre) }
     var kind by remember { mutableStateOf(d.kind) }
     var perSeason by remember { mutableStateOf((d.perSeason ?: 10).toString()) }
+    var season by remember { mutableStateOf((old?.season ?: 1).toString()) }
     var cover by remember { mutableStateOf(old?.cover) }
     var bytes by remember { mutableStateOf<ByteArray?>(null) }
     LaunchedEffect(d.coverUrl) { if (old == null) d.coverUrl?.let { bytes = fetch(it) } }
     val art = remember(cover, bytes) { cover?.let { Covers.art(ctx, it) } ?: bytes?.let { Covers.fromBytes(it) } }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) { cover = Covers.saveUri(ctx, uri); bytes = null } }
     suspend fun saveCover(): String? = cover ?: bytes?.let { b -> withContext(Dispatchers.IO) { Covers.save(ctx, b) } }?.also { cover = it; bytes = null }
-    fun build(status: Status) = Title(
-        id = old?.id ?: 0, kind = kind, title = title.trim().ifBlank { if (ru) "Без названия" else "Untitled" }, year = year.toIntOrNull(), country = country.trim(), genre = genre,
-        minutes = minutes.toIntOrNull() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
-        season = old?.season ?: 1, episode = old?.episode ?: 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 99) ?: 10, cliff = old?.cliff ?: false,
-    )
+    fun build(status: Status): Title {
+        val sn = season.toIntOrNull()?.coerceIn(1, 99) ?: 1
+        // Another season starts from its first episode.
+        val same = old != null && old.season == sn
+        return Title(
+            id = old?.id ?: 0, kind = kind, title = title.trim().ifBlank { if (ru) "Без названия" else "Untitled" }, year = year.toIntOrNull(), country = country.trim(), genre = genre,
+            minutes = minutes.toIntOrNull() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
+            season = sn, episode = if (same) old!!.episode else 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 99) ?: 10, cliff = same && old!!.cliff,
+        )
+    }
     Sheet(nav::close) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -146,7 +152,16 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
         }
         Field(country, { country = it }, t("страна", "country"))
         Flow { Chip(t("фильм", "film"), kind == TKind.FILM, { kind = TKind.FILM }); Chip(t("сериал", "series"), kind == TKind.SERIES, { kind = TKind.SERIES }) }
-        if (kind == TKind.SERIES) Field(perSeason, { perSeason = it.filter(Char::isDigit).take(2) }, t("серий в сезоне", "episodes per season"), number = true)
+        if (kind == TKind.SERIES) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(t("сезон", "season"), style = T.Small)
+                Field(season, { season = it.filter(Char::isDigit).take(2) }, "1", number = true)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(t("серий в сезоне", "episodes per season"), style = T.Small)
+                Field(perSeason, { perSeason = it.filter(Char::isDigit).take(2) }, "10", number = true)
+            }
+        }
         Text(t("Жанр — от него афиша, зритель в зале и черта питомца", "Genre: it sets the poster, the spectator and the pet's trait").uppercase(), style = T.Eyebrow)
         Flow { for (g in Genre.entries) Chip(Words.genre(g, ru), genre == g, { genre = g }, color = C.genre(g)) }
         if (old != null) Btn(t("Сохранить", "Save"), {

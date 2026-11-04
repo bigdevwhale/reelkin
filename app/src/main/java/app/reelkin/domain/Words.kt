@@ -20,6 +20,7 @@ object Words {
         Genre.MUSICAL -> if (ru) "мюзикл" else "musical"
         Genre.DRAMA -> if (ru) "драма" else "drama"
         Genre.ADVENTURE -> if (ru) "приключения" else "adventure"
+        Genre.REALITY -> if (ru) "реалити-шоу" else "reality"
     }
 
     /** "One more X" for the pet's hint. */
@@ -74,6 +75,7 @@ object Words {
         Who.TOPHAT -> if (ru) "господин в цилиндре" else "a gent in a top hat"
         Who.BERET -> if (ru) "художник в берете" else "a painter in a beret"
         Who.PITH -> if (ru) "путешественник" else "an explorer"
+        Who.SELFIE -> if (ru) "зритель с телефоном" else "a fan filming on a phone"
     }
 
     fun stage(n: Int, ru: Boolean) = when (n) { 1 -> if (ru) "малыш" else "little one"; 2 -> if (ru) "подросток" else "half-grown"; else -> if (ru) "взрослый" else "grown-up" }
@@ -98,12 +100,13 @@ object Words {
         Genre.ANIMATION -> if (ru) "Ещё!" else "More!"
         Genre.DOC -> if (ru) "Записываю." else "Taking notes."
         Genre.ADVENTURE -> if (ru) "Вперёд!" else "Onwards!"
+        Genre.REALITY -> if (ru) "Сейчас будет скандал. Чувствую." else "There's a row coming. I can feel it."
     }
 
     /** Something to say when poked, from what the cinema holds. */
     fun poke(c: Cinema, ru: Boolean, rnd: Random = Random.Default): String {
         val l = ArrayList<String>()
-        c.running.firstOrNull { it.cliff }?.let { l += if (ru) "«${it.title}» оборвался на самом интересном. Я грызу попкорн." else "${it.title} stopped at the worst moment. I'm chewing popcorn." }
+        c.running.firstOrNull { it.cliff }?.let { l += if (ru) "В «${it.title}» серия закончилась на самом интересном. Я грызу попкорн." else "${it.title} stopped at the worst moment. I'm chewing popcorn." }
         Cinema.DECADES.filter { it >= 1920 }.firstOrNull { it !in c.decades }?.let { d ->
             val w = c.watch.firstOrNull { it.year != null && Cinema.decade(it.year) == d }
             l += if (ru) "В $d-х у нас пусто. " + (w?.let { "В афише есть «${it.title}»." } ?: "Говорят, там было хорошее кино.")

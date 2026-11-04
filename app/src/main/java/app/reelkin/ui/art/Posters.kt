@@ -84,6 +84,14 @@ object Posters {
                 }
                 b.ln(cx, cy, cx, cy + R * .9, ink); b.dot(cx - 1, cy + R * .9, ink)
             }
+            Genre.REALITY -> {
+                // A studio camera filming: the body, the lens and the red light that means it's on.
+                b.lit(ramp(hex(0x5A5E6A))) { box(cx - R * .7, cy - R * .35, R * 1.1, R * .7, M) }
+                b.el(cx + R * .55, cy, R * .3, R * .3, hex(0x1A1A24)); b.el(cx + R * .55, cy, R * .16, R * .16, hex(0x4A6A9A)); b.dot(cx + R * .5, cy - R * .06, hex(0xFFFFFF))
+                b.box(cx - R * .6, cy - R * .6, R * .5, R * .22, hex(0x3A3E48))
+                b.el(cx - R * .5, cy - R * .2, maxOf(1.0, R * .1), maxOf(1.0, R * .1), hex(0xF03A3A))
+                b.ln(cx - R * .2, cy + R * .35, cx - R * .6, cy + R * .95, ink); b.ln(cx - R * .1, cy + R * .35, cx + R * .3, cy + R * .95, ink)
+            }
             Genre.ADVENTURE -> {
                 b.poly(hex(0x3A4A5A), cx - R * 1.3, h * .75, cx - R * .3, cy - R * .5, cx + R * .6, h * .75)
                 b.poly(hex(0xF0F0F0), cx - R * .3, cy - R * .5, cx - R * .55, cy - R * .1, cx - R * .08, cy - R * .15)
@@ -147,6 +155,7 @@ object Icons {
             Who.TOPHAT -> { b.box(cx - 4, y - 5, 9.0, 1.0, dk); b.box(cx - 2, y - 11, 5.0, 6.0, hex(0x1C1820)); b.box(cx - 2, y - 7, 5.0, 1.0, hex(0x8A2030)) }
             Who.BERET -> { b.el(cx + 1, y - 5, 4.0, 1.0, hex(0x8A2030)); b.dot(cx + 1, y - 7, hex(0x8A2030)) }
             Who.PITH -> { b.el(cx, y - 5, 4.0, 2.0, hex(0xD8C08A)); b.box(cx - 5, y - 4, 11.0, 1.0, hex(0xB8A070)) }
+            Who.SELFIE -> { b.box(cx + 3, y - 6, 1.0, 3.0, hex(0xE0B090)); b.box(cx + 2, y - 11, 4.0, 6.0, hex(0x1A1A22)); b.box(cx + 3, y - 10, 2.0, 4.0, hex(0x6A8ACA)); b.dot(cx + 5, y - 11, hex(0xF03A3A)) }
             else -> Unit
         }
     }

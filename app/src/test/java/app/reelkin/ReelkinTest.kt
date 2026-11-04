@@ -9,7 +9,9 @@ import app.reelkin.data.Status
 import app.reelkin.data.Ticket
 import app.reelkin.data.Title
 import app.reelkin.data.Trait
+import app.reelkin.domain.Browse
 import app.reelkin.domain.Cinema
+import app.reelkin.domain.Stats
 import app.reelkin.domain.Mood
 import app.reelkin.domain.Picker
 import app.reelkin.domain.gains
@@ -63,5 +65,35 @@ class ReelkinTest {
         assertNull(Picker.pick(c, 30, Mood.LAUGH, emptySet(), true))
         val s = Title(id = 9, kind = Kind.SERIES, title = "S", minutes = 25, status = Status.RUNNING)
         assertEquals("S", Picker.pick(cin(emptyList(), w + s), 30, Mood.LAUGH, emptySet(), true)!!.episode!!.title)
+    }
+
+    @Test fun filtersNarrowStubsAndKeepTheirOrder() {
+        val day = 86_400_000L
+        val a = tk("Alien", Genre.HORROR, m = 117, at = 1).copy(stars = 5)
+        val b = tk("Brazil", Genre.SCIFI, m = 142, at = 2 * day).copy(stars = 3)
+        val s = tk("Lost · season 1", Genre.ADVENTURE, at = 3 * day).copy(season = true)
+        val all = listOf(a, b, s)
+        assertEquals(listOf(s, b, a), Browse().stubs(all))
+        assertEquals(listOf(a), Browse(stars = 4).stubs(all))
+        assertEquals(listOf(s), Browse(kind = Kind.SERIES).stubs(all))
+        assertEquals(listOf(b, a), Browse(genres = setOf(Genre.HORROR, Genre.SCIFI), sort = Browse.Sort.LENGTH).stubs(all))
+        assertEquals(listOf(b), Browse(query = "braz").stubs(all))
+        val back = Browse.decode(Browse(kind = Kind.FILM, genres = setOf(Genre.NOIR), stars = 4, year = 2026, sort = Browse.Sort.TITLE).encode())
+        assertEquals(Browse(kind = Kind.FILM, genres = setOf(Genre.NOIR), stars = 4, year = 2026, sort = Browse.Sort.TITLE), back)
+        assertEquals(Browse(), Browse.decode("garbage"))
+    }
+
+    @Test fun statsCountFilmsNotSeasonsTwice() {
+        val f1 = tk("A", Genre.NOIR, m = 80, cn = "France").copy(stars = 4)
+        val f2 = tk("B", Genre.NOIR, m = 130, at = 1, cn = "France").copy(stars = 2)
+        val sn = tk("S · season 1", Genre.DRAMA, m = 400, at = 2).copy(season = true)
+        val st = Stats(cin(listOf(f1, f2, sn)), null)
+        assertEquals(2, st.films.size)
+        assertEquals(1, st.seasons)
+        assertEquals(210L, st.minutes)
+        assertEquals(3.0, st.avgPopcorn!!, 0.001)
+        assertEquals(listOf(Genre.NOIR to 2), st.genres)
+        assertEquals(listOf(1, 0, 1, 0), st.lengths)
+        assertEquals(listOf("France" to 2), st.countries)
     }
 }

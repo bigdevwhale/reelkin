@@ -169,7 +169,7 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
             Btn(t("−1", "−1"), { co.write { office.undoEpisode(s) } }, kind = Kind.GHOST, enabled = s.episode > 0)
         }
         Flow {
-            Chip(if (s.cliff) t("оборвалось ✓", "cliffhanger ✓") else t("оборвалось!", "cliffhanger!"), s.cliff, { co.write { office.update(s.copy(cliff = !s.cliff)) } }, color = C.velvet)
+            Chip(if (s.cliff) t("на самом интересном ✓", "cliffhanger ✓") else t("на самом интересном!", "cliffhanger!"), s.cliff, { co.write { office.update(s.copy(cliff = !s.cliff)) } }, color = C.velvet)
             if (s.status == Status.RUNNING) Chip(t("снять с проката", "take off"), false, { co.write { office.update(s.copy(status = Status.SHELVED, cliff = false)) }; nav.close(); nav.toast(if (ru) "«${s.title}» в шкафу. Достать можно в любой момент." else "${s.title} is in the cupboard. Bring it back any time.") })
             else Chip(t("смотрю", "watching"), false, { co.write { office.update(s.copy(status = Status.RUNNING)) } })
         }
