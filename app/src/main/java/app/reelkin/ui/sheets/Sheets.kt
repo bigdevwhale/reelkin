@@ -249,7 +249,7 @@ fun StubSheet(c: Cinema, tk: Ticket, nav: Nav) {
 /* ---------------- tearing a stub ---------------- */
 
 @Composable
-fun LogSheet(c: Cinema, s: Seance, nav: Nav) {
+fun LogSheet(c: Cinema, s: Seance, nav: Nav, series: Title? = null) {
     val ru = LocalRu.current
     val co = LocalContext.current.container
     var stars by remember { mutableIntStateOf(0) }
@@ -269,7 +269,7 @@ fun LogSheet(c: Cinema, s: Seance, nav: Nav) {
         }
         Text(t("Как тебе?", "How was it?").uppercase(), style = T.Eyebrow)
         Popcorn(stars, size = 36.dp) { stars = it }
-        Text(t("Три слова о фильме", "Three words about it").uppercase(), style = T.Eyebrow)
+        Text((if (series != null) t("Три слова о сезоне", "Three words about it") else t("Три слова о фильме", "Three words about it")).uppercase(), style = T.Eyebrow)
         Field(words, { words = it.take(60) }, t("дождь, единорог, слёзы", "rain, unicorn, tears"))
         Text(t("С кем", "With whom").uppercase(), style = T.Eyebrow)
         Flow { for ((v, l) in listOf(Company.ALONE to t("один", "alone"), Company.TWO to t("вдвоём", "for two"), Company.MANY to t("компанией", "with friends"))) Chip(l, company == v, { company = v }) }
@@ -279,9 +279,10 @@ fun LogSheet(c: Cinema, s: Seance, nav: Nav) {
         WatchedOn(at) { at = it }
         Btn(t("Оторвать корешок", "Tear the stub"), {
             val tk = Ticket(title = s.title, year = s.year, country = s.country, genre = s.genre, minutes = s.minutes, stars = stars, words = words.trim(),
-                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at)
+                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at, season = series != null)
             co.write {
                 val before = cinema()
+                series?.let { office.add(it) }
                 val saved = office.tear(tk, s.titleId.takeIf { it > 0 })
                 val g = gains(before, cinema(), saved)
                 nav.scene.hop(30.0); nav.scene.burst(); nav.scene.mood(PetMood.HAPPY, 3.0)

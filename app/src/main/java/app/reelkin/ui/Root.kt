@@ -45,6 +45,7 @@ import app.reelkin.data.Draft
 import app.reelkin.data.Seance
 import app.reelkin.data.Settings
 import app.reelkin.data.Ticket
+import app.reelkin.data.Title
 import app.reelkin.domain.Cinema
 import app.reelkin.domain.Gains
 import app.reelkin.domain.Words
@@ -84,8 +85,8 @@ sealed class Overlay {
     data class Film(val id: Long) : Overlay()
     data class Series(val id: Long) : Overlay()
     data class Stub(val id: Long) : Overlay()
-    /** The stub form for a film just watched. */
-    data class Log(val s: Seance) : Overlay()
+    /** The stub form for a film just watched, or for a season of a new [series] that goes in the cupboard once the stub is torn. */
+    data class Log(val s: Seance, val series: Title? = null) : Overlay()
     data class Reward(val ticket: Ticket, val g: Gains) : Overlay()
     data class Choose(val log: Boolean) : Overlay()
     data object Pick : Overlay()
@@ -165,7 +166,7 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
                     is Overlay.Film -> cin.title(o.id)?.let { FilmSheet(cin, it, nav) }
                     is Overlay.Series -> cin.title(o.id)?.let { SeriesSheet(cin, it, nav) }
                     is Overlay.Stub -> cin.seats.firstOrNull { it.id == o.id }?.let { StubSheet(cin, it, nav) }
-                    is Overlay.Log -> LogSheet(cin, o.s, nav)
+                    is Overlay.Log -> LogSheet(cin, o.s, nav, o.series)
                     is Overlay.Reward -> RewardSheet(cin, o.ticket, o.g, nav)
                     is Overlay.Choose -> ChooseSheet(cin, o.log, nav)
                     Overlay.Pick -> PickSheet(cin, nav)

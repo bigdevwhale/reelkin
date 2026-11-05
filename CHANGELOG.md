@@ -6,6 +6,17 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [1.2.1]
+
+- **A series already watched:** adding a series now offers «Уже посмотрел сезон N» next to «Смотрю».
+  It tears a stub for that season, with popcorn, three words and the date, and puts the series in the
+  cupboard at the next season, ready to bring back when it comes out.
+
+<!-- tg
+Сериал теперь тоже можно отметить как уже просмотренный: кнопка «Уже посмотрел сезон N» при добавлении.
+Корешок за сезон отрывается сразу, а сериал ждёт в шкафу следующего сезона.
+-->
+
 ## [1.2.0]
 
 - **The day you watched it:** tearing a stub asks when you watched the film — today, yesterday or any

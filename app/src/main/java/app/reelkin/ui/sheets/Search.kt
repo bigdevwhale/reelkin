@@ -167,13 +167,23 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
         if (old != null) Btn(t("Сохранить", "Save"), {
             co.write { val cv = saveCover(); office.update(build(old.status).copy(cover = cv)) }; nav.close()
         }, Modifier.fillMaxWidth())
-        else if (kind == TKind.SERIES) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        else if (kind == TKind.SERIES) { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("В афишу", "To the bill"), { co.write { val cv = saveCover(); office.add(build(Status.WATCH).copy(cover = cv)) }; nav.close(); nav.tab(Tab.BILL) }, Modifier.weight(1f), kind = Kind.GHOST)
             Btn(t("Смотрю", "Watching"), {
                 co.write { val cv = saveCover(); office.add(build(Status.RUNNING).copy(cover = cv)) }; nav.close(); nav.tab(Tab.BILL)
                 nav.toast(if (ru) "Абонемент на «${title.trim()}» выдан." else "Season ticket for ${title.trim()} issued.")
             }, Modifier.weight(1f))
-        } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        }
+            // A season already watched: its stub now, and the series waits in the cupboard at the next season.
+            Btn(t("Уже посмотрел сезон ${season.ifBlank { "1" }}", "Watched season ${season.ifBlank { "1" }}"), {
+                co.write {
+                    val cv = saveCover(); val tt = build(Status.SHELVED).copy(cover = cv)
+                    val stub = Seance(tt.title + if (ru) " · сезон ${tt.season}" else " · season ${tt.season}", tt.minutes * tt.perSeason, tt.genre, tt.year, tt.country, cv, -1, false, System.currentTimeMillis())
+                    nav.go(Overlay.Log(stub, tt.copy(season = tt.season + 1, episode = 0)))
+                }
+            }, Modifier.fillMaxWidth(), kind = Kind.GOLD)
+        }
+        else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("В афишу", "To the bill"), {
                 co.write { val cv = saveCover(); office.add(build(Status.WATCH).copy(cover = cv)) }; nav.close()
                 nav.toast(if (ru) "«${title.trim()}» в афише." else "${title.trim()} is on the bill.")
