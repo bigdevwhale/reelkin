@@ -6,6 +6,19 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [1.2.0]
+
+- **The day you watched it:** tearing a stub asks when you watched the film — today, yesterday or any
+  earlier day from a calendar; a stub's date can be changed later on its card. The stats, the hall and
+  the bill follow the date (#3).
+- **Mystery/thriller:** the noir genre is now called «детектив/триллер» («mystery/thriller»), and
+  thrillers, mysteries, suspense and spy films land in it instead of drama.
+
+<!-- tg
+Теперь можно указать, когда смотрел фильм: сегодня, вчера или любой день в календаре. Дату можно поменять и потом, в корешке.
+Жанр «нуар» стал «детектив/триллер», и триллеры больше не попадают в драму.
+-->
+
 ## [1.1.0]
 
 - **The season you're on:** a series can start from any season, and the season can be changed later;

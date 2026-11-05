@@ -1,5 +1,6 @@
 package app.reelkin.ui.sheets
 
+import android.app.DatePickerDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
@@ -75,6 +76,9 @@ import app.reelkin.ui.theme.C
 import app.reelkin.ui.theme.R8
 import app.reelkin.ui.theme.T
 import kotlinx.coroutines.delay
+import app.reelkin.data.DAY
+import androidx.compose.runtime.mutableLongStateOf
+import java.util.Calendar
 
 fun Title.seance(rewatch: Boolean = false) = Seance(title, minutes, genre, year, country, cover, id, rewatch, System.currentTimeMillis())
 fun Ticket.seance() = Seance(title, minutes, genre, year, country, cover, -1, true, System.currentTimeMillis())
@@ -102,6 +106,31 @@ fun Brings(c: Cinema, title: String, genre: app.reelkin.data.Genre, year: Int?, 
     Column(Modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(t("Если посмотреть", "If you watch it").uppercase(), style = T.Eyebrow)
         for (s in l) Text("+  $s", style = T.Body)
+    }
+}
+
+/** The day it was watched: today, yesterday or any earlier day from the calendar. The time of day is kept. */
+@Composable
+fun WatchedOn(at: Long, onPick: (Long) -> Unit) {
+    val ru = LocalRu.current
+    val ctx = LocalContext.current
+    val now = System.currentTimeMillis()
+    fun day(ms: Long) = Calendar.getInstance().apply { timeInMillis = ms }.let { it.get(Calendar.YEAR) * 400 + it.get(Calendar.DAY_OF_YEAR) }
+    fun onDay(ms: Long) = Calendar.getInstance().apply { timeInMillis = at }.also { c ->
+        val d = Calendar.getInstance().apply { timeInMillis = ms }
+        c.set(d.get(Calendar.YEAR), d.get(Calendar.MONTH), d.get(Calendar.DAY_OF_MONTH))
+    }.timeInMillis.coerceAtMost(now)
+    val today = day(at) == day(now)
+    val yesterday = day(at) == day(now - DAY)
+    Text(t("Когда смотрел", "Watched on").uppercase(), style = T.Eyebrow)
+    Flow {
+        Chip(t("сегодня", "today"), today, { onPick(onDay(now)) })
+        Chip(t("вчера", "yesterday"), yesterday, { onPick(onDay(now - DAY)) })
+        Chip(if (today || yesterday) t("другой день…", "another day…") else app.reelkin.ui.bill.date(at, ru), !today && !yesterday, {
+            val c = Calendar.getInstance().apply { timeInMillis = at }
+            DatePickerDialog(ctx, { _, y, m, d -> onPick(onDay(Calendar.getInstance().apply { set(y, m, d) }.timeInMillis)) },
+                c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).apply { datePicker.maxDate = System.currentTimeMillis() }.show()
+        })
     }
 }
 
@@ -207,6 +236,7 @@ fun StubSheet(c: Cinema, tk: Ticket, nav: Nav) {
             if (tk.rewatch) append(if (ru) " Пересмотрено." else " A rewatch.")
             if (tk.credits == Credits.SCENE) append(if (ru) " Была сцена после титров." else " There was a post-credits scene.")
         }, style = T.Muted)
+        WatchedOn(tk.at) { at -> co.write { office.update(tk.copy(at = at, words = words.trim())) } }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (!tk.season) Btn(t("Пересмотреть", "Watch again"), {
                 if (c.s.seance == null) { co.write { office.startSeance(tk.seance()) }; nav.tab(Tab.BOOTH) } else nav.toast(if (ru) "Сеанс уже идёт." else "A film is already on.")
@@ -227,6 +257,7 @@ fun LogSheet(c: Cinema, s: Seance, nav: Nav) {
     var company by remember { mutableStateOf(Company.ALONE) }
     var credits by remember { mutableStateOf(Credits.NOTHING) }
     var rewatch by remember { mutableStateOf(s.rewatch || c.seats.any { it.title == s.title && !it.season }) }
+    var at by remember { mutableLongStateOf(System.currentTimeMillis()) }
     Sheet(nav::close) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             BigPoster(s.title, s.genre, s.cover, 2.6f)
@@ -245,9 +276,10 @@ fun LogSheet(c: Cinema, s: Seance, nav: Nav) {
         Text(t("После титров", "After the credits").uppercase(), style = T.Eyebrow)
         Flow { for ((v, l) in listOf(Credits.SCENE to t("была сцена", "a scene"), Credits.NOTHING to t("ничего", "nothing"), Credits.LEFT to t("не досидел", "left early"))) Chip(l, credits == v, { credits = v }) }
         Flow { Chip(t("впервые", "first time"), !rewatch, { rewatch = false }); Chip(t("пересмотр", "rewatch"), rewatch, { rewatch = true }) }
+        WatchedOn(at) { at = it }
         Btn(t("Оторвать корешок", "Tear the stub"), {
             val tk = Ticket(title = s.title, year = s.year, country = s.country, genre = s.genre, minutes = s.minutes, stars = stars, words = words.trim(),
-                company = company, credits = credits, rewatch = rewatch, cover = s.cover)
+                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at)
             co.write {
                 val before = cinema()
                 val saved = office.tear(tk, s.titleId.takeIf { it > 0 })

@@ -9,7 +9,7 @@ import kotlin.random.Random
 /** Names and sentences in both languages: Russian first, English second. */
 object Words {
     fun genre(g: Genre, ru: Boolean) = when (g) {
-        Genre.NOIR -> if (ru) "нуар" else "noir"
+        Genre.NOIR -> if (ru) "детектив/триллер" else "mystery/thriller"
         Genre.SCIFI -> if (ru) "фантастика" else "sci-fi"
         Genre.ROMANCE -> if (ru) "мелодрама" else "romance"
         Genre.COMEDY -> if (ru) "комедия" else "comedy"
@@ -24,7 +24,8 @@ object Words {
     }
 
     /** "One more X" for the pet's hint. */
-    fun oneMore(g: Genre, ru: Boolean) = if (!ru) "One more ${genre(g, false)}" else when (g) {
+    fun oneMore(g: Genre, ru: Boolean) = if (!ru) (if (g == Genre.NOIR) "One more mystery or thriller" else "One more ${genre(g, false)}") else when (g) {
+        Genre.NOIR -> "Ещё один детектив или триллер"
         Genre.SCIFI, Genre.ROMANCE, Genre.COMEDY -> "Ещё одна ${genre(g, true)}"
         Genre.DOC -> "Ещё один документальный фильм"
         else -> "Ещё один ${genre(g, true)}"

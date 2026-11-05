@@ -335,7 +335,7 @@ private fun Heatmap(c: Cinema) {
     }
 }
 
-private fun date(ms: Long, ru: Boolean): String = SimpleDateFormat(if (ru) "d MMMM yyyy" else "MMM d, yyyy", if (ru) Locale.forLanguageTag("ru") else Locale.ENGLISH).format(Date(ms))
+fun date(ms: Long, ru: Boolean): String = SimpleDateFormat(if (ru) "d MMMM yyyy" else "MMM d, yyyy", if (ru) Locale.forLanguageTag("ru") else Locale.ENGLISH).format(Date(ms))
 
 /** A torn ticket: the poster on the stub side, perforation, then the seat, the film and three words. */
 @Composable

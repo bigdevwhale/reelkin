@@ -60,6 +60,7 @@ object Catalog {
             "documentary" in t -> Genre.DOC
             "comedy" in t || "sitcom" in t || "parody" in t -> Genre.COMEDY
             "romance" in t || "romantic" in t || "melodrama" in t -> Genre.ROMANCE
+            "thriller" in t || "mystery" in t || "suspense" in t || "spy" in t -> Genre.NOIR
             "adventure" in t || "action" in t || "fantasy" in t || "war" in t -> Genre.ADVENTURE
             else -> Genre.DRAMA
         }
