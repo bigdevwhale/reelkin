@@ -1,5 +1,6 @@
 package app.reelkin.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -60,6 +61,12 @@ data class Title(
     val perSeason: Int = 10,
     /** The last episode stopped at the worst moment. */
     val cliff: Boolean = false,
+    /** The seasons as the catalogue knows them, with their episodes and first days: see [Seasons]. Empty when unknown. */
+    @ColumnInfo(defaultValue = "") val plan: String = "",
+    /** When [plan] was last asked for, so it's asked again only now and then. */
+    @ColumnInfo(defaultValue = "0") val planAt: Long = 0,
+    /** Where the seasons come from: «myshows:73193» or «tvmaze:51394»; empty when it was looked for and isn't anywhere. */
+    val show: String? = null,
 )
 
 /** A torn stub: a film watched, or a whole season. It holds a copy of everything so the bill can forget the title. */
@@ -79,6 +86,10 @@ data class Ticket(
     val rewatch: Boolean = false,
     val at: Long = System.currentTimeMillis(),
     val cover: String? = null,
+    /** A season watched before it came here: no episodes carry its minutes, so the stub does. */
+    @ColumnInfo(defaultValue = "0") val whole: Boolean = false,
+    /** Where an imported stub came from, so importing again doesn't tear it twice. */
+    val ref: String? = null,
 )
 
 @Entity(tableName = "episodes", indices = [Index("series")])

@@ -1,7 +1,10 @@
 package app.reelkin.domain
 
+import app.reelkin.data.Air
 import app.reelkin.data.Genre
+import app.reelkin.data.Seasons
 import app.reelkin.data.Species
+import app.reelkin.data.Title
 import app.reelkin.data.Trait
 import app.reelkin.data.Who
 import kotlin.random.Random
@@ -131,4 +134,22 @@ object Words {
     }
     fun minutes(n: Long, ru: Boolean) = fmt(n) + " " + if (ru) plural((n % 100).toInt(), "минута", "минуты", "минут") else if (n == 1L) "minute" else "minutes"
     fun films(n: Int, ru: Boolean) = if (ru) "$n " + plural(n, "фильм", "фильма", "фильмов") else "$n film" + if (n == 1) "" else "s"
+
+    /** A day as «12 марта 2027» or «Mar 12, 2027», in UTC since the catalogue's days are dates, not moments. */
+    fun day(ms: Long, ru: Boolean): String = java.text.SimpleDateFormat(if (ru) "d MMMM yyyy" else "MMM d, yyyy", if (ru) java.util.Locale.forLanguageTag("ru") else java.util.Locale.ENGLISH)
+        .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }.format(java.util.Date(ms))
+
+    /** What the season [n] of a series is waiting for, or null when it's out or nothing is known. */
+    fun air(t: Title, ru: Boolean, now: Long = System.currentTimeMillis(), n: Int = t.season): String? = when (val a = Seasons.air(t, n, now)) {
+        is Air.On -> if (ru) "сезон $n выйдет ${day(a.at, true)}" else "season $n comes out ${day(a.at, false)}"
+        Air.Later -> if (ru) "сезон $n ещё не вышел, даты пока нет" else "season $n isn't out yet, no date"
+        Air.None -> if (ru) "сезона $n пока нет" else "no season $n yet"
+        Air.Out, Air.Unknown -> null
+    }
+
+    /** «вышло 3 сезона» / «3 seasons out», or null when unknown. */
+    fun seasonsOut(t: Title, ru: Boolean, now: Long = System.currentTimeMillis()): String? {
+        val n = Seasons.out(Seasons.decode(t.plan), now).takeIf { it > 0 } ?: return null
+        return if (ru) plural(n, "вышел", "вышло", "вышло") + " $n " + plural(n, "сезон", "сезона", "сезонов") else "$n season${if (n == 1) "" else "s"} out"
+    }
 }

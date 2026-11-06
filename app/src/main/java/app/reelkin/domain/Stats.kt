@@ -15,8 +15,8 @@ class Stats(c: Cinema, val year: Int?) {
     val seasons: Int = stubs.count { it.season }
     val episodes = c.episodes.filter { year == null || yearOf(it.at) == year }
 
-    /** Films and every episode; season stubs aren't counted twice. */
-    val minutes: Long = films.sumOf { it.minutes.toLong() } + episodes.sumOf { it.minutes.toLong() }
+    /** Films, every episode and the seasons watched before they came here; other season stubs aren't counted twice. */
+    val minutes: Long = stubs.filter { !it.season || it.whole }.sumOf { it.minutes.toLong() } + episodes.sumOf { it.minutes.toLong() }
     val hours: Long = minutes / 60
 
     val rated = films.filter { it.stars > 0 }

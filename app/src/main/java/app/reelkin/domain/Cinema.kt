@@ -21,8 +21,8 @@ class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: L
     /** Seat i belongs to the i-th stub, in the order they were torn. */
     val seats = tickets.sortedBy { it.at }
 
-    /** Minutes watched: films and every episode (season stubs aren't counted twice). */
-    val minutes: Long = seats.filter { !it.season }.sumOf { it.minutes.toLong() } + episodes.sumOf { it.minutes.toLong() }
+    /** Minutes watched: films, every episode, and seasons watched before they came here (other season stubs aren't counted twice). */
+    val minutes: Long = seats.filter { !it.season || it.whole }.sumOf { it.minutes.toLong() } + episodes.sumOf { it.minutes.toLong() }
 
     val earned: Int = seats.sumOf { if (it.season) 15 else 10 + (if (it.credits == Credits.SCENE) 5 else 0) + (if (it.rewatch) 5 else 0) } + episodes.size * 3
     val popcorn: Int = earned - s.spent

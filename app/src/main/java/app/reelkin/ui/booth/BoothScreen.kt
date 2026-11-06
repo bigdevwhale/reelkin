@@ -228,6 +228,7 @@ fun SeriesRow(s: Title, nav: Nav) {
             Text(s.title, style = T.Name, maxLines = 1)
             Text(t("сезон ${s.season} · серия ${s.episode} из ${s.perSeason}", "season ${s.season} · episode ${s.episode} of ${s.perSeason}"), style = T.Muted)
             if (s.cliff) Text(t("на самом интересном", "at the worst moment"), style = T.Small.copy(color = C.velvet))
+            Words.air(s, ru)?.let { Text(it, style = T.Small.copy(color = C.gold), maxLines = 1) }
         }
         Btn(t("+1 серия", "+1 ep"), { episode(s, nav, ctx, ru) }, small = true)
     }

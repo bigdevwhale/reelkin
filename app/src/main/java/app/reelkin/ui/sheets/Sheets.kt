@@ -177,6 +177,11 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
     val ru = LocalRu.current
     val co = ctx.container
     var sure by remember { mutableStateOf(false) }
+    // The seasons are asked for again now and then, so a season announced since shows up with its date.
+    LaunchedEffect(s.id) {
+        if (System.currentTimeMillis() - s.planAt > app.reelkin.data.Seasons.FRESH)
+            app.reelkin.data.Seasons.refresh(s)?.let { (tv, plan) -> co.office.setPlan(s.id, tv, plan) }
+    }
     Sheet(nav::close) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             BigPoster(s.title, s.genre, s.cover)
@@ -189,6 +194,8 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
                     Status.SHELVED -> t("снят с проката", "taken off")
                     Status.RUNNING -> t("сезон ${s.season} · серия ${s.episode} из ${s.perSeason}", "season ${s.season} · episode ${s.episode} of ${s.perSeason}")
                 }, style = T.Strong)
+                Words.air(s, ru, c.now)?.let { Text(it, style = T.Small.copy(color = C.gold)) }
+                Words.seasonsOut(s, ru, c.now)?.let { Text(it, style = T.Small) }
             }
         }
         app.reelkin.ui.bill.TicketBook(s)
@@ -279,7 +286,7 @@ fun LogSheet(c: Cinema, s: Seance, nav: Nav, series: Title? = null) {
         WatchedOn(at) { at = it }
         Btn(t("Оторвать корешок", "Tear the stub"), {
             val tk = Ticket(title = s.title, year = s.year, country = s.country, genre = s.genre, minutes = s.minutes, stars = stars, words = words.trim(),
-                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at, season = series != null)
+                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at, season = series != null, whole = series != null)
             co.write {
                 val before = cinema()
                 series?.let { office.add(it) }

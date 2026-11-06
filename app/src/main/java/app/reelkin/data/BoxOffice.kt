@@ -1,6 +1,12 @@
 package app.reelkin.data
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 /** Every change to the cinema goes through here. */
 class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private val settings: SettingsStore) {
@@ -39,8 +45,72 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
         val stub = Ticket(title = s.title + if (ru) " · сезон ${s.season}" else " · season ${s.season}", season = true, year = s.year, country = s.country,
             genre = s.genre, minutes = s.minutes * s.perSeason, stars = 0, cover = s.cover)
         val id = dao.insert(stub)
-        dao.update(s.copy(season = s.season + 1, episode = 0, cliff = false, status = Status.RUNNING))
+        // The next season takes its length from the catalogue, and waits in the cupboard if it isn't out yet.
+        val next = s.season + 1
+        val out = Seasons.air(s, next).let { it == Air.Out || it == Air.Unknown }
+        dao.update(s.copy(season = next, episode = 0, cliff = false, status = if (out) Status.RUNNING else Status.SHELVED, perSeason = Seasons.episodes(s, next) ?: s.perSeason))
         return stub.copy(id = id)
+    }
+
+    suspend fun setPlan(id: Long, show: String?, plan: String, at: Long = System.currentTimeMillis()) = dao.setPlan(id, plan, at, show)
+
+    /**
+     * Writes an import, leaving out what's already here: stubs imported before (by [Ticket.ref]),
+     * stubs with the same name and year, and series already on the bill. Returns what was written,
+     * with the ids the posters will need.
+     */
+    suspend fun import(loot: Loot): Imported {
+        val tickets = dao.ticketList()
+        val refs = tickets.mapNotNull { it.ref }.toHashSet()
+        val names = tickets.map { key(it.title, it.year) }.toHashSet()
+        val bill = dao.titleList().map { key(it.title, null) + it.kind }.toHashSet()
+        var stubs = 0; var titles = 0
+        val covers = ArrayList<Triple<CoverHint, List<Long>, List<Long>>>()
+        for (h in loot.hauls) {
+            val fresh = h.stubs.filter { (it.ref == null || it.ref !in refs) && key(it.title, it.year) !in names }
+            val tIds = dao.insertTickets(fresh)
+            fresh.forEach { it.ref?.let(refs::add); names += key(it.title, it.year) }
+            var titleId: Long? = null
+            if (h.title != null && key(h.title.title, null) + h.title.kind !in bill) {
+                titleId = dao.insert(h.title)
+                bill += key(h.title.title, null) + h.title.kind
+                if (h.episodes.isNotEmpty()) dao.insertEpisodes(h.episodes.map { it.copy(series = titleId) })
+                titles++
+            }
+            stubs += tIds.size
+            if (h.cover != null && (tIds.isNotEmpty() || titleId != null)) covers += Triple(h.cover, listOfNotNull(titleId), tIds)
+        }
+        return Imported(stubs, titles, covers)
+    }
+
+    class Imported(val stubs: Int, val titles: Int, val covers: List<Triple<CoverHint, List<Long>, List<Long>>>)
+
+    private fun key(title: String, year: Int?) = title.trim().lowercase().replace('ё', 'е') + "|" + (year ?: "")
+
+    /** Posters for what was imported, a few at a time; slow, so it runs after the import is already on screen. */
+    suspend fun fillCovers(jobs: List<Triple<CoverHint, List<Long>, List<Long>>>) = coroutineScope {
+        val gate = Semaphore(4)
+        jobs.map { (hint, titles, tickets) ->
+            launch(Dispatchers.IO) {
+                gate.withPermit {
+                    val url = hint.url ?: Catalog.posterOf(hint.ruwiki, hint.enwiki) ?: hint.name?.let { Catalog.posterFor(it, hint.year, hint.series) } ?: return@withPermit
+                    val name = Catalog.download(url)?.let { Covers.save(ctx, it) } ?: return@withPermit
+                    if (titles.isNotEmpty()) dao.coverTitles(titles, name)
+                    if (tickets.isNotEmpty()) dao.coverTickets(tickets, name)
+                }
+            }
+        }.joinAll()
+    }
+
+    /** How many stubs came from [source] ("myshows", "kinopoisk"). */
+    suspend fun importedFrom(source: String): Int = dao.ticketList().count { it.ref?.startsWith("$source:") == true || it.ref?.startsWith("$source-") == true }
+
+    /** Takes back the stubs an import from [source] tore. */
+    suspend fun undoImport(source: String) {
+        val gone = dao.ticketList().filter { it.ref?.startsWith("$source:") == true || it.ref?.startsWith("$source-") == true }
+        dao.deleteTickets(gone)
+        val kept = (dao.ticketList().mapNotNull { it.cover } + dao.titleList().mapNotNull { it.cover }).toHashSet()
+        for (c in gone.mapNotNull { it.cover }.toSet()) if (c !in kept) Covers.delete(ctx, c)
     }
 
     /** Takes back the last episode, if it was this season's. */

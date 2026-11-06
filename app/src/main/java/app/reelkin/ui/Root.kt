@@ -98,6 +98,7 @@ sealed class Overlay {
     data object Award : Overlay()
     data object Settings : Overlay()
     data object Stats : Overlay()
+    data object Import : Overlay()
 }
 
 /** Ways screens move around and talk to each other. */
@@ -178,6 +179,7 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
                     Overlay.Award -> AwardSheet(cin, nav)
                     Overlay.Settings -> SettingsPage(cin, nav)
                     Overlay.Stats -> app.reelkin.ui.bill.StatsPage(cin, nav)
+                    Overlay.Import -> app.reelkin.ui.settings.ImportPage(cin, nav)
                     null -> Unit
                 }
                 Toast(nav, Modifier.align(Alignment.TopCenter))

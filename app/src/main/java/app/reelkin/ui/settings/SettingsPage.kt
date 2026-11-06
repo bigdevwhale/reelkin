@@ -83,6 +83,17 @@ fun SettingsPage(c: Cinema, nav: Nav) {
                 }
             }
 
+            Section(t("История", "History"))
+            Card(Modifier.fillMaxWidth(), onClick = { nav.go(app.reelkin.ui.Overlay.Import) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t("Перенести историю", "Bring your history"), style = T.Strong)
+                        Text(t("из MyShows или Кинопоиска", "from MyShows or Kinopoisk"), style = T.Muted)
+                    }
+                    Text("›", style = T.Title.copy(color = C.velvet))
+                }
+            }
+
             Section(t("Цель на год", "A goal for the year"))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Btn("−", { co.write { settings.update { it.copy(goal = (it.goal - 4).coerceAtLeast(4)) } } }, kind = Kind.SOFT, small = true)
@@ -133,8 +144,8 @@ fun SettingsPage(c: Cinema, nav: Nav) {
             }
 
             Section(t("О приложении", "About"))
-            Text(if (ru) "Бобина ${BuildConfig.VERSION_NAME}. Всё хранится на телефоне. В интернет — только поиск по Википедии, когда ты сам ищешь фильм."
-                else "Reelkin ${BuildConfig.VERSION_NAME}. Everything stays on the phone. The internet is only for the Wikipedia search, when you look a film up.", style = T.Muted)
+            Text(if (ru) "Бобина ${BuildConfig.VERSION_NAME}. Всё хранится на телефоне. В интернет — только когда ты сам ищешь фильм (Википедия), открываешь сериал (сезоны с TVmaze) или переносишь историю."
+                else "Reelkin ${BuildConfig.VERSION_NAME}. Everything stays on the phone. The internet is only for when you look a film up (Wikipedia), open a series (seasons from TVmaze) or bring your history over.", style = T.Muted)
             Btn(t("Исходный код", "Source code"), { open("https://github.com/bigdevwhale/reelkin") }, kind = Kind.GHOST, small = true)
         }
     }

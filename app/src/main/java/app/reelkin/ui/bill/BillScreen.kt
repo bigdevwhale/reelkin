@@ -278,6 +278,7 @@ fun SeriesCard(s: Title, nav: Nav) {
                 Text(s.title, style = T.Name)
                 Text(t("сезон ${s.season} · серия ${s.episode} из ${s.perSeason} · ${s.minutes} мин", "season ${s.season} · episode ${s.episode} of ${s.perSeason} · ${s.minutes} min"), style = T.Muted)
                 if (s.cliff) Text(t("серия закончилась на самом интересном", "stopped at the worst moment"), style = T.Small.copy(color = C.velvet))
+                Words.air(s, ru)?.let { Text(it, style = T.Small.copy(color = C.gold)) }
             }
         }
         TicketBook(s)

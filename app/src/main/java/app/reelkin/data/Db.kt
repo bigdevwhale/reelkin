@@ -1,6 +1,7 @@
 package app.reelkin.data
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
@@ -20,7 +21,7 @@ interface CinemaDao {
     suspend fun title(id: Long): Title?
 
     @Insert suspend fun insert(t: Title): Long
-    @Insert suspend fun insertTitles(t: List<Title>)
+    @Insert suspend fun insertTitles(t: List<Title>): List<Long>
     @Update suspend fun update(t: Title)
     @Delete suspend fun delete(t: Title)
 
@@ -31,9 +32,22 @@ interface CinemaDao {
     suspend fun ticketList(): List<Ticket>
 
     @Insert suspend fun insert(t: Ticket): Long
-    @Insert suspend fun insertTickets(t: List<Ticket>)
+    @Insert suspend fun insertTickets(t: List<Ticket>): List<Long>
+
+    @Query("SELECT * FROM titles")
+    suspend fun titleList(): List<Title>
+
+    @Query("UPDATE titles SET plan = :plan, planAt = :at, show = :show WHERE id = :id")
+    suspend fun setPlan(id: Long, plan: String, at: Long, show: String?)
+
+    @Query("UPDATE titles SET cover = :cover WHERE id IN (:ids) AND cover IS NULL")
+    suspend fun coverTitles(ids: List<Long>, cover: String)
+
+    @Query("UPDATE tickets SET cover = :cover WHERE id IN (:ids) AND cover IS NULL")
+    suspend fun coverTickets(ids: List<Long>, cover: String)
     @Update suspend fun update(t: Ticket)
     @Delete suspend fun delete(t: Ticket)
+    @Delete suspend fun deleteTickets(t: List<Ticket>)
 
     @Query("SELECT * FROM episodes ORDER BY at")
     fun episodes(): Flow<List<Episode>>
@@ -53,7 +67,8 @@ interface CinemaDao {
     suspend fun titleCount(): Int
 }
 
-@Database(entities = [Title::class, Ticket::class, Episode::class], version = 1, exportSchema = true)
+@Database(entities = [Title::class, Ticket::class, Episode::class], version = 2, exportSchema = true,
+    autoMigrations = [AutoMigration(from = 1, to = 2)])
 abstract class CinemaDb : RoomDatabase() {
     abstract fun dao(): CinemaDao
 

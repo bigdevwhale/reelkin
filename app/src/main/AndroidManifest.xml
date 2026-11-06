@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Only the film search: Wikidata facts and Wikipedia posters. -->
+    <!-- The film search (Wikidata, Wikipedia posters), a series' seasons (TVmaze) and bringing a history over (MyShows, Kinopoisk). -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application

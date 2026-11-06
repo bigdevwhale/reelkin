@@ -22,6 +22,9 @@ data class Draft(
     val perSeason: Int? = null,
     val about: String = "",
     val coverUrl: String? = null,
+    /** The show on TVmaze, for the seasons. */
+    val tvmaze: Int? = null,
+    val imdb: String? = null,
 )
 
 /**
@@ -36,7 +39,7 @@ object Catalog {
     private val films = setOf("Q11424", "Q202866", "Q24869", "Q506240", "Q93204", "Q17517379", "Q226730", "Q20650540", "Q24862")
     private val series = setOf("Q5398426", "Q581714", "Q1259759", "Q526877", "Q117467246", "Q63952888", "Q21191270")
 
-    private fun get(url: String): String? = try {
+    internal fun get(url: String): String? = try {
         val c = URL(url).openConnection() as HttpURLConnection
         c.setRequestProperty("User-Agent", AGENT)
         c.connectTimeout = 8_000
@@ -44,7 +47,23 @@ object Catalog {
         try { if (c.responseCode in 200..299) c.inputStream.bufferedReader().readText() else null } finally { c.disconnect() }
     } catch (_: Exception) { null }
 
-    private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
+    /** A POST with a [type] body, for the Wikidata query service and MyShows. */
+    internal fun post(url: String, body: String, type: String, accept: String = "application/json"): String? = try {
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.requestMethod = "POST"
+        c.doOutput = true
+        c.setRequestProperty("User-Agent", AGENT)
+        c.setRequestProperty("Content-Type", type)
+        c.setRequestProperty("Accept", accept)
+        c.connectTimeout = 8_000
+        c.readTimeout = 30_000
+        try {
+            c.outputStream.use { it.write(body.toByteArray()) }
+            if (c.responseCode in 200..299) c.inputStream.bufferedReader().readText() else c.errorStream?.bufferedReader()?.readText()
+        } finally { c.disconnect() }
+    } catch (_: Exception) { null }
+
+    internal fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
 
     /** The genre from English genre names and the kind of film; drama when nothing fits. */
     fun guessGenre(s: String): Genre {
@@ -78,7 +97,7 @@ object Catalog {
             ?.let { JSONObject(it).optJSONObject("entities") } ?: return@withContext null
 
         class Raw(val kind: Kind, val label: String, val year: Int?, val countries: List<String>, val genres: List<String>, val types: List<String>,
-                  val minutes: Int?, val eps: Int?, val seasons: Int?, val en: String?, val ruw: String?)
+                  val minutes: Int?, val eps: Int?, val seasons: Int?, val en: String?, val ruw: String?, val tvmaze: Int?, val imdb: String?)
         val raws = ArrayList<Raw>()
         for (id in ids) {
             val e = ents.optJSONObject(id) ?: continue
@@ -95,7 +114,8 @@ object Catalog {
             }
             val links = e.optJSONObject("sitelinks")
             raws += Raw(kind, label, time?.let { Regex("""(\d{4})""").find(it)?.value?.toIntOrNull() }, ids(c, "P495").take(1), ids(c, "P136").take(6), p31,
-                dur, amount(c, "P1113"), amount(c, "P2437"), links?.optJSONObject("enwiki")?.optString("title"), links?.optJSONObject("ruwiki")?.optString("title"))
+                dur, amount(c, "P1113"), amount(c, "P2437"), links?.optJSONObject("enwiki")?.optString("title"), links?.optJSONObject("ruwiki")?.optString("title"),
+                string(c, "P8600")?.toIntOrNull(), string(c, "P345"))
             if (raws.size >= 8) break
         }
         val more = raws.flatMap { it.countries + it.genres }.distinct().take(50)
@@ -121,7 +141,7 @@ object Catalog {
                         kind = r.kind, title = r.label, year = r.year, country = r.countries.mapNotNull { names[it] }.firstOrNull() ?: "", genre = g,
                         minutes = r.minutes, perSeason = if (r.eps != null && r.seasons != null && r.seasons > 0) (r.eps / r.seasons).coerceAtLeast(1) else null,
                         about = r.genres.mapNotNull { names[it] }.take(2).joinToString(", "),
-                        coverUrl = poster(r.ruw, "ru") ?: poster(r.en, "en"),
+                        coverUrl = poster(r.ruw, "ru") ?: poster(r.en, "en"), tvmaze = r.tvmaze, imdb = r.imdb,
                     )
                 }
             }.awaitAll()
@@ -146,6 +166,90 @@ object Catalog {
         val a = c.optJSONArray(p) ?: return emptyList()
         return (0 until a.length()).mapNotNull { a.optJSONObject(it)?.optJSONObject("mainsnak")?.optJSONObject("datavalue")?.optJSONObject("value")?.optString("id")?.ifBlank { null } }
     }
+
+    private fun string(c: JSONObject, p: String): String? = c.optJSONArray(p)?.optJSONObject(0)?.optJSONObject("mainsnak")?.optJSONObject("datavalue")?.optString("value")?.ifBlank { null }
+
+    /**
+     * The TVmaze show of a series known only by name: through Wikidata (its TVmaze or IMDb id), then
+     * TVmaze's own search. 0 when there's none; null when the network failed.
+     */
+    suspend fun tvmazeFor(title: String, year: Int?): Int? = withContext(Dispatchers.IO) {
+        val q = title.substringBefore(" · ").trim()
+        if (q.length < 2) return@withContext 0
+        val lang = if (Regex("[а-яё]", RegexOption.IGNORE_CASE).containsMatchIn(q)) "ru" else "en"
+        val s = get(WD + "action=wbsearchentities&search=${enc(q)}&language=$lang&uselang=$lang&type=item&limit=8") ?: return@withContext null
+        val ids = JSONObject(s).optJSONArray("search")?.let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("id") } }.orEmpty()
+        if (ids.isNotEmpty()) {
+            val ents = get(WD + "action=wbgetentities&ids=${ids.joinToString("|")}&props=claims")?.let { JSONObject(it).optJSONObject("entities") } ?: return@withContext null
+            for (id in ids) {
+                val c = ents.optJSONObject(id)?.optJSONObject("claims") ?: continue
+                if (ids(c, "P31").none { it in series }) continue
+                val y = (c.optJSONArray("P580") ?: c.optJSONArray("P577"))?.let { first(it)?.optString("time") }?.let { Regex("""(\d{4})""").find(it)?.value?.toIntOrNull() }
+                if (year != null && y != null && kotlin.math.abs(y - year) > 1) continue
+                string(c, "P8600")?.toIntOrNull()?.let { return@withContext it }
+                string(c, "P345")?.let { Seasons.byImdb(it) }?.let { return@withContext it }
+            }
+        }
+        if (lang == "en") Seasons.byName(q, year) ?: 0 else 0
+    }
+
+    /** What Wikidata knows of a title found by its Kinopoisk id, with its Wikipedia articles for the poster. */
+    data class Found(val draft: Draft, val enwiki: String?, val ruwiki: String?)
+
+    /** Kinopoisk ids to what Wikidata knows; ids it doesn't know are left out. Null when the query failed. */
+    suspend fun byKinopoisk(kp: Collection<Int>, ru: Boolean): Map<Int, Found>? = withContext(Dispatchers.IO) {
+        val out = HashMap<Int, Found>()
+        for (chunk in kp.distinct().chunked(150)) {
+            val q = """
+                SELECT ?kp (SAMPLE(?ru) AS ?r) (SAMPLE(?en) AS ?e) (SAMPLE(?mul) AS ?m) (MIN(?date) AS ?d) (SAMPLE(?dur) AS ?min) (SAMPLE(?cL) AS ?c)
+                 (GROUP_CONCAT(DISTINCT ?gL; separator="|") AS ?g) (GROUP_CONCAT(DISTINCT STRAFTER(STR(?t), "entity/"); separator="|") AS ?types)
+                 (SAMPLE(?enw) AS ?enwiki) (SAMPLE(?ruw) AS ?ruwiki) (SAMPLE(?eps) AS ?ep) (SAMPLE(?ss) AS ?sn) (SAMPLE(?tvm) AS ?tv) WHERE {
+                 VALUES ?kp { ${chunk.joinToString(" ") { "\"$it\"" }} }
+                 ?item wdt:P2603 ?kp .
+                 OPTIONAL { ?item rdfs:label ?ru FILTER(LANG(?ru)="ru") }
+                 OPTIONAL { ?item rdfs:label ?en FILTER(LANG(?en)="en") }
+                 OPTIONAL { ?item rdfs:label ?mul FILTER(LANG(?mul)="mul") }
+                 OPTIONAL { ?item wdt:P577|wdt:P580 ?date }
+                 OPTIONAL { ?item wdt:P2047 ?dur }
+                 OPTIONAL { ?item wdt:P1113 ?eps }
+                 OPTIONAL { ?item wdt:P2437 ?ss }
+                 OPTIONAL { ?item wdt:P8600 ?tvm }
+                 OPTIONAL { ?item wdt:P495 ?co . ?co rdfs:label ?cL FILTER(LANG(?cL)="${if (ru) "ru" else "en"}") }
+                 OPTIONAL { ?item wdt:P136 ?gn . ?gn rdfs:label ?gL FILTER(LANG(?gL)="en") }
+                 OPTIONAL { ?item wdt:P31 ?t }
+                 OPTIONAL { ?enw schema:about ?item; schema:isPartOf <https://en.wikipedia.org/> }
+                 OPTIONAL { ?ruw schema:about ?item; schema:isPartOf <https://ru.wikipedia.org/> }
+                } GROUP BY ?kp
+            """.trimIndent()
+            val body = post("https://query.wikidata.org/sparql", "query=" + enc(q), "application/x-www-form-urlencoded", "application/sparql-results+json") ?: return@withContext null
+            val rows = runCatching { JSONObject(body).getJSONObject("results").getJSONArray("bindings") }.getOrNull() ?: return@withContext null
+            for (i in 0 until rows.length()) {
+                val b = rows.getJSONObject(i)
+                fun v(k: String) = b.optJSONObject(k)?.optString("value")?.ifBlank { null }
+                val id = v("kp")?.toIntOrNull() ?: continue
+                val types = v("types").orEmpty().split('|')
+                val kind = if (types.any { it in series }) Kind.SERIES else Kind.FILM
+                val label = (if (ru) listOf(v("r"), v("m"), v("e")) else listOf(v("e"), v("m"), v("r"))).firstNotNullOfOrNull { it } ?: continue
+                val g = when {
+                    types.any { it in setOf("Q202866", "Q20650540", "Q581714", "Q63952888") } -> Genre.ANIMATION
+                    "Q93204" in types -> Genre.DOC
+                    else -> guessGenre(v("g").orEmpty().replace('|', ' '))
+                }
+                val eps = v("ep")?.toDoubleOrNull()?.toInt()
+                val ss = v("sn")?.toDoubleOrNull()?.toInt()
+                fun page(u: String?) = u?.substringAfter("/wiki/", "")?.ifBlank { null }?.let { java.net.URLDecoder.decode(it, "UTF-8").replace('_', ' ') }
+                out[id] = Found(
+                    Draft(kind, label, v("d")?.take(4)?.toIntOrNull(), v("c").orEmpty(), g, v("min")?.toDoubleOrNull()?.toInt()?.takeIf { it in 1..1000 },
+                        if (eps != null && ss != null && ss > 0) (eps / ss).coerceAtLeast(1) else null, tvmaze = v("tv")?.toIntOrNull()),
+                    page(v("enwiki")), page(v("ruwiki")),
+                )
+            }
+        }
+        out
+    }
+
+    /** A poster address from a Wikipedia article, Russian first. */
+    fun posterOf(ruwiki: String?, enwiki: String?): String? = poster(ruwiki, "ru") ?: poster(enwiki, "en")
 
     private fun amount(c: JSONObject, p: String): Int? = c.optJSONArray(p)?.let { first(it) }?.optString("amount")?.toDoubleOrNull()?.toInt()
 

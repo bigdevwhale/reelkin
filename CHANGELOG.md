@@ -6,6 +6,33 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [1.3.0]
+
+- **Bring your history over** (Settings → Bring your history):
+  - **MyShows** by a public profile's login, no password (#2). A finished series tears a stub for each
+    season; one being watched tears its finished seasons and goes to Running at the episode reached;
+    «will watch» goes to Waiting. MyShows doesn't show when an episode was watched, so a season's stub
+    is dated by its last episode.
+  - **Kinopoisk** (#4) has no export, so its own pages are opened in a browser inside the app and the
+    films are picked up from every ratings page you go through, with the rating and the date. Wikidata
+    fills in the year, the country, the genre and the length by the Kinopoisk id. A saved ratings page
+    or any list of Kinopoisk links works too.
+  - Nothing comes in twice, the posters follow in the background, and an import can be taken back.
+- **When the next season comes out** (#1): a series' card, the bill and the booth say «season 4 comes
+  out on…», «isn't out yet» or «no season 4 yet», and how many seasons are out. The seasons come from
+  MyShows (TVmaze when MyShows doesn't know the show) and are checked again every couple of days. A
+  season finished while the next isn't out puts the series in the cupboard, and each season takes its
+  own number of episodes.
+- **The season field says what it is:** «on season», with a note when it skips seasons that they won't
+  count as watched (#1).
+- Seasons marked as already watched now count their minutes.
+
+<!-- tg
+Историю можно перенести: сериалы из MyShows по логину, оценки с Кинопоиска прямо с его страниц (Настройки → Перенести историю).
+В карточке сериала видно, сколько сезонов вышло и когда выйдет следующий.
+Поле «смотрю сезон» больше не путается с числом сезонов, а сезоны, отмеченные как уже просмотренные, теперь считаются в минутах.
+-->
+
 ## [1.2.1]
 
 - **A series already watched:** adding a series now offers «Уже посмотрел сезон N» next to «Смотрю».
