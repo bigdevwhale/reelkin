@@ -26,6 +26,8 @@ then close it like any HTML comment. The release notes carry it, and the chat bo
 - **The season field says what it is:** «on season», with a note when it skips seasons that they won't
   count as watched (#1).
 - Seasons marked as already watched now count their minutes.
+- **Google Play:** the release also builds an AAB with every language; the store listing, graphics and a
+  privacy policy are in `docs/google-play` and `PRIVACY.md`.
 
 <!-- tg
 Историю можно перенести: сериалы из MyShows по логину, оценки с Кинопоиска прямо с его страниц (Настройки → Перенести историю).
