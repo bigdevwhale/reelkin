@@ -8,11 +8,14 @@ then close it like any HTML comment. The release notes carry it, and the chat bo
 
 ## [1.3.2]
 
-- **Support Reelkin:** Settings → More → StillCraft has a fifth line, «Поддержать Бобину · на новые
+- **Support Reelkin:** Settings → More → StillCraft has a fifth line, «Поддержать Reelkin · на новые
   сеансы и тёплый попкорн», which opens the StillCraft support page in the browser.
+- **The app is called Reelkin in Russian too**, as on Google Play: under the icon, on the first screen,
+  in Settings, in the README and in the privacy policy.
 
 <!-- tg
-Новое: в Настройках, во вкладке «Ещё», появилась строчка «Поддержать Бобину» — на новые сеансы и тёплый попкорн.
+Новое: в Настройках, во вкладке «Ещё», появилась строчка «Поддержать Reelkin» — на новые сеансы и тёплый попкорн.
+Приложение теперь и по-русски называется Reelkin, как в Google Play.
 -->
 
 ## [1.3.1]

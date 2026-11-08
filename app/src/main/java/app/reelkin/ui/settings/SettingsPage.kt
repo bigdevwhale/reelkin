@@ -131,13 +131,13 @@ fun SettingsPage(c: Cinema, nav: Nav) {
             Btn(t("Как это устроено", "How it works"), { co.write { settings.update { it.copy(onboarded = false) } }; nav.close() }, Modifier.fillMaxWidth(), kind = Kind.SOFT)
 
             Section("StillCraft")
-            Text(t("Бобина — одно из приложений StillCraft. Расскажи, что сломалось или чего не хватает.", "Reelkin is one of the StillCraft apps. Tell us what's broken or what's missing."), style = T.Muted)
+            Text(t("Reelkin — одно из приложений StillCraft. Расскажи, что сломалось или чего не хватает.", "Reelkin is one of the StillCraft apps. Tell us what's broken or what's missing."), style = T.Muted)
             for ((label, sub, url) in listOf(
                 Triple(t("Сообщить об ошибке", "Report a bug"), t("откроется бот в Телеграме", "opens the bot in Telegram"), Community.BUG),
                 Triple(t("Предложить идею", "Suggest an idea"), t("чего не хватает кинотеатру", "what the cinema is missing"), Community.IDEA),
                 Triple(t("Следить за обновлениями", "Follow updates"), t("сообщение, когда выйдет новая версия", "a message when a new version is out"), Community.FOLLOW),
                 Triple(t("Чат StillCraft", "StillCraft chat"), t("люди, которые пользуются этими приложениями", "people who use these apps"), Community.CHAT),
-                Triple(t("Поддержать Бобину", "Support Reelkin"), t("на новые сеансы и тёплый попкорн", "for new showings and warm popcorn"), Community.SUPPORT),
+                Triple(t("Поддержать Reelkin", "Support Reelkin"), t("на новые сеансы и тёплый попкорн", "for new showings and warm popcorn"), Community.SUPPORT),
             )) Card(Modifier.fillMaxWidth(), onClick = { open(url) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text(label, style = T.Strong); Text(sub, style = T.Muted) }
@@ -146,7 +146,7 @@ fun SettingsPage(c: Cinema, nav: Nav) {
             }
 
             Section(t("О приложении", "About"))
-            Text(if (ru) "Бобина ${BuildConfig.VERSION_NAME}. Всё хранится на телефоне. В интернет — только когда ты сам ищешь фильм (Википедия), открываешь сериал (сезоны с TVmaze) или переносишь историю."
+            Text(if (ru) "Reelkin ${BuildConfig.VERSION_NAME}. Всё хранится на телефоне. В интернет — только когда ты сам ищешь фильм (Википедия), открываешь сериал (сезоны с TVmaze) или переносишь историю."
                 else "Reelkin ${BuildConfig.VERSION_NAME}. Everything stays on the phone. The internet is only for when you look a film up (Wikipedia), open a series (seasons from TVmaze) or bring your history over.", style = T.Muted)
             Btn(t("Исходный код", "Source code"), { open("https://github.com/bigdevwhale/reelkin") }, kind = Kind.GHOST, small = true)
         }

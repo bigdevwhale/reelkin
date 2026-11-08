@@ -2,7 +2,7 @@
 
 *Last updated: 6 November 2026*
 
-Reelkin (Бобина) is an Android diary of films and series with a pet in a projectionist's booth. It is
+Reelkin is an Android diary of films and series with a pet in a projectionist's booth. It is
 published as open source at <https://github.com/bigdevwhale/reelkin>.
 
 ## What we collect
@@ -68,11 +68,11 @@ Questions: open an issue at <https://github.com/bigdevwhale/reelkin/issues>.
 
 ---
 
-# Бобина — Политика конфиденциальности
+# Reelkin — Политика конфиденциальности
 
 *Обновлено: 6 ноября 2026*
 
-Бобина (Reelkin) — приложение под Android: дневник фильмов и сериалов с питомцем в будке киномеханика.
+Reelkin — приложение под Android: дневник фильмов и сериалов с питомцем в будке киномеханика.
 Код открыт: <https://github.com/bigdevwhale/reelkin>.
 
 ## Что мы собираем

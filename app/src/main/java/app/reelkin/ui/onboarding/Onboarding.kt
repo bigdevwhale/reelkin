@@ -53,7 +53,7 @@ fun Onboarding() {
         else -> BoothLook(Species.CAT, false, 2, setOf(Trait.HAT, Trait.NOSE), null, emptyList(), garland = true, chair = true, neon = true, popcorn = false, night = false, seance = null, ru = ru)
     }
     Column(Modifier.fillMaxSize().background(C.bg)) {
-        Text(t("Бобина", "Reelkin"), style = T.Display.copy(color = C.gold), modifier = Modifier.statusBarsPadding().padding(start = 20.dp, top = 16.dp, bottom = 8.dp))
+        Text("Reelkin", style = T.Display.copy(color = C.gold), modifier = Modifier.statusBarsPadding().padding(start = 20.dp, top = 16.dp, bottom = 8.dp))
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(Modifier.fillMaxWidth().clip(R8.Lg).border(1.dp, C.line, R8.Lg)) {
                 PixelCanvas(BoothScene.W, BoothScene.H, Modifier.fillMaxWidth()) { b, tick -> scene.draw(b, look, tick * Art.FRAME_MS / 1000.0, Art.FRAME_MS / 1000.0) }
