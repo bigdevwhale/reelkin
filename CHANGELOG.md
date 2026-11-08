@@ -6,6 +6,15 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [1.3.2]
+
+- **Support Reelkin:** Settings → More → StillCraft has a fifth line, «Поддержать Бобину · на новые
+  сеансы и тёплый попкорн», which opens the StillCraft support page in the browser.
+
+<!-- tg
+Новое: в Настройках, во вкладке «Ещё», появилась строчка «Поддержать Бобину» — на новые сеансы и тёплый попкорн.
+-->
+
 ## [1.3.1]
 
 - **A big collection no longer stalls the app.** The stubs page lays out only the stubs on screen

@@ -44,7 +44,7 @@ import app.reelkin.ui.components.t
 import app.reelkin.ui.theme.C
 import app.reelkin.ui.theme.T
 
-/** The StillCraft bot: deep links file a bug or an idea for this app, or follow its releases. */
+/** The StillCraft bot: deep links file a bug or an idea for this app, or follow its releases; and the page to support the apps. */
 object Community {
     private const val BOT = "https://t.me/ArcaneWhisperBot?start="
     const val SLUG = "reelkin"
@@ -52,6 +52,7 @@ object Community {
     const val IDEA = "${BOT}wish_$SLUG"
     const val FOLLOW = "${BOT}f_$SLUG"
     const val CHAT = "https://t.me/+Q4gFEDk8O842OGVi"
+    const val SUPPORT = "https://bigdevwhale.github.io/stillcraft/support/"
 }
 
 @Composable
@@ -136,6 +137,7 @@ fun SettingsPage(c: Cinema, nav: Nav) {
                 Triple(t("Предложить идею", "Suggest an idea"), t("чего не хватает кинотеатру", "what the cinema is missing"), Community.IDEA),
                 Triple(t("Следить за обновлениями", "Follow updates"), t("сообщение, когда выйдет новая версия", "a message when a new version is out"), Community.FOLLOW),
                 Triple(t("Чат StillCraft", "StillCraft chat"), t("люди, которые пользуются этими приложениями", "people who use these apps"), Community.CHAT),
+                Triple(t("Поддержать Бобину", "Support Reelkin"), t("на новые сеансы и тёплый попкорн", "for new showings and warm popcorn"), Community.SUPPORT),
             )) Card(Modifier.fillMaxWidth(), onClick = { open(url) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text(label, style = T.Strong); Text(sub, style = T.Muted) }
