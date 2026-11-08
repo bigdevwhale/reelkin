@@ -36,6 +36,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -148,8 +149,17 @@ fun PosterBuf(title: String, genre: app.reelkin.data.Genre, art: app.reelkin.ui.
 }
 
 @Composable
-fun PosterImage(title: String, genre: app.reelkin.data.Genre, cover: String?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) =
-    PosterBuf(title, genre, app.reelkin.data.Covers.art(androidx.compose.ui.platform.LocalContext.current, cover), w, h, modifier, scale)
+fun PosterImage(title: String, genre: app.reelkin.data.Genre, cover: String?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val pixel = LocalPixelCovers.current
+    // The file is read and decoded off the main thread; the drawn poster stands in until it's ready.
+    val art by androidx.compose.runtime.produceState(app.reelkin.data.Covers.peek(cover)?.takeIf { pixel || it.ready }, cover, pixel) {
+        if (value == null && cover != null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            app.reelkin.data.Covers.art(ctx, cover)?.also { if (pixel) it.pixels(w, h) else it.full }
+        }
+    }
+    PosterBuf(title, genre, art, w, h, modifier, scale)
+}
 
 @Composable
 fun Field(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, style: TextStyle = T.Body, single: Boolean = true, number: Boolean = false, onDone: (() -> Unit)? = null) {

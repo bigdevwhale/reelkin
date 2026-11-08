@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.reelkin.domain.Browse
 import app.reelkin.domain.Cinema
 import app.reelkin.domain.Stats
 import app.reelkin.domain.Words
@@ -43,12 +44,15 @@ import java.util.Locale
 @Composable
 fun StatsPage(c: Cinema, nav: Nav) {
     val ru = LocalRu.current
-    var all by rememberSaveable { mutableStateOf(false) }
-    val s = remember(c, all) { Stats(c, if (all) null else c.year) }
+    // All time first: stubs brought over from elsewhere carry the days they were watched, mostly in years past.
+    var year by rememberSaveable { mutableStateOf<Int?>(null) }
+    val all = year == null
+    val years = remember(c) { (c.seats.map { Browse.yearOf(it.at) } + c.episodes.map { Browse.yearOf(it.at) } + c.year).distinct().sortedDescending() }
+    val s = remember(c, year) { Stats(c, year) }
     Page(t("Статистика", "Stats"), nav::close) {
         Flow {
-            Chip("${c.year}", !all, { all = false })
-            Chip(t("за всё время", "all time"), all, { all = true })
+            Chip(t("за всё время", "all time"), all, { year = null })
+            for (y in years) Chip("$y", year == y, { year = y })
         }
         Card(Modifier.fillMaxWidth()) {
             Row {
@@ -71,14 +75,15 @@ fun StatsPage(c: Cinema, nav: Nav) {
         }
         if (s.films.isEmpty() && s.episodes.isEmpty()) {
             Text(if (all) t("Пока пусто. Посмотри фильм — и здесь появятся цифры.", "Nothing yet. Watch a film and the numbers show up here.")
-                else t("В этом году пока ничего. Загляни в «за всё время».", "Nothing this year yet. Try «all time»."), style = T.Muted)
+                else if (year == c.year) t("В этом году пока ничего. Загляни в «за всё время».", "Nothing this year yet. Try «all time».")
+                else t("В $year году ничего не отмечено.", "Nothing logged in $year."), style = T.Muted)
             return@Page
         }
 
         // Month by month this year, or year by year over all of them.
         val months = if (ru) listOf("Я", "Ф", "М", "А", "М", "И", "И", "А", "С", "О", "Н", "Д") else listOf("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
         val columns = if (all) s.byYear.map { (y, n) -> "’" + y.toString().takeLast(2) to n } else s.byMonth.mapIndexed { i, n -> months[i] to n }
-        val current = if (all) columns.lastIndex else java.util.Calendar.getInstance().apply { timeInMillis = c.now }.get(java.util.Calendar.MONTH)
+        val current = if (all) columns.lastIndex else if (year == c.year) java.util.Calendar.getInstance().apply { timeInMillis = c.now }.get(java.util.Calendar.MONTH) else -1
         if (columns.size > 1) {
             Section(if (all) t("Фильмы по годам", "Films by year") else t("Фильмы по месяцам", "Films by month"))
             Card(Modifier.fillMaxWidth()) { Columns(columns, current) }
@@ -171,7 +176,8 @@ private fun Columns(columns: List<Pair<String, Int>>, current: Int) {
     Row(Modifier.fillMaxWidth().height(120.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
         columns.forEachIndexed { i, (_, n) ->
             Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
-                if (n > 0) Text("$n", style = T.Small, maxLines = 1)
+                // Many narrow columns of three-digit counts: a smaller figure that's never cut short.
+                if (n > 0) Text("$n", style = if (columns.size > 10 && top >= 100) T.Small.copy(fontSize = T.Small.fontSize * .8f) else T.Small, maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Visible)
                 Spacer(Modifier.height(3.dp))
                 Box(Modifier.fillMaxWidth().height((92 * (n / top)).coerceAtLeast(3f).dp).clip(RoundedCornerShape(4.dp))
                     .background(if (n == 0) C.line else if (i == current) C.gold else C.velvet.copy(alpha = .7f)))

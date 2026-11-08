@@ -6,6 +6,28 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [1.3.1]
+
+- **A big collection no longer stalls the app.** The stubs page lays out only the stubs on screen
+  instead of all of them at once, posters are read and decoded off the main thread, only the latest
+  hundred stay in memory, and posters found after an import are written in batches instead of one by
+  one. On a Mi 9 with 1385 stubs: janky frames went from 91% to 2.5%, and opening the stubs page no
+  longer freezes for 3.6 s.
+- **Stats open on all time**, with a chip for every year that has stubs: films brought over from
+  Kinopoisk or MyShows are dated the day they were watched, mostly in years past, so the current year
+  alone hid them.
+- **Posters for Kinopoisk films come from Kinopoisk itself** by the film's id, then from Wikipedia,
+  then by name; a failed download is tried again and placeholders are turned away. Films brought over
+  before this version get their missing posters once, in the background.
+- Year bars in the stats show three-digit counts in full.
+- A collection brought over before the film can opened no longer says «−1384 more and it opens».
+
+<!-- tg
+Большая коллекция больше не тормозит: список корешков и обложки грузятся по мере прокрутки.
+Статистика открывается «за всё время» и сразу учитывает фильмы, перенесённые с Кинопоиска и MyShows, а ещё по ней можно смотреть любой год.
+Обложки для фильмов с Кинопоиска берутся с самого Кинопоиска, а недостающие у уже перенесённых подтянутся сами.
+-->
+
 ## [1.3.0]
 
 - **Bring your history over** (Settings → Bring your history):

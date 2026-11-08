@@ -42,6 +42,7 @@ class ReelkinApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         if (BuildConfig.DEMO) container.scope.launch { try { DemoSeed.seedIfEmpty(this@ReelkinApp, container) } finally { container.seeding.value = false } }
+        else container.scope.launch { runCatching { container.office.mendCovers() } }
     }
 }
 

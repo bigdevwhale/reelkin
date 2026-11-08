@@ -222,6 +222,9 @@ object Kinopoisk {
 
     private val hosts = listOf("kinopoisk.ru", "yandex.ru", "yandex.com", "yandex.net", "ya.ru", "yandex.by", "yandex.kz")
 
+    /** Kinopoisk's own poster for a film by its id; a film without one gets a small GIF placeholder, which [Catalog.picture] turns away. */
+    fun poster(id: Int) = "https://st.kp.yandex.net/images/film_iphone/iphone360_$id.jpg"
+
     /** Pages the in-app browser may open: Kinopoisk and Yandex, where its sign-in and robot check live. */
     fun allowed(host: String?): Boolean = host != null && hosts.any { host == it || host.endsWith(".$it") }
 
@@ -285,7 +288,7 @@ object Kinopoisk {
             Haul(null, listOf(Ticket(
                 title = name, season = series, whole = series, year = year, country = d?.country.orEmpty(), genre = d?.genre ?: Genre.DRAMA,
                 minutes = if (series) 0 else d?.minutes ?: 0, stars = s.stars ?: 0, at = noonOf(s.at ?: now, now), ref = "kinopoisk:${s.id}",
-            )), cover = CoverHint(ruwiki = f?.ruwiki, enwiki = f?.enwiki, name = if (f == null) null else name, year = year, series = series))
+            )), cover = CoverHint(url = Kinopoisk.poster(s.id), ruwiki = f?.ruwiki, enwiki = f?.enwiki, name = if (f == null) null else name, year = year, series = series))
         }
         return Loot(hauls, missed)
     }

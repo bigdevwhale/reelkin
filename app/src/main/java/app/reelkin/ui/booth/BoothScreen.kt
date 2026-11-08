@@ -207,7 +207,7 @@ private fun PetLine(c: Cinema, onClick: () -> Unit) {
         if (c.egg) {
             Text(t("Коробка с плёнкой", "A film can"), style = T.Strong)
             Bar(c.seats.size / Cinema.HATCH_AT.toFloat(), Modifier.weight(1f))
-            Text(t("${c.seats.size} из ${Cinema.HATCH_AT}", "${c.seats.size} of ${Cinema.HATCH_AT}"), style = T.Small)
+            Text(minOf(c.seats.size, Cinema.HATCH_AT).let { n -> t("$n из ${Cinema.HATCH_AT}", "$n of ${Cinema.HATCH_AT}") }, style = T.Small)
         } else {
             Text("${c.s.pet(ru)} · ${Words.stage(c.stage, ru)}", style = T.Strong)
             val nx = Cinema.STEPS.getOrNull(c.stage + 1)

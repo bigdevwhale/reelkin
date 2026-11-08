@@ -93,6 +93,10 @@ class SettingsStore(context: Context) {
 
     suspend fun now(): Settings = settings.first()
 
+    /** A one-off chore done once per install, such as a fix after an update. */
+    suspend fun done(chore: String): Boolean = store.data.first()[booleanPreferencesKey("done_$chore")] ?: false
+    suspend fun markDone(chore: String) { store.edit { it[booleanPreferencesKey("done_$chore")] = true } }
+
     suspend fun update(change: (Settings) -> Settings) {
         store.edit {
             val s = change(it.read())

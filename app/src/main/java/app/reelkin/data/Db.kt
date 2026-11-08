@@ -45,6 +45,15 @@ interface CinemaDao {
 
     @Query("UPDATE tickets SET cover = :cover WHERE id IN (:ids) AND cover IS NULL")
     suspend fun coverTickets(ids: List<Long>, cover: String)
+    /** Posters found for an import, written in one go: (poster, title ids, stub ids). */
+    @androidx.room.Transaction
+    suspend fun coverAll(found: List<Triple<String, List<Long>, List<Long>>>) {
+        for ((name, titles, tickets) in found) {
+            if (titles.isNotEmpty()) coverTitles(titles, name)
+            if (tickets.isNotEmpty()) coverTickets(tickets, name)
+        }
+    }
+
     @Update suspend fun update(t: Ticket)
     @Delete suspend fun delete(t: Ticket)
     @Delete suspend fun deleteTickets(t: List<Ticket>)

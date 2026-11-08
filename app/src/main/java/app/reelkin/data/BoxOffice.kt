@@ -88,18 +88,48 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
     private fun key(title: String, year: Int?) = title.trim().lowercase().replace('ё', 'е') + "|" + (year ?: "")
 
     /** Posters for what was imported, a few at a time; slow, so it runs after the import is already on screen. */
-    suspend fun fillCovers(jobs: List<Triple<CoverHint, List<Long>, List<Long>>>) = coroutineScope {
+    suspend fun fillCovers(jobs: List<Triple<CoverHint, List<Long>, List<Long>>>): Int = coroutineScope {
         val gate = Semaphore(4)
+        // Found posters are written a batch at a time: every write redraws the screens, and a thousand of them one by one stall the app.
+        val found = ArrayList<Triple<String, List<Long>, List<Long>>>()
+        val lock = Any()
+        var got = 0
+        suspend fun flush() {
+            val batch = synchronized(lock) { found.toList().also { found.clear() } }
+            if (batch.isEmpty()) return
+            dao.coverAll(batch)
+        }
+        val writer = launch { while (true) { kotlinx.coroutines.delay(3_000); flush() } }
         jobs.map { (hint, titles, tickets) ->
             launch(Dispatchers.IO) {
                 gate.withPermit {
-                    val url = hint.url ?: Catalog.posterOf(hint.ruwiki, hint.enwiki) ?: hint.name?.let { Catalog.posterFor(it, hint.year, hint.series) } ?: return@withPermit
-                    val name = Catalog.download(url)?.let { Covers.save(ctx, it) } ?: return@withPermit
-                    if (titles.isNotEmpty()) dao.coverTitles(titles, name)
-                    if (tickets.isNotEmpty()) dao.coverTickets(tickets, name)
+                    val name = posterBytes(hint)?.let { Covers.save(ctx, it) } ?: return@withPermit
+                    synchronized(lock) { found += Triple(name, titles, tickets); got++ }
                 }
             }
         }.joinAll()
+        writer.cancel()
+        flush()
+        got
+    }
+
+    /** A poster from the first source that has one: the address given, then Wikipedia's articles, then a guess by name. */
+    private suspend fun posterBytes(hint: CoverHint): ByteArray? {
+        hint.url?.let { Catalog.picture(it) }?.let { return it }
+        Catalog.posterOf(hint.ruwiki, hint.enwiki)?.let { Catalog.picture(it) }?.let { return it }
+        return hint.name?.let { Catalog.posterFor(it, hint.year, hint.series) }?.let { Catalog.picture(it) }
+    }
+
+    /**
+     * Posters for stubs brought from Kinopoisk without one, by the Kinopoisk id. Runs once per
+     * install: earlier versions looked only on Wikipedia, which doesn't have every film.
+     */
+    suspend fun mendCovers() {
+        if (settings.done("kp_covers")) return
+        val bare = dao.ticketList().filter { it.cover == null && it.ref?.startsWith("kinopoisk:") == true }
+        val jobs = bare.mapNotNull { t -> t.ref!!.removePrefix("kinopoisk:").toIntOrNull()?.let { Triple(CoverHint(url = Kinopoisk.poster(it)), emptyList<Long>(), listOf(t.id)) } }
+        // Nothing found at all most likely means no connection: try again next launch.
+        if (jobs.isEmpty() || fillCovers(jobs) > 0) settings.markDone("kp_covers")
     }
 
     /** How many stubs came from [source] ("myshows", "kinopoisk"). */

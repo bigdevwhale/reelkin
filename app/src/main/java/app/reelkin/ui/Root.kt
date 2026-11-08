@@ -143,6 +143,7 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
         LaunchedEffect(Unit) {
             if (nav.said.first.isEmpty()) nav.say(when {
                 cin.egg && cin.seats.isEmpty() -> if (ru) "В коробке кто-то шуршит. Отметь три фильма — и она откроется." else "Something rustles in the can. Log three films and it opens."
+                cin.hatchReady -> if (ru) "Коробка дрожит. Сейчас откроется!" else "The can is shaking. It's about to open!"
                 cin.egg -> if (ru) "Коробка дрожит. Ещё ${Cinema.HATCH_AT - cin.seats.size} — и откроется." else "The can is shaking. ${Cinema.HATCH_AT - cin.seats.size} more and it opens."
                 else -> (if (ru) "Добрый вечер. " else "Good evening. ") + Words.poke(cin, ru)
             })

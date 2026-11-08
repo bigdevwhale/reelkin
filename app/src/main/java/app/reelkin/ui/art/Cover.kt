@@ -8,15 +8,18 @@ import kotlin.math.max
  */
 class CoverArt(val src: Buf, private val load: () -> android.graphics.Bitmap? = { null }) {
     /** The picture at a size fit for showing as it is, decoded the first time it's asked for. */
-    val full: android.graphics.Bitmap? by lazy { load() }
+    private val fullLazy = lazy { load() }
+    val full: android.graphics.Bitmap? by fullLazy
+    /** True once [full] has been decoded, so showing it costs nothing. */
+    val ready: Boolean get() = fullLazy.isInitialized()
 
     private val cache = HashMap<Long, Buf>()
     private val smooth = HashMap<Long, Buf>()
 
-    fun pixels(w: Int, h: Int): Buf = cache.getOrPut(w.toLong() shl 32 or h.toLong()) { pixelArt(src, w, h, if (w * h < 200) 6 else 12) }
+    fun pixels(w: Int, h: Int): Buf = synchronized(cache) { cache.getOrPut(w.toLong() shl 32 or h.toLong()) { pixelArt(src, w, h, if (w * h < 200) 6 else 12) } }
 
     /** The picture at w×h without the palette, for people who want covers as they are. */
-    fun plain(w: Int, h: Int): Buf = smooth.getOrPut(w.toLong() shl 32 or h.toLong()) { fit(src, w, h) }
+    fun plain(w: Int, h: Int): Buf = synchronized(smooth) { smooth.getOrPut(w.toLong() shl 32 or h.toLong()) { fit(src, w, h) } }
 
     /** The cover's most telling colour: frequent, saturated, not too dark or light. */
     val dominant: Int by lazy {

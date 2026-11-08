@@ -66,7 +66,8 @@ class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: L
     }
 
     fun title(id: Long) = titles.firstOrNull { it.id == id }
-    fun seatOf(t: Ticket) = seats.indexOfFirst { it.id == t.id }
+    private val seatIndex: Map<Long, Int> by lazy { HashMap<Long, Int>(seats.size * 2).also { m -> seats.forEachIndexed { i, t -> m[t.id] = i } } }
+    fun seatOf(t: Ticket) = seatIndex[t.id] ?: -1
     fun has(d: Decor) = d.name in s.bought
 
     /** The next trait one film away, if any. */

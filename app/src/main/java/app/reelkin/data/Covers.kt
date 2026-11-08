@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
+import android.util.LruCache
 import androidx.exifinterface.media.ExifInterface
 import app.reelkin.ui.art.Buf
 import app.reelkin.ui.art.CoverArt
@@ -13,14 +14,17 @@ import java.util.UUID
 
 /** Posters in the app's own folder, and their small pixel-ready copies in memory. */
 object Covers {
-    private val cache = HashMap<String, CoverArt?>()
+    /** The posters seen last: a big collection would otherwise keep every picture in memory at once. */
+    private val cache = LruCache<String, CoverArt>(96)
+    /** Names whose file isn't there, so they aren't looked for on every frame. */
+    private val gone = HashSet<String>()
 
     fun dir(context: Context): File = File(context.filesDir, "covers").apply { mkdirs() }
 
     fun file(context: Context, name: String?): File? = name?.let { File(dir(context), it) }?.takeIf { it.exists() }
 
     /** Removes a poster unless something else still shows it. */
-    fun delete(context: Context, name: String?) { file(context, name)?.delete(); synchronized(cache) { cache.remove(name) } }
+    fun delete(context: Context, name: String?) { file(context, name)?.delete(); name?.let { synchronized(cache) { cache.remove(it) } } }
 
     /** Saves picture bytes as a poster, shrunk to a sane size and turned upright; the file's name. */
     fun save(context: Context, bytes: ByteArray): String? {
@@ -46,8 +50,15 @@ object Covers {
     /** The picture as a small buffer the art can redraw at any size. */
     fun art(context: Context, name: String?): CoverArt? {
         name ?: return null
-        return synchronized(cache) { cache.getOrPut(name) { file(context, name)?.readBytes()?.let { fromBytes(it) } } }
+        peek(name)?.let { return it }
+        if (synchronized(cache) { name in gone }) return null
+        val a = file(context, name)?.readBytes()?.let { fromBytes(it) }
+        synchronized(cache) { if (a != null) cache.put(name, a) else gone += name }
+        return a
     }
+
+    /** The poster if it's already in memory, without touching the disk. */
+    fun peek(name: String?): CoverArt? = name?.let { synchronized(cache) { cache.get(it) } }
 
     fun fromBytes(bytes: ByteArray): CoverArt? {
         val keep = bytes

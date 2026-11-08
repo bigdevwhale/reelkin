@@ -253,6 +253,16 @@ object Catalog {
 
     private fun amount(c: JSONObject, p: String): Int? = c.optJSONArray(p)?.let { first(it) }?.optString("amount")?.toDoubleOrNull()?.toInt()
 
+    /** A poster's bytes, or null: placeholders (GIFs, tiny files) don't count, and a failed try is tried once more. */
+    suspend fun picture(url: String): ByteArray? {
+        repeat(2) { attempt ->
+            val b = download(url)
+            if (b != null) return b.takeIf { it.size > 4_000 && !(it[0] == 'G'.code.toByte() && it[1] == 'I'.code.toByte() && it[2] == 'F'.code.toByte()) }
+            if (attempt == 0) kotlinx.coroutines.delay(1_500)
+        }
+        return null
+    }
+
     /** Downloads a picture's bytes, or null. */
     suspend fun download(url: String): ByteArray? = withContext(Dispatchers.IO) {
         try {

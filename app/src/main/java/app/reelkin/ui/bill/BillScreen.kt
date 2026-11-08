@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -108,37 +110,41 @@ fun BillScreen(c: Cinema, nav: Nav) {
                 counts = listOf(watch.size, running.size + shelved.size, stubs.size))
             if (c.titles.isNotEmpty() || c.seats.isNotEmpty()) Tools(b, page == 2, ::set, onFilter = { filtering = true }, onReset = { q = ""; set(Browse(sort = b.sort)) })
         }
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (q.isNotBlank()) Text(t("Искать «${q.trim()}» в каталоге ›", "Look «${q.trim()}» up in the catalogue ›"), style = T.Strong.copy(color = C.gold),
-                modifier = Modifier.clip(R8.Sm).clickable(onClick = ::search).padding(vertical = 4.dp))
+        // Lazy, so a collection of a thousand stubs only lays out the ones on screen; each page starts at its top.
+        val list = remember(page) { LazyListState() }
+        var open by rememberSaveable { mutableStateOf(false) }
+        LazyColumn(Modifier.fillMaxSize(), list, contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (q.isNotBlank()) item { Text(t("Искать «${q.trim()}» в каталоге ›", "Look «${q.trim()}» up in the catalogue ›"), style = T.Strong.copy(color = C.gold),
+                modifier = Modifier.clip(R8.Sm).clickable(onClick = ::search).padding(vertical = 4.dp)) }
             when (page) {
                 0 -> {
-                    if (c.watch.isEmpty()) Empty(t("Афиша пуста. Найди фильм или сериал — и он появится здесь.", "The bill is empty. Find a film or a series and it shows up here."), t("Найти", "Find"), ::search)
-                    else if (watch.isEmpty()) Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted)
-                    for (row in watch.chunked(3)) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        for (f in row) PosterTile(f, Modifier.weight(1f)) { nav.go(if (f.kind == app.reelkin.data.Kind.SERIES) Overlay.Series(f.id) else Overlay.Film(f.id)) }
-                        repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                    if (c.watch.isEmpty()) item { Empty(t("Афиша пуста. Найди фильм или сериал — и он появится здесь.", "The bill is empty. Find a film or a series and it shows up here."), t("Найти", "Find"), ::search) }
+                    else if (watch.isEmpty()) item { Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted) }
+                    items(watch.chunked(3), key = { r -> "w" + r.first().id }) { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            for (f in row) PosterTile(f, Modifier.weight(1f)) { nav.go(if (f.kind == app.reelkin.data.Kind.SERIES) Overlay.Series(f.id) else Overlay.Film(f.id)) }
+                            repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                        }
                     }
                 }
                 1 -> {
-                    if (c.running.isEmpty() && c.shelved.isEmpty()) Empty(t("Сериалов пока нет. Добавь сериал и нажми «Смотрю» — абонемент появится здесь.",
-                        "No series yet. Add one and tap «Watching»: its season ticket shows up here."), t("Найти сериал", "Find a series"), ::search)
-                    else if (running.isEmpty() && shelved.isEmpty()) Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted)
-                    for (s in running) SeriesCard(s, nav)
+                    if (c.running.isEmpty() && c.shelved.isEmpty()) item { Empty(t("Сериалов пока нет. Добавь сериал и нажми «Смотрю» — абонемент появится здесь.",
+                        "No series yet. Add one and tap «Watching»: its season ticket shows up here."), t("Найти сериал", "Find a series"), ::search) }
+                    else if (running.isEmpty() && shelved.isEmpty()) item { Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted) }
+                    items(running, key = { "r" + it.id }) { s -> SeriesCard(s, nav) }
                     if (shelved.isNotEmpty()) {
-                        var open by remember { mutableStateOf(false) }
-                        Text(t("Снято с проката · ${shelved.size}", "Taken off · ${shelved.size}") + if (open || b.narrowed) "  ▴" else "  ▾", style = T.Muted, modifier = Modifier.clickable { open = !open }.padding(vertical = 4.dp))
-                        if (open || b.narrowed) for (s in shelved) SeriesCard(s, nav)
+                        item { Text(t("Снято с проката · ${shelved.size}", "Taken off · ${shelved.size}") + if (open || b.narrowed) "  ▴" else "  ▾", style = T.Muted, modifier = Modifier.clickable { open = !open }.padding(vertical = 4.dp)) }
+                        if (open || b.narrowed) items(shelved, key = { "s" + it.id }) { s -> SeriesCard(s, nav) }
                     }
                 }
                 else -> {
-                    if (!b.narrowed) YearCard(c) { nav.go(Overlay.Stats) }
-                    if (c.seats.isEmpty()) Text(t("Здесь будут корешки от всего, что ты посмотришь.", "Stubs from everything you watch will be kept here."), style = T.Muted)
-                    else if (stubs.isEmpty()) Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted)
-                    for (tk in stubs) Stub(tk, c.seatOf(tk), ru) { nav.go(Overlay.Stub(tk.id)) }
+                    if (!b.narrowed) item { YearCard(c) { nav.go(Overlay.Stats) } }
+                    if (c.seats.isEmpty()) item { Text(t("Здесь будут корешки от всего, что ты посмотришь.", "Stubs from everything you watch will be kept here."), style = T.Muted) }
+                    else if (stubs.isEmpty()) item { Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted) }
+                    items(stubs, key = { "t" + it.id }) { tk -> Stub(tk, c.seatOf(tk), ru) { nav.go(Overlay.Stub(tk.id)) } }
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            item { Spacer(Modifier.height(8.dp)) }
         }
     }
     if (filtering) FilterSheet(c, b, ::set) { filtering = false }
