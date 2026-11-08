@@ -321,6 +321,15 @@ private fun YearCard(c: Cinema, onStats: () -> Unit) {
             Text(if (ru) "${Words.films(films, true)} из ${c.s.goal}" else "${films} of ${c.s.goal} films", style = T.Small)
         }
         Bar(films / c.s.goal.toFloat().coerceAtLeast(1f), Modifier.fillMaxWidth())
+        // Series have their own goal, counted in finished seasons (#6).
+        if (c.s.goalSeasons > 0) {
+            val seasons = c.thisYear.count { it.season }
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(t("Сериалы", "Series"), style = T.Small, modifier = Modifier.weight(1f))
+                Text(if (ru) "${Words.seasons(seasons, true)} из ${c.s.goalSeasons}" else "$seasons of ${c.s.goalSeasons} seasons", style = T.Small)
+            }
+            Bar(seasons / c.s.goalSeasons.toFloat(), Modifier.fillMaxWidth())
+        }
         Heatmap(c)
         Text(t("Статистика ›", "Stats ›"), style = T.Strong.copy(color = C.gold))
     }

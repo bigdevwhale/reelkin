@@ -6,6 +6,16 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [1.4.0] - 2026-11-08
+
+- A goal for series too: seasons to finish this year, with its own bar on the year card (#6).
+- The year's goals move one at a time; held down, the number runs (#6).
+
+<!-- tg
+Цель на год теперь и для сериалов – сколько сезонов досмотреть, со своей полоской в афише.
+«+» и «−» меняют цель по одному, а если держать – быстро прокручивают.
+-->
+
 ## [1.3.2]
 
 - **Support Reelkin:** Settings → More → StillCraft has a fifth line, «Поддержать Reelkin · на новые

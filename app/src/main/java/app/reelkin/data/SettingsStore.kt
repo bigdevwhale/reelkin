@@ -57,6 +57,8 @@ data class Settings(
     val off: Set<Trait> = emptySet(),
     val awards: List<Award> = emptyList(),
     val goal: Int = 52,
+    /** Seasons of series to finish this year; 0 = no such goal (#6). */
+    val goalSeasons: Int = 0,
     /** Posters in lists redrawn in pixels, or shown as they are. */
     val pixelCovers: Boolean = false,
     val seance: Seance? = null,
@@ -84,6 +86,7 @@ class SettingsStore(context: Context) {
         off = this[OFF]?.split(',')?.mapNotNull { s -> runCatching { Trait.valueOf(s) }.getOrNull() }?.toSet() ?: emptySet(),
         awards = this[AWARDS]?.lines()?.mapNotNull { l -> l.split('\t').takeIf { it.size == 3 }?.let { Award(it[0].toInt(), it[1].toInt(), it[2]) } } ?: emptyList(),
         goal = this[GOAL] ?: 52,
+        goalSeasons = this[GOAL_SEASONS] ?: 0,
         pixelCovers = this[PIXEL] ?: false,
         seance = Seance.of(this[SEANCE]),
         backdrop = this[BACKDROP] ?: "",
@@ -110,6 +113,7 @@ class SettingsStore(context: Context) {
             it[OFF] = s.off.map { t -> t.name }.sorted().joinToString(",")
             it[AWARDS] = s.awards.joinToString("\n") { a -> "${a.year}\t${a.cat}\t${a.title.replace('\t', ' ').replace('\n', ' ')}" }
             it[GOAL] = s.goal
+            it[GOAL_SEASONS] = s.goalSeasons
             it[PIXEL] = s.pixelCovers
             if (s.seance != null) it[SEANCE] = s.seance.json() else it.remove(SEANCE)
             it[BACKDROP] = s.backdrop
@@ -129,6 +133,7 @@ class SettingsStore(context: Context) {
         val OFF = stringPreferencesKey("off")
         val AWARDS = stringPreferencesKey("awards")
         val GOAL = intPreferencesKey("goal")
+        val GOAL_SEASONS = intPreferencesKey("goal_seasons")
         // "pixel" was written by every save while pixels were the default, so the choice starts afresh under a new key.
         val PIXEL = booleanPreferencesKey("pixel_covers")
         val SEANCE = stringPreferencesKey("seance")

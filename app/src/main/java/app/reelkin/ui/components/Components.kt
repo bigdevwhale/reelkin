@@ -40,6 +40,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -292,5 +297,40 @@ fun Tile(title: String, note: String, modifier: Modifier = Modifier, accent: Col
         verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(title, style = T.Strong, maxLines = 1)
         Text(note, style = T.Small.copy(color = accent), maxLines = 1)
+    }
+}
+
+/**
+ * A number with «−» and «+»: a tap moves it by one, and held down it keeps going, faster the longer it's
+ * held (#6). [onStep] gets −1 or +1.
+ */
+@Composable
+fun Stepper(label: String, modifier: Modifier = Modifier, onStep: (Int) -> Unit) {
+    val step = androidx.compose.runtime.rememberUpdatedState(onStep)
+    @Composable
+    fun Key(text: String, d: Int) {
+        Box(
+            Modifier.clip(CircleShape).background(C.surface2).heightIn(min = 36.dp).widthIn(min = 48.dp)
+                .pointerInput(d) {
+                    awaitEachGesture {
+                        awaitFirstDown()
+                        step.value(d)
+                        val held = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                            kotlinx.coroutines.delay(420)
+                            var wait = 140L
+                            while (true) { step.value(d); kotlinx.coroutines.delay(wait); wait = (wait * 0.88).toLong().coerceAtLeast(35) }
+                        }
+                        waitForUpOrCancellation()
+                        held.cancel()
+                    }
+                }
+                .padding(horizontal = 14.dp, vertical = 7.dp),
+            contentAlignment = Alignment.Center,
+        ) { Text(text, style = T.Button.copy(fontSize = T.Button.fontSize * .9f, color = C.ink)) }
+    }
+    Row(modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Key("−", -1)
+        Text(label, style = T.Strong, modifier = Modifier.weight(1f))
+        Key("+", 1)
     }
 }

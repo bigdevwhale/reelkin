@@ -133,6 +133,8 @@ object Words {
         return when { m10 == 1 && m100 != 11 -> one; m10 in 2..4 && m100 !in 12..14 -> few; else -> many }
     }
     fun minutes(n: Long, ru: Boolean) = fmt(n) + " " + if (ru) plural((n % 100).toInt(), "минута", "минуты", "минут") else if (n == 1L) "minute" else "minutes"
+    fun seasons(n: Int, ru: Boolean) = if (ru) "$n " + plural(n, "сезон", "сезона", "сезонов") else "$n season" + if (n == 1) "" else "s"
+
     fun films(n: Int, ru: Boolean) = if (ru) "$n " + plural(n, "фильм", "фильма", "фильмов") else "$n film" + if (n == 1) "" else "s"
 
     /** A day as «12 марта 2027» or «Mar 12, 2027», in UTC since the catalogue's days are dates, not moments. */

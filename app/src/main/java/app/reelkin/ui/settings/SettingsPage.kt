@@ -96,10 +96,10 @@ fun SettingsPage(c: Cinema, nav: Nav) {
             }
 
             Section(t("Цель на год", "A goal for the year"))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Btn("−", { co.write { settings.update { it.copy(goal = (it.goal - 4).coerceAtLeast(4)) } } }, kind = Kind.SOFT, small = true)
-                Text(Words.films(c.s.goal, ru), style = T.Strong, modifier = Modifier.weight(1f))
-                Btn("+", { co.write { settings.update { it.copy(goal = (it.goal + 4).coerceAtMost(400)) } } }, kind = Kind.SOFT, small = true)
+            // One at a time; held down, the number runs (#6).
+            app.reelkin.ui.components.Stepper(Words.films(c.s.goal, ru)) { d -> co.write { settings.update { it.copy(goal = (it.goal + d).coerceIn(1, 400)) } } }
+            app.reelkin.ui.components.Stepper(if (c.s.goalSeasons == 0) t("Сериалы: без цели", "Series: no goal") else t("и ", "and ") + Words.seasons(c.s.goalSeasons, ru) + t(" сериалов", " of series")) { d ->
+                co.write { settings.update { it.copy(goalSeasons = (it.goalSeasons + d).coerceIn(0, 200)) } }
             }
 
         }
