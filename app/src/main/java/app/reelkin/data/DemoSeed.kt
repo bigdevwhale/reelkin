@@ -68,7 +68,13 @@ object DemoSeed {
             w(r("Город Бога", "City of God"), 2002, r("Бразилия", "Brazil"), Genre.DRAMA, 130, 10),
         ))
         if (app.reelkin.BuildConfig.DEMO) c.scope.launch(Dispatchers.IO) { posters(ctx, c) }
-        c.settings.update { it.copy(onboarded = false, species = Species.CAT, cinema = r("МЕЧТА", "MAGIC"), bought = setOf("GARLAND")) }
+        // Three pets: a fox raised on the first half of the films, a dragon on a few after it, and the cat in the booth now.
+        val ts = c.db.dao().ticketList()
+        val a1 = ts[ts.size / 2].at; val a2 = ts[ts.size * 2 / 3].at
+        c.db.dao().insert(Pet(species = Species.FOX, laid = 0, spans = "0-$a1", hatched = true, nature = Nature.CURIOUS))
+        c.db.dao().insert(Pet(species = Species.DRAGON, laid = a1, spans = "$a1-$a2", hatched = true, nature = Nature.GREEDY))
+        val cat = c.db.dao().insert(Pet(species = Species.CAT, laid = a2, spans = "$a2-0", hatched = true, nature = Nature.CALM))
+        c.settings.update { it.copy(onboarded = false, pet = cat, cinema = r("МЕЧТА", "MAGIC"), bought = setOf("GARLAND")) }
     }
 
     /** Real posters from English Wikipedia for the demo, fetched once in the background. */

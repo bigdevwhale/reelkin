@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import app.reelkin.ui.LocalRu
@@ -94,7 +95,7 @@ enum class Kind { VELVET, GOLD, SOFT, GHOST }
 fun Btn(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, kind: Kind = Kind.VELVET, enabled: Boolean = true, small: Boolean = false) {
     val (fill, ink) = when (kind) {
         Kind.VELVET -> C.velvet to Color.White
-        Kind.GOLD -> C.gold to C.onGold
+        Kind.GOLD -> C.goldSoft to C.gold
         Kind.SOFT -> C.surface2 to C.ink
         Kind.GHOST -> Color.Transparent to C.ink
     }
@@ -113,8 +114,8 @@ fun Btn(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, kind: 
 
 @Composable
 fun Chip(text: String, on: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, color: Color? = null) {
-    val fill = if (on) color ?: C.gold else C.surface2
-    val ink = when { on && color != null -> Color.White; on -> C.onGold; else -> C.muted }
+    val fill = if (on) color ?: C.goldSoft else C.surface2
+    val ink = when { on && color != null -> Color.White; on -> C.gold; else -> C.muted }
     Text(text, style = T.Small.copy(color = ink, fontSize = T.Small.fontSize * 1.1f), maxLines = 1,
         modifier = modifier.clip(CircleShape).background(fill).clickable(onClick = onClick).padding(horizontal = 13.dp, vertical = 8.dp))
 }
@@ -135,8 +136,20 @@ fun Flow(modifier: Modifier = Modifier, gap: Dp = 6.dp, content: @Composable Flo
 fun BufImage(buf: Buf, modifier: Modifier = Modifier, scale: Dp = 2.dp, smooth: Boolean = false) {
     val image = remember(buf) { buf.toBitmap().asImageBitmap() }
     Canvas(modifier.size(scale * buf.w, scale * buf.h)) {
-        drawImage(image, srcOffset = IntOffset.Zero, srcSize = IntSize(buf.w, buf.h), dstOffset = IntOffset.Zero,
+        drawImage(image, srcOffset = IntOffset.Zero, srcSize = IntSize(buf.fw, buf.fh), dstOffset = IntOffset.Zero,
             dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()), filterQuality = if (smooth) FilterQuality.Medium else FilterQuality.None)
+    }
+}
+
+/** A pixel picture filling its box, keeping its shape, centred, with hard pixels. */
+@Composable
+fun FitBuf(buf: Buf, modifier: Modifier = Modifier) {
+    val image = remember(buf) { buf.toBitmap().asImageBitmap() }
+    Canvas(modifier) {
+        val k = minOf(size.width / buf.fw, size.height / buf.fh)
+        val w = (buf.fw * k).roundToInt(); val h = (buf.fh * k).roundToInt()
+        drawImage(image, srcOffset = IntOffset.Zero, srcSize = IntSize(buf.fw, buf.fh), dstOffset = IntOffset(((size.width - w) / 2).roundToInt(), ((size.height - h) / 2).roundToInt()),
+            dstSize = IntSize(w, h), filterQuality = FilterQuality.None)
     }
 }
 
@@ -145,22 +158,33 @@ val LocalPixelCovers = androidx.compose.runtime.staticCompositionLocalOf { false
 
 @Composable
 fun PosterBuf(title: String, genre: app.reelkin.data.Genre, art: app.reelkin.ui.art.CoverArt?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) {
-    val full = if (art != null && !LocalPixelCovers.current) art.full else null
+    val full = art?.full
     if (full != null) {
         val image = remember(full) { full.asImageBitmap() }
         androidx.compose.foundation.Image(image, null, modifier.size(scale * w, scale * h), contentScale = androidx.compose.ui.layout.ContentScale.Crop, filterQuality = FilterQuality.Medium)
+    } else NoPoster(title, genre, modifier.size(scale * w, scale * h))
+}
+
+/** A film without a picture: its genre's colour, softly lit, and the title set like on a poster. */
+@Composable
+fun NoPoster(title: String, genre: app.reelkin.data.Genre, modifier: Modifier = Modifier) {
+    val base = Color(0xFF000000 or genre.color.toLong())
+    Box(modifier.background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(base.copy(alpha = .95f), Color(0xFF1A1014)))), contentAlignment = Alignment.BottomStart) {
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+            val big = maxWidth > 60.dp
+            Text(title, style = (if (big) T.Name else T.Small).copy(color = Color.White, fontSize = if (big) T.Name.fontSize * (maxWidth.value / 140f).coerceIn(.7f, 1.2f) else T.Small.fontSize * .75f),
+                maxLines = if (big) 4 else 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.BottomStart).padding(if (big) 10.dp else 3.dp))
+        }
     }
-    else BufImage(app.reelkin.ui.art.Posters.of(title, genre, w, h, art), modifier, scale)
 }
 
 @Composable
 fun PosterImage(title: String, genre: app.reelkin.data.Genre, cover: String?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    val pixel = LocalPixelCovers.current
-    // The file is read and decoded off the main thread; the drawn poster stands in until it's ready.
-    val art by androidx.compose.runtime.produceState(app.reelkin.data.Covers.peek(cover)?.takeIf { pixel || it.ready }, cover, pixel) {
+    // The file is read and decoded off the main thread; the title card stands in until it's ready.
+    val art by androidx.compose.runtime.produceState(app.reelkin.data.Covers.peek(cover)?.takeIf { it.ready }, cover) {
         if (value == null && cover != null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            app.reelkin.data.Covers.art(ctx, cover)?.also { if (pixel) it.pixels(w, h) else it.full }
+            app.reelkin.data.Covers.art(ctx, cover)?.also { it.full }
         }
     }
     PosterBuf(title, genre, art, w, h, modifier, scale)
@@ -285,6 +309,26 @@ fun Tabs(names: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: 
                 }, style = T.Strong.copy(color = if (on) C.gold else C.muted), maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
                 Spacer(Modifier.height(8.dp))
                 Box(Modifier.fillMaxWidth().height(2.dp).clip(CircleShape).background(if (on) C.gold else C.line))
+            }
+        }
+    }
+}
+
+/** A switch of a few pages: soft pills in a rounded tray, the chosen one lifted, a glyph and a count when given. */
+@Composable
+fun Pills(names: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, counts: List<Int?> = emptyList(), icons: List<Int?> = emptyList()) {
+    Row(modifier.fillMaxWidth().clip(CircleShape).background(C.surface).border(1.dp, C.line, CircleShape).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        names.forEachIndexed { i, name ->
+            val on = i == selected
+            Row(Modifier.weight(1f).clip(CircleShape).background(if (on) C.surface2 else Color.Transparent).clickable { onSelect(i) }.padding(vertical = 9.dp),
+                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                icons.getOrNull(i)?.let { ic ->
+                    androidx.compose.foundation.Image(androidx.compose.ui.graphics.ImageBitmap.imageResource(ic), null, Modifier.size(16.dp),
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(if (on) C.gold else C.faint))
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(name, style = T.Strong.copy(color = if (on) C.ink else C.muted), maxLines = 1)
+                counts.getOrNull(i)?.let { n -> Text(" $n", style = T.Small.copy(color = if (on) C.gold else C.faint), maxLines = 1) }
             }
         }
     }

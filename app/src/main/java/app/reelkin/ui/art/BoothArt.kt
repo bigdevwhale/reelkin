@@ -1,8 +1,10 @@
 package app.reelkin.ui.art
 
+import android.graphics.BitmapFactory
+import app.reelkin.data.Form
 import app.reelkin.data.Genre
 import app.reelkin.data.Species
-import app.reelkin.data.Trait
+import app.reelkin.data.Stage
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -14,12 +16,22 @@ import kotlin.math.sign
 import kotlin.math.sin
 import kotlin.random.Random
 
+private operator fun IntArray.component1() = this[0]
+private operator fun IntArray.component2() = this[1]
+private operator fun IntArray.component3() = this[2]
+private operator fun IntArray.component4() = this[3]
+
 /** What the booth needs to know to draw itself. */
 data class BoothLook(
+    /** The pet in the booth; null when there's none yet. */
     val species: Species?,
-    val shiny: Boolean,
-    val stage: Int,
-    val traits: Set<Trait>,
+    val stage: Stage = Stage.YOUNG,
+    val shiny: Boolean = false,
+    val form: Form? = null,
+    /** 0 awake .. 1 drowsy after days without films. */
+    val windup: Float = 0f,
+    /** A can: how near it is to opening, 0..1. */
+    val hatch: Float = 0f,
     /** The favourite film's poster on the wall, already in pixels. */
     val poster: Buf?,
     /** Colours of the last four films, for the stack of cans. */
@@ -33,23 +45,64 @@ data class BoothLook(
     val seance: Genre?,
     /** The neon says ТИШЕ in Russian, HUSH in English. */
     val ru: Boolean = true,
+    val rug: Boolean = false,
+    val plant: Boolean = false,
+    val clock: Boolean = false,
+    /** The wallpaper's picture: room, room_green… */
+    val wall: String = "room",
 )
 
 enum class Spot { PET, PROJECTOR, POSTER, CANS, POPCORN, PORT, NONE }
 
 /**
- * The projectionist's booth, as in the prototype: a projector with two reels, a stack of film cans,
- * a bulb on a cord, the port into the hall and the pet. Lit by the bulb in the evening, by the
- * projector's beam during a film and by almost nothing at night.
+ * The booth's pictures, drawn ahead of time (tools/scene.py cuts them from Codex's drawings): the room, the projector,
+ * the popcorn cart, the armchair, the poster's frame and the hall's stage, with where each stands.
+ */
+object Scenery {
+    class Pic(val buf: Buf, val x: Int, val y: Int)
+
+    private fun read(name: String): Buf? = runCatching {
+        val bmp = Scenery::class.java.getResourceAsStream("/booth/$name.png")?.use { BitmapFactory.decodeStream(it) } ?: return null
+        val b = Buf(bmp.width / Buf.FINE, bmp.height / Buf.FINE, Buf.FINE)
+        bmp.getPixels(b.d, 0, b.fw, 0, 0, b.fw, b.fh)
+        bmp.recycle()
+        b
+    }.getOrNull()
+
+    /** name → numbers, from booth.txt; reels come twice, so they're kept in order. */
+    val table: List<Pair<String, IntArray>> by lazy {
+        (Scenery::class.java.getResourceAsStream("/booth/booth.txt")?.bufferedReader()?.use { it.readText() }.orEmpty()).lines()
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+            .map { l -> val p = l.trim().split(Regex("\\s+")); p[0] to p.drop(1).map { it.toInt() }.toIntArray() }
+    }
+    fun at(name: String): IntArray? = table.firstOrNull { it.first == name }?.second
+
+    private val pics = HashMap<String, Pic?>()
+    fun pic(name: String): Pic? = synchronized(pics) {
+        pics.getOrPut(name) { read(name)?.let { b -> val p = at(name); Pic(b, p?.getOrNull(0) ?: 0, p?.getOrNull(1) ?: 0) } }
+    }
+    /** The poster's window in the frame: x, y, w, h. */
+    val poster: IntArray by lazy { at("poster") ?: intArrayOf(92, 16, 24, 34) }
+    private val rooms = HashMap<String, Buf?>()
+    fun room(file: String): Buf? = synchronized(rooms) { rooms.getOrPut(file) { read(file) ?: if (file != "room") read("room") else null } }
+    /** Where the port is on a wallpaper, in art pixels: x, y, w, h. */
+    fun port(file: String): IntArray = (if (file == "room") at("port") else at("port_" + file.removePrefix("room_"))) ?: at("port") ?: intArrayOf(160, 48, 9, 11)
+    val stage: Buf? by lazy { read("stage") }
+}
+
+/**
+ * The projectionist's booth: a projector with two turning reels, the stack of film cans, a bulb on a cord,
+ * the port into the hall, the favourite's poster and the pet. Lit by the bulb in the evening, by the projector's
+ * beam during a film and by almost nothing at night. Drawn [Buf.FINE] times finer than its art pixels.
  */
 class BoothScene {
-    private val bg = Buf(W, H)
+    private val bg = Buf(W, H, F)
     private var bgKey: Any? = null
-    private val pet = Buf(PetArt.W, PetArt.H)
+    private val pet = Buf(PetArt.W, PetArt.H, F)
     private val lights = HashMap<String, FloatArray>()
 
     // the pet's walk and moods
-    var x = 114.0; private var tx = 114.0; private var dir = 1; private var walk = false
+    var x = 112.0; private var tx = 112.0; private var dir = 1; private var walk = false
     private var hop = 0.0; private var vy = 0.0; private var next = 0.0
     private var blinkUntil = 0.0; private var nextBlink = 5.0
     private var mood = Mood.IDLE; private var moodUntil = 0.0
@@ -65,6 +118,8 @@ class BoothScene {
     private val sparks = ArrayList<Spark>()
     private val motes = List(16) { Mote(Random.nextDouble(), Random.nextDouble() - .5, .02 + Random.nextDouble() * .04) }
     private var now = 0.0
+    private var port = intArrayOf(160, 48, 9, 11)
+    private val portC get() = port[0] + port[2] / 2.0 to port[1] + port[3] / 2.0
 
     fun hop(v: Double = 26.0) { if (hop == 0.0) { vy = v; hop = .01 } }
     fun mood(m: Mood, sec: Double = 2.5) { mood = m; moodUntil = now + sec }
@@ -72,14 +127,15 @@ class BoothScene {
         val cols = intArrayOf(hex(0xFFF4C0), hex(0xE8B840), hex(0xFF7AA8), hex(0xFFFFFF))
         repeat(n) { i -> val a = Random.nextDouble() * 6.28; val v = 20 + Random.nextDouble() * 40; sparks += Spark(x, 110.0, cos(a) * v, sin(a) * v - 20, 0.0, .6 + Random.nextDouble() * .6, cols[i % 4]) }
     }
+    /** Plays the can opening; [done] runs when the pet is out. */
     fun hatch(done: () -> Unit) { if (!hatching) { hatching = true; hatchAt = now; onHatched = done } }
 
     fun hit(px: Double, py: Double, look: BoothLook): Spot = when {
-        abs(px - x) < 18 && py > 88 && py < 142 -> Spot.PET
+        abs(px - x) < 20 && py > 84 && py < 142 -> Spot.PET
         px < 66 && py > 20 && py < 140 -> Spot.PROJECTOR
-        px in 90.0..118.0 && py in 14.0..52.0 -> Spot.POSTER
-        px > 66 && px < 94 && py > 112 -> Spot.CANS
-        look.popcorn && px > 134 && px < 157 && py > 92 -> Spot.POPCORN
+        px in POSTER_X - 4.0..POSTER_X + 28.0 && py in 8.0..54.0 -> Spot.POSTER
+        px > 68 && px < 94 && py > 112 -> Spot.CANS
+        look.popcorn && px > 128 && px < 158 && py > 90 -> Spot.POPCORN
         px > 156 -> Spot.PORT
         else -> Spot.NONE
     }
@@ -87,23 +143,30 @@ class BoothScene {
     /** Draws the moment [t] seconds in; [dt] moves the pet and the reels. */
     fun draw(b: Buf, look: BoothLook, t: Double, dt: Double) {
         now = t
-        val key = listOf(look.poster, look.cans, look.neon, look.popcorn)
+        port = Scenery.port(look.wall)
+        val key = listOf(look.poster, look.cans, look.neon, look.popcorn, look.chair, look.rug, look.plant, look.clock, look.wall)
         if (key != bgKey) { drawBg(look); bgKey = key }
         b.copyFrom(bg)
         if (look.seance != null) ang += dt * 4.2
-        reel(b, 26.0, 36.0, 14.0, ang); reel(b, 52.0, 46.0, 11.0, ang * 1.27 + .4)
+        val reels = Scenery.table.filter { it.first == "reel" }.map { it.second }
+        if (reels.size == 2) for ((k, r) in reels.withIndex()) reel(b, r[0].toDouble(), r[1].toDouble(), r[2].toDouble(), if (k == 0) ang else ang * 1.27 + .4)
+        else { reel(b, 26.0, 36.0, 14.0, ang); reel(b, 52.0, 46.0, 11.0, ang * 1.27 + .4) }
         val chair = look.chair && !hatching
-        if (chair) chairBack(b)
         update(look, t, dt)
-        val gy = if (chair && !walk) 133 else 140
-        if (look.species == null || hatching) drawCan(b, look, t, gy) else {
-            val m = when { moodUntil > t -> mood; look.seance != null -> Mood.WATCH; look.night -> Mood.SLEEP; else -> Mood.IDLE }
-            PetArt.draw(pet, Pose(look.species, look.shiny, look.stage, look.traits, t, m, t < blinkUntil, hop + if (walk && hop == 0.0) abs(sin(t * 12)) * 1.5 else 0.0, if (look.seance != null && m == Mood.WATCH) 1 else 0))
-            val px = (x - 32).roundToInt()
-            if (dir < 0 && walk) blitFlipped(b, pet, px, gy - 64) else b.blit(pet, px, gy - 64)
-            if (m == Mood.SLEEP && Random.nextDouble() < dt * .8) zz += Z(x + 10, gy - 44.0, 0.0)
+        val gy = if (chair && !walk && abs(x - CHAIR_X) < 2) 128 else 141
+        if (look.species == null || look.stage == Stage.EGG || hatching) drawCan(b, look, t, gy) else {
+            val m = when {
+                moodUntil > t -> mood
+                look.seance != null -> Mood.WATCH
+                look.night || look.windup >= .8f -> Mood.SLEEP
+                else -> Mood.IDLE
+            }
+            PetArt.draw(pet, Pose(look.species, look.stage, look.shiny, look.form, t, m, t < blinkUntil,
+                hop + if (walk && hop == 0.0) abs(sin(t * 12)) * 1.5 else 0.0, look.windup))
+            val px = (x - PetArt.W / 2.0).roundToInt()
+            if (dir < 0 && walk) blitFlipped(b, pet, px, gy - PetArt.H) else b.blit(pet, px, gy - PetArt.H)
+            if (m == Mood.SLEEP && Random.nextDouble() < dt * .8) zz += Z(x + 12, gy - 50.0, 0.0)
         }
-        if (chair) chairFront(b)
         val mode = when { look.seance != null -> "seance"; look.night -> "night"; else -> "eve" }
         light(b, lightMap(mode, look.neon))
         glow(b, look, t, mode)
@@ -119,111 +182,94 @@ class BoothScene {
     private fun update(look: BoothLook, t: Double, dt: Double) {
         val chair = look.chair
         when {
-            look.seance != null -> tx = if (chair) 114.0 else 120.0
-            chair -> tx = 114.0
+            look.species == null || look.stage == Stage.EGG -> tx = CHAIR_X
+            look.seance != null -> tx = if (chair) CHAIR_X else 118.0
+            chair && t > next && Random.nextDouble() < .6 -> { tx = CHAIR_X; next = t + 8 + Random.nextDouble() * 8 }
             look.night -> tx = x
-            t > next -> { tx = 104 + Random.nextDouble() * 24; next = t + 4 + Random.nextDouble() * 6 }
+            t > next -> { tx = 96 + Random.nextDouble() * 30; next = t + 4 + Random.nextDouble() * 6 }
         }
         val dx = tx - x
-        walk = abs(dx) > .5 && look.species != null && !hatching
+        walk = abs(dx) > .5 && look.species != null && look.stage != Stage.EGG && !hatching
         if (walk) { x += sign(dx) * min(abs(dx), dt * 14); dir = sign(dx).toInt() }
         if (hop > 0) { vy -= dt * 130; hop = max(0.0, hop + vy * dt); if (hop == 0.0) vy = 0.0 }
         if (t > nextBlink) { blinkUntil = t + .13; nextBlink = t + 2 + Random.nextDouble() * 3.5 }
     }
 
     private fun drawCan(b: Buf, look: BoothLook, t: Double, gy: Int) {
-        val cx = 114.0
-        if (!hatching) { Icons.can(b, cx, 135.0, hex(0xB8243E)); return }
+        val sp = look.species
+        if (sp == null) { Icons.can(b, CHAIR_X, 135.0, hex(0xB8243E)); return }
+        val px = (CHAIR_X - PetArt.W / 2.0).roundToInt()
+        if (!hatching) {
+            PetArt.draw(pet, Pose(sp, Stage.EGG, t = t, hatch = look.hatch))
+            b.blit(pet, px, 141 - PetArt.H)
+            return
+        }
         val ht = t - hatchAt
         if (ht < 2.5) {
-            val sh = if (ht % .8 < .25) (if ((ht * 40).roundToInt() % 2 == 1) 1 else -1) else 0
-            Icons.can(b, cx + sh, 135.0, hex(0xB8243E))
+            PetArt.draw(pet, Pose(sp, Stage.EGG, t = t, hatch = 1f))
+            b.blit(pet, px, 141 - PetArt.H)
         } else {
             val lt = ht - 2.5
-            if (lt < 1.2) { val ly = 130 - lt * 80 + lt * lt * 60; val lx = cx + lt * 30; b.el(lx, ly, 12.0, 2.0, hex(0xB0B6C0)); b.el(lx, ly, 5.0, 1.0, hex(0x868C96)) }
-            PetArt.draw(pet, Pose(look.species ?: Species.CAT, look.shiny, 1, emptySet(), t, Mood.HAPPY, hop = max(0.0, sin(lt * 6) * 4)))
-            b.blit(pet, (cx - 32).roundToInt(), gy - 64)
-            b.box(cx - 12, 136.0, 25.0, 4.0, hex(0x6A6E78)); b.box(cx - 12, 136.0, 25.0, 2.0, hex(0xB8243E))
+            PetArt.draw(pet, Pose(sp, Stage.BABY, look.shiny, t = t, mood = Mood.HAPPY, hop = max(0.0, sin(lt * 6) * 4)))
+            b.blit(pet, px, 141 - PetArt.H)
+            if (lt < 1.2) { val ly = 128 - lt * 80 + lt * lt * 60; val lx = CHAIR_X + lt * 30; b.el(lx, ly, 12.0, 2.0, hex(0xB0B6C0)); b.el(lx, ly, 5.0, 1.0, hex(0x868C96)) }
             if (lt < .05) burst(36)
         }
-        if (ht > 4.2) { hatching = false; x = 114.0; tx = 114.0; onHatched?.invoke(); onHatched = null }
+        if (ht > 4.2) { hatching = false; x = CHAIR_X; tx = CHAIR_X; onHatched?.invoke(); onHatched = null }
     }
 
     private fun blitFlipped(b: Buf, o: Buf, x: Int, y: Int) {
-        for (j in 0 until o.h) for (i in 0 until o.w) { val c = o.d[j * o.w + (o.w - 1 - i)]; if (c ushr 24 != 0) b.p(x + i, y + j, c) }
+        for (j in 0 until o.fh) for (i in 0 until o.fw) {
+            val c = o.d[j * o.fw + (o.fw - 1 - i)]
+            if (c ushr 24 != 0) b.pf(x * F + i, y * F + j, c)
+        }
     }
 
+    /** A reel drawn on the fine grid, so its spokes turn smoothly. */
     private fun reel(b: Buf, cx: Double, cy: Double, r: Double, a: Double) {
-        b.el(cx, cy, r, r, hex(0x1E1E24)); b.el(cx, cy, r - 1, r - 1, hex(0x8A909A))
-        b.el(cx, cy, (r * .78).roundToInt().toDouble(), (r * .78).roundToInt().toDouble(), hex(0x3A2A22))
-        val hole = if (r > 12) 2.5 else 2.0
-        for (i in 0 until 3) { val an = a + i * 2.094; b.el(cx + cos(an) * r * .5, cy + sin(an) * r * .5, hole, hole, hex(0x120A10)) }
-        for (i in 0 until 3) { val an = a + i * 2.094 + 1.047; b.ln(cx, cy, cx + cos(an) * (r - 2), cy + sin(an) * (r - 2), hex(0xB8C0CA)) }
-        b.el(cx, cy, 2.0, 2.0, hex(0xDCE0E8)); b.dot(cx, cy, hex(0x3A3A40))
-        var an = -2.7; while (an < -.5) { b.dot(cx + cos(an) * (r - 1), cy + sin(an) * (r - 1), hex(0xD8E0E8)); an += .07 }
-    }
-
-    private fun chairBack(b: Buf) {
-        val c = 114.0
-        b.lit(ramp(hex(0xA82038))) { el(c, 106.0, 17.0, 5.0, M); box(c - 17, 106.0, 35.0, 24.0, M) }
-        var x = c - 12; while (x < c + 14) { b.box(x, 108.0, 1.0, 18.0, hex(0x7A1628)); x += 6 }
-    }
-
-    private fun chairFront(b: Buf) {
-        val c = 114.0
-        b.lit(ramp(hex(0xA82038))) { box(c - 21, 120.0, 8.0, 16.0, M); box(c + 14, 120.0, 8.0, 16.0, M); box(c - 15, 129.0, 31.0, 6.0, M) }
-        b.box(c - 20, 136.0, 2.0, 4.0, hex(0x3A2214)); b.box(c + 19, 136.0, 2.0, 4.0, hex(0x3A2214))
-        b.box(c - 21, 120.0, 8.0, 1.0, hex(0xE8B840)); b.box(c + 14, 120.0, 8.0, 1.0, hex(0xE8B840))
+        val s = F.toDouble()
+        val n = ((r + 1) * 2 * s).toInt() + 2
+        val t = Buf(n, n)
+        val c = n / 2.0; val R = r * s
+        fun disc(rr: Double, col: Int) = t.el(c, c, rr, rr, col)
+        disc(R, hex(0x1E1E24)); disc(R - s, hex(0x8A909A)); disc(R * .78, hex(0x3A2A22))
+        val hole = (if (r > 12) 2.5 else 2.0) * s
+        for (i in 0 until 3) { val an = a + i * 2.094; t.el(c + cos(an) * R * .5, c + sin(an) * R * .5, hole, hole, hex(0x120A10)) }
+        for (i in 0 until 3) {
+            val an = a + i * 2.094 + 1.047
+            for (w in -1..0) t.ln(c + w, c, c + w + cos(an) * (R - 2 * s), c + sin(an) * (R - 2 * s), hex(0xB8C0CA))
+        }
+        disc(2 * s, hex(0xDCE0E8)); disc(s * .6, hex(0x3A3A40))
+        var an = -2.7; while (an < -.5) { t.dot(c + cos(an) * (R - s), c + sin(an) * (R - s), hex(0xD8E0E8)); an += .03 }
+        val ox = ((cx - r - 1) * s).roundToInt() - 1; val oy = ((cy - r - 1) * s).roundToInt() - 1
+        for (j in 0 until n) for (i in 0 until n) { val col = t.d[j * n + i]; if (col ushr 24 != 0) b.pf(ox + i, oy + j, col) }
     }
 
     private fun drawBg(look: BoothLook) {
         val b = bg; b.clear()
-        b.rect(0, 0, W, 120, hex(0x3A2436))
-        var x = 0; while (x < W) { b.rect(x, 0, 4, 86, hex(0x432A3E)); x += 8 }
-        var y = 6
-        while (y < 84) { x = (y / 8 % 2) * 4 + 2; while (x < W) { b.p(x, y, hex(0x583856)); b.p(x + 1, y + 1, hex(0x2E1C2C)); b.p(x - 1, y + 1, hex(0x2E1C2C)); x += 8 }; y += 8 }
-        b.rect(0, 0, W, 3, hex(0x22141F))
-        b.rect(0, 86, W, 2, hex(0x6A4A2A)); b.rect(0, 86, W, 1, hex(0x9A7444))
-        b.rect(0, 88, W, 32, hex(0x4A2C1C))
-        x = 4; while (x < W) { b.rect(x, 92, 20, 22, hex(0x3C2216)); b.rect(x, 92, 20, 1, hex(0x2A160E)); b.rect(x, 92, 1, 22, hex(0x2A160E)); b.rect(x, 113, 20, 1, hex(0x6A4228)); b.rect(x + 19, 92, 1, 22, hex(0x6A4228)); x += 26 }
-        b.rect(0, 120, W, 30, hex(0x5A3620))
-        y = 124; while (y < H) { b.rect(0, y, W, 1, hex(0x44281A)); y += 5 }
-        y = 120; var i = 0
-        while (y < H) { x = (i * 17) % 40; while (x < W) { b.rect(x, y, 1, 5, hex(0x3A2214)); x += 40 }; y += 5; i++ }
-        b.rect(0, 120, W, 1, hex(0x24120C))
-        // the wall with the port
-        b.rect(156, 0, 18, 120, hex(0x4C3048)); b.rect(156, 0, 1, 120, hex(0x24141F)); b.rect(157, 0, 1, 120, hex(0x5E3C58))
-        b.rect(156, 88, 18, 32, hex(0x553420)); b.rect(156, 86, 18, 2, hex(0x9A7444))
-        b.rect(158, 46, 13, 15, hex(0xA87418)); b.rect(158, 46, 13, 1, hex(0xFFF0A0)); b.rect(160, 48, 9, 11, hex(0x08040C))
-        // the favourite's poster
-        b.rect(90, 14, 28, 38, hex(0x6A4A10)); b.rect(91, 15, 26, 36, hex(0xE8B840)); b.rect(91, 15, 26, 1, hex(0xFFF0A0))
-        if (look.poster != null) b.blit(look.poster, 92, 16) else b.rect(92, 16, 24, 34, hex(0x2A1A26))
+        val room = Scenery.room(look.wall)
+        if (room != null) b.blit(room, 0, 0) else {
+            b.rect(0, 0, W, 120, hex(0x3A2436)); b.rect(0, 86, W, 34, hex(0x4A2C1C)); b.rect(0, 120, W, 30, hex(0x5A3620))
+        }
+        // the favourite's poster, behind its frame
+        // Exactly in the frame's window, as tools/scene.py measured it; the frame's rim covers the edges.
+        val (wx, wy, ww, wh) = Scenery.poster
+        if (look.poster != null) b.blitScaled(look.poster, wx, wy, ww, wh) else b.rect(wx, wy, ww, wh, hex(0x2A1A26))
+        Scenery.pic("frame")?.let { b.blit(it.buf, it.x, it.y) }
         // the bulb on its cord
         b.line(76, 0, 76, 11, hex(0x140A10)); b.rect(74, 11, 5, 3, hex(0x4A4048)); b.ell(76, 16, 2, 2, hex(0xE8D8A0))
-        // the projector
-        b.lit(ramp(hex(0x34403C))) { rect(30, 86, 7, 50, M); poly(M, 20.0, 139.0, 47.0, 139.0, 38.0, 130.0, 29.0, 130.0) }
-        b.lit(ramp(hex(0x4A4A54))) { rect(6, 60, 13, 26, M); rect(9, 48, 7, 13, M); rect(7, 45, 11, 3, M) }
-        y = 64; while (y < 84) { b.rect(8, y, 9, 1, hex(0x18161C)); y += 3 }
-        b.lit(ramp(hex(0x3E5248))) { rect(18, 58, 38, 30, M); rect(20, 56, 34, 2, M) }
-        b.rect(24, 66, 16, 6, hex(0xA87418)); b.rect(25, 67, 14, 4, hex(0xE8B840)); b.rect(25, 67, 14, 1, hex(0xFFF0A0))
-        for (k in 0 until 4) b.p(27 + k * 3, 69, hex(0x6A4410))
-        b.rect(44, 62, 7, 9, hex(0x14161A)); b.rect(45, 63, 5, 7, hex(0x2A2E34))
-        b.ell(36, 80, 3, 3, hex(0x24282C)); b.line(36, 80, 41, 84, hex(0xA8B0B8)); b.rect(41, 84, 2, 2, hex(0xC83A3A))
-        b.lit(ramp(hex(0xC89A3A))) { rect(56, 67, 8, 9, M); rect(63, 66, 3, 11, M) }
-        b.p(65, 70, hex(0xCFE8FF)); b.p(65, 71, hex(0x8AB0D0)); b.p(65, 72, hex(0x6A90B0))
-        b.line(30, 57, 26, 37, hex(0x24242A)); b.line(31, 57, 27, 37, hex(0x5A5A64)); b.line(48, 57, 52, 47, hex(0x24242A)); b.line(49, 57, 53, 47, hex(0x5A5A64))
-        b.line(14, 40, 22, 58, hex(0x1A100C)); b.line(50, 58, 62, 50, hex(0x1A100C))
+        if (look.clock) Scenery.pic("clock")?.let { b.blit(it.buf, it.x, it.y) }
+        if (look.rug) Scenery.pic("rug")?.let { b.blit(it.buf, it.x, it.y) }
+        if (look.plant) Scenery.pic("plant")?.let { b.blit(it.buf, it.x, it.y) }
+        Scenery.pic("projector")?.let { b.blit(it.buf, it.x, it.y) }
         // the cans, last films on top
-        val cols = (List(4) { hex(0x6A5A62) } + look.cans).takeLast(4)
-        for (k in 0 until 4) Icons.can(b, 80.0 + if (k % 2 == 1) 1 else -1, 136.0 - k * 5, cols[k])
-        if (look.popcorn) {
-            b.lit(ramp(hex(0xC82A3A))) { rect(136, 122, 19, 14, M); rect(135, 98, 21, 4, M) }
-            b.rect(137, 102, 17, 20, hex(0xA8D0E0)); b.rect(138, 103, 15, 18, hex(0x20303A))
-            for (yy in 110 until 121) for (xx in 138 until 153) if (dith(xx, yy, .55 + (yy - 110) / 30.0)) b.p(xx, yy, if ((xx + yy) % 3 != 0) hex(0xFFF0C0) else hex(0xF0C850))
-            b.rect(137, 102, 1, 20, hex(0xE8F4FA)); b.ell(145, 97, 6, 2, hex(0xE83A4A)); b.rect(144, 94, 2, 2, hex(0xE8B840))
-            for (xx in intArrayOf(138, 152)) { b.ell(xx, 137, 2, 2, hex(0x24242A)); b.p(xx, 137, hex(0x8A8A94)) }
-            b.rect(139, 126, 13, 5, hex(0xFFF0C0)); b.rect(140, 127, 11, 3, hex(0xC82A3A))
+        val stack = Scenery.pic("cans")
+        if (stack != null) b.blit(stack.buf, stack.x, stack.y) else {
+            val cols = (List(4) { hex(0x6A5A62) } + look.cans).takeLast(4)
+            for (k in 0 until 4) Icons.can(b, 80.0 + if (k % 2 == 1) 1 else -1, 136.0 - k * 5, cols[k])
         }
+        if (look.chair) Scenery.pic("chair")?.let { b.blit(it.buf, it.x, it.y) }
+        if (look.popcorn) Scenery.pic("popcorn")?.let { b.blit(it.buf, it.x, it.y) }
         if (look.neon) { neon(b, hex(0x5A2A44), look.ru); b.rect(123, 23, 21, 1, hex(0x2A1A22)); b.rect(123, 32, 21, 1, hex(0x2A1A22)) }
     }
 
@@ -232,20 +278,24 @@ class BoothScene {
         for (g in if (ru) NEON else HUSH) { g.forEachIndexed { y, row -> row.forEachIndexed { i, ch -> if (ch == '1') b.p(x + i, 26 + y, c) } }; x += g[0].length + 1 }
     }
 
-    private fun lightMap(mode: String, neon: Boolean): FloatArray = lights.getOrPut("$mode$neon") {
-        val L = FloatArray(W * H)
-        val amb = when (mode) { "eve" -> .36; "seance" -> .2; else -> .17 }
-        for (y in 0 until H) for (x in 0 until W) {
+    /** How lit each fine pixel is, dithered on the fine grid. */
+    private fun lightMap(mode: String, neon: Boolean): FloatArray = lights.getOrPut("$mode$neon${port.joinToString()}") {
+        val fw = W * F; val fh = H * F
+        val L = FloatArray(fw * fh)
+        val amb = when (mode) { "eve" -> .42; "seance" -> .24; else -> .19 }
+        val (lx, ly) = LENS; val (px, py) = portC
+        for (fy in 0 until fh) for (fx in 0 until fw) {
+            val x = (fx + .5) / F; val y = (fy + .5) / F
             var l = amb
-            if (mode == "eve") l += 1.05 * max(0.0, 1 - hypot(x - 76.0, (y - 16) * 1.1) / 112).pow(1.25)
+            if (mode == "eve") l += 1.0 * max(0.0, 1 - hypot(x - 76.0, (y - 16) * 1.1) / 115).pow(1.25)
             if (mode == "seance") {
-                l += .6 * max(0.0, 1 - hypot(x - 14.0, y - 70.0) / 36).pow(1.5)
-                if (x > 62) { val tt = (x - 66) / 93.0; val yc = 72 - 18 * tt; l += .4 * max(0.0, 1 - abs(y - yc) / (9 + 16 * tt)) }
-                l += .45 * max(0.0, 1 - hypot(x - 164.0, y - 54.0) / 30).pow(1.3)
+                l += .55 * max(0.0, 1 - hypot(x - 22.0, y - 70.0) / 38).pow(1.5)
+                if (x > lx) { val tt = (x - lx) / (px - lx); val yc = ly + (py - ly) * tt; l += .4 * max(0.0, 1 - abs(y - yc) / (9 + 16 * tt)) }
+                l += .45 * max(0.0, 1 - hypot(x - px, y - py) / 30).pow(1.3)
             }
             if (neon && mode != "eve") l += .35 * max(0.0, 1 - hypot(x - 136.0, y - 28.0) / 34).pow(1.4)
-            val v = min(1.12, l) * 9; val f = kotlin.math.floor(v)
-            L[y * W + x] = ((f + if (dith(x, y, v - f)) 1 else 0) / 9).toFloat()
+            val v = min(1.12, l) * 12; val f = kotlin.math.floor(v)
+            L[fy * fw + fx] = ((f + if (dith(fx, fy, v - f)) 1 else 0) / 12).toFloat()
         }
         L
     }
@@ -263,44 +313,67 @@ class BoothScene {
     private fun glow(b: Buf, look: BoothLook, t: Double, mode: String) {
         if (look.garland) {
             val cs = intArrayOf(hex(0xFF5A6A), hex(0xFFD84A), hex(0x6AD0FF), hex(0x8AFF7A))
-            for (x in 2 until 156) {
-                val y = 4 + (4 * sin(Math.PI * ((x % 52) / 52.0))).roundToInt()
-                b.p(x, y, hex(0x24141C))
-                if (x % 8 == 4) {
-                    val i = (x shr 3) % 4
-                    val on = if (mode == "night") ((t * 1.5).toInt() + i) % 4 == 0 else ((t * 2).toInt() + i) % 4 != 0
-                    b.rect(x, y + 1, 2, 2, if (on) cs[i] else mix(cs[i], hex(0x140810), .6f)); if (on) b.p(x, y + 1, hex(0xFFFFFF))
-                }
+            // The wire on the fine grid, the bulbs a little rounder.
+            for (fx in 2 * F until 156 * F) {
+                val x = fx / F.toDouble()
+                val y = 4 + 4 * sin(Math.PI * ((x % 52) / 52.0))
+                b.pf(fx, (y * F).roundToInt(), hex(0x24141C))
+            }
+            for (x in 4 until 156 step 8) {
+                val y = 4 + 4 * sin(Math.PI * ((x % 52) / 52.0))
+                val i = (x shr 3) % 4
+                val on = if (mode == "night") ((t * 1.5).toInt() + i) % 4 == 0 else ((t * 2).toInt() + i) % 4 != 0
+                val c = if (on) cs[i] else mix(cs[i], hex(0x140810), .6f)
+                val fx = x * F; val fy = (y * F).roundToInt() + 1
+                for (j in 0 until 5) for (k in 0 until 4) if (!(j == 4 && (k == 0 || k == 3))) b.pf(fx + k - 1, fy + j, c)
+                if (on) { b.pf(fx, fy + 1, hex(0xFFFFFF)); for (j in -2..6) for (k in -3..5) if (b.getF(fx + k, fy + j) != 0) b.pf(fx + k, fy + j, cs[i], .12f) }
             }
         }
         if (look.neon) neon(b, if ((t * 7).toInt() % 37 == 0) hex(0x5A2A44) else hex(0xFF7AB0), look.ru)
         if (mode == "eve") { b.ell(76, 16, 2, 2, hex(0xFFF8D0)); b.p(75, 15, hex(0xFFFFFF)) }
         if (look.seance != null) {
             val fl = .82 + .18 * sin(t * 37) * sin(t * 13)
-            for (i in BEAM.indices) { val a = BEAM[i]; if (a > 0f) { val x = i % W; val y = i / W; if (dith(x, y, a * fl)) b.p(x, y, if (a > .45f) hex(0xFFF8DC) else hex(0xF0DCA0)) } }
+            val fw = W * F
+            val beam = beam(portC)
+            for (i in beam.indices) { val a = beam[i]; if (a > 0f) { val x = i % fw; val y = i / fw; if (dith(x, y, a * fl)) b.pf(x, y, if (a > .45f) hex(0xFFF8DC) else hex(0xF0DCA0)) } }
+            val (lx, ly) = LENS; val (px, py) = portC
             for (m in motes) {
                 m.t += m.v * .09; if (m.t > 1) m.t = 0.0
-                val x = 70 + m.t * 86; val t2 = (x - 66) / 93; val y = 71.5 - 17.5 * t2 + m.o * (3 + 6 * t2) + sin(t * 2 + m.v * 100)
-                b.dot(x, y, hex(0xFFFFFF))
+                val x = lx + 4 + m.t * (px - lx - 6); val t2 = (x - lx) / (px - lx); val y = ly + (py - ly) * t2 + m.o * (3 + 6 * t2) + sin(t * 2 + m.v * 100)
+                b.pf((x * F).roundToInt(), (y * F).roundToInt(), hex(0xFFFFFF))
             }
-            var y = 64; while (y < 84) { b.rect(8, y, 9, 1, if (sin(t * 9 + y) > 0) hex(0xFF9A3A) else hex(0xC85A1A)); y += 3 }
-            b.rect(160, 48, 9, 11, mix(hex(look.seance.color.toLong()), hex(0xFFFFFF), (.25 + .35 * abs(sin(t * 3.1))).toFloat()))
-            b.p(65, 71, hex(0xFFFFFF))
+            b.rect(port[0], port[1], port[2], port[3], mix(hex(look.seance.color.toLong()), hex(0xFFFFFF), (.25 + .35 * abs(sin(t * 3.1))).toFloat()))
         }
     }
 
     companion object {
         const val W = 174
         const val H = 150
+        const val F = Buf.FINE
+        const val CHAIR_X = 113.0
+        const val POSTER_X = 92
         private val NEON = listOf(listOf("111", "010", "010", "010", "010"), listOf("1001", "1011", "1101", "1001", "1001"),
             listOf("10101", "10101", "10101", "10101", "11111"), listOf("111", "100", "110", "100", "111"))
         private val HUSH = listOf(listOf("101", "101", "111", "101", "101"), listOf("101", "101", "101", "101", "111"),
             listOf("111", "100", "111", "001", "111"), listOf("101", "101", "111", "101", "101"))
-        private val BEAM = FloatArray(W * H).also { B ->
-            for (x in 66 until 160) {
-                val t = (x - 66) / 93.0; val yc = 71.5 - 17.5 * t; val hw = 1.5 + 4 * t
-                for (y in (yc - hw - 1).toInt()..(yc + hw + 1).toInt()) { val d = abs(y - yc); if (d <= hw + .5) B[y * W + x] = (.62 * (1 - d / (hw + 1.5)) * (1 - .35 * t)).toFloat() }
+        /** Where the beam leaves the lens and where it goes in the port, in art pixels. */
+        private val LENS: Pair<Double, Double> by lazy { Scenery.at("lens")?.let { it[0].toDouble() to it[1].toDouble() } ?: (66.0 to 72.0) }
+        private val beams = HashMap<Pair<Double, Double>, FloatArray>()
+        /** The projector's beam from the lens to the port, how bright each fine pixel is. */
+        private fun beam(to: Pair<Double, Double>): FloatArray = synchronized(beams) { beams.getOrPut(to) {
+            val fw = W * F; val fh = H * F
+            val (lx, ly) = LENS; val (px, py) = to
+            FloatArray(fw * fh).also { B ->
+                for (fx in (lx * F).toInt() until (px * F).toInt()) {
+                    val x = fx / F.toDouble()
+                    val t = (x - lx) / (px - lx); val yc = ly + (py - ly) * t; val hw = 1.5 + 4 * t
+                    for (fy in ((yc - hw - 1) * F).toInt()..((yc + hw + 1) * F).toInt()) {
+                        if (fy !in 0 until fh) continue
+                        val d = abs(fy / F.toDouble() - yc)
+                        if (d <= hw + .5) B[fy * fw + fx] = (.62 * (1 - d / (hw + 1.5)) * (1 - .35 * t)).toFloat()
+                    }
+                }
             }
-        }
+        } }
     }
 }

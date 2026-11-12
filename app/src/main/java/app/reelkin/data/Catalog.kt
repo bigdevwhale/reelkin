@@ -25,6 +25,8 @@ data class Draft(
     /** The show on TVmaze, for the seasons. */
     val tvmaze: Int? = null,
     val imdb: String? = null,
+    val director: String = "",
+    val cast: String = "",
 )
 
 /**
@@ -97,7 +99,8 @@ object Catalog {
             ?.let { JSONObject(it).optJSONObject("entities") } ?: return@withContext null
 
         class Raw(val kind: Kind, val label: String, val year: Int?, val countries: List<String>, val genres: List<String>, val types: List<String>,
-                  val minutes: Int?, val eps: Int?, val seasons: Int?, val en: String?, val ruw: String?, val tvmaze: Int?, val imdb: String?)
+                  val minutes: Int?, val eps: Int?, val seasons: Int?, val en: String?, val ruw: String?, val tvmaze: Int?, val imdb: String?,
+                  val directors: List<String> = emptyList(), val cast: List<String> = emptyList())
         val raws = ArrayList<Raw>()
         for (id in ids) {
             val e = ents.optJSONObject(id) ?: continue
@@ -115,15 +118,16 @@ object Catalog {
             val links = e.optJSONObject("sitelinks")
             raws += Raw(kind, label, time?.let { Regex("""(\d{4})""").find(it)?.value?.toIntOrNull() }, ids(c, "P495").take(1), ids(c, "P136").take(6), p31,
                 dur, amount(c, "P1113"), amount(c, "P2437"), links?.optJSONObject("enwiki")?.optString("title"), links?.optJSONObject("ruwiki")?.optString("title"),
-                string(c, "P8600")?.toIntOrNull(), string(c, "P345"))
+                string(c, "P8600")?.toIntOrNull(), string(c, "P345"), ids(c, "P57").take(2), ids(c, "P161").take(4))
             if (raws.size >= 8) break
         }
-        val more = raws.flatMap { it.countries + it.genres }.distinct().take(50)
+        val more = raws.flatMap { it.countries + it.genres + it.directors + it.cast }.distinct().take(150)
         val names = HashMap<String, String>()
         val en = HashMap<String, String>()
-        if (more.isNotEmpty()) get(WD + "action=wbgetentities&ids=${more.joinToString("|")}&props=labels&languages=$lang|en|mul")
+        // Fifty to a request, as the API takes them.
+        for (chunk in more.chunked(50)) get(WD + "action=wbgetentities&ids=${chunk.joinToString("|")}&props=labels&languages=$lang|en|mul")
             ?.let { JSONObject(it).optJSONObject("entities") }?.let { es ->
-                for (id in more) {
+                for (id in chunk) {
                     val l = es.optJSONObject(id)?.optJSONObject("labels") ?: continue
                     listOf(lang, "mul", "en").firstNotNullOfOrNull { l.optJSONObject(it)?.optString("value") }?.let { names[id] = it }
                     listOf("en", "mul", lang).firstNotNullOfOrNull { l.optJSONObject(it)?.optString("value") }?.let { en[id] = it }
@@ -142,6 +146,7 @@ object Catalog {
                         minutes = r.minutes, perSeason = if (r.eps != null && r.seasons != null && r.seasons > 0) (r.eps / r.seasons).coerceAtLeast(1) else null,
                         about = r.genres.mapNotNull { names[it] }.take(2).joinToString(", "),
                         coverUrl = poster(r.ruw, "ru") ?: poster(r.en, "en"), tvmaze = r.tvmaze, imdb = r.imdb,
+                        director = People.join(r.directors.mapNotNull { names[it] }), cast = People.join(r.cast.mapNotNull { names[it] }),
                     )
                 }
             }.awaitAll()

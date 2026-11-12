@@ -74,7 +74,7 @@ python tools/play.py
 | Поле | Значение |
 |---|---|
 | App category | Application → **Entertainment** |
-| Tags (до 5) | Movies, TV shows, Diary, Virtual pet, Collection (берите ближайшие из списка Play) |
+| Tags (до 5) | Movie, TV, Entertainment, TV guide, Movie tickets, reviews & listings |
 | Email address | *ваш публичный email* — обязательно, его увидят все |
 | Website | `https://bigdevwhale.github.io/stillcraft/apps/reelkin/` |
 | Phone | пусто |

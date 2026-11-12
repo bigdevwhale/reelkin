@@ -6,6 +6,37 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.0.0] - 2026-11-12
+
+- 32 pets instead of 5, fairy-tale ones too (a little dragon, a unicorn, a phoenix, a kitsune, a back-row ghost…):
+  three cans are open from the start, the rest open by the way you watch.
+- Pets work as in Songling: egg (a film can), little one, half-grown, grown-up, old-timer; favourite films feed
+  one and a half times as much and pay popcorn; a nature and, when grown, a form for good; only the pet in the
+  booth eats, the others rest and come back when called. The pet of 1.x comes along with all it ate.
+- A pet's card and a can's card in blocks: growing, favourite films, what they give, favourites eaten so far,
+  nature, form, what it ate. Pets blink and close their eyes when asleep or happy, and breathe.
+- The pets, the booth, its things and the hall's stage drawn anew (Codex image generation: tools/art_prompts.py,
+  tools/art_gen.py, cut by tools/cut.py and tools/scene.py), three times finer than before. A new launcher icon.
+- New navigation: the booth, the bill, the reel in the middle, the saga and the pets.
+- The booth: the pet's card, «Tonight» with a mood to pick, a poster to swap to and the pet's word on it, the
+  week's tasks, the running series. The buffet sells wallpapers, a rug, a plant and a clock, with a live try-on.
+- The saga: the numbers for a week, a month, a year or all time, the pet's word, fact tiles that open into their
+  whole story, goals, achievements, the calendar, the hall, the awards and postcards.
+- Goals picked from 22, weekly tasks, and 56 achievements in steps, each step paying popcorn.
+- Postcards for a feed or a story: a stub's review, an achievement, the booth, the pet, the numbers, films,
+  series, genres, rhythm, the year, the map and the menagerie, with a QR code to Google Play if you like.
+- The bill: a wall of stubs by month, search, filters by directors and cast (from Wikidata), people on the cards.
+- Posters are shown as they are, no longer pixelated.
+- Tips on the first visit to each screen.
+- Traits and the cinema's sign are gone: the pets' own pictures carry their looks now.
+
+<!-- tg
+32 питомца вместо пяти, среди них дракончик, единорог, феникс и кицунэ – коробки открываются тем, как ты смотришь.
+Питомцы и будка нарисованы заново, в буфете обои, ковёр, цветок и часы с примеркой.
+Новая вкладка «Сага»: статистика, цели, 56 достижений и открытки для соцсетей.
+«Сегодня вечером» подбирает фильм под настроение.
+-->
+
 ## [1.4.0] - 2026-11-08
 
 - A goal for series too: seasons to finish this year, with its own bar on the year card (#6).

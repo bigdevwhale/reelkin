@@ -1,0 +1,19 @@
+# Made by tools/scene.py: name x y [w h] in art pixels (the booth's, or the hall's for the screen).
+port 161 43 8 10
+port_green 160 43 9 11
+port_navy 161 48 9 10
+port_deco 159 48 9 10
+port_brick 162 44 7 11
+projector 2 36 64 105
+reel 23 36 14
+reel 55 42 11
+lens 66 73
+popcorn 130 94 26 47
+chair 93 102 41 39
+frame 87 8 30 45
+poster 92 16 24 35
+rug 84 132 62 12
+plant 157 116 17 26
+clock 126 37 15 18
+cans 66 115 30 26
+screen 35 14 104 33

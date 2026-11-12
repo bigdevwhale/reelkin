@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.imageResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.reelkin.container
 import app.reelkin.data.Covers
@@ -56,7 +57,6 @@ import app.reelkin.ui.art.Posters
 import app.reelkin.ui.bill.BillScreen
 import app.reelkin.ui.booth.BoothScreen
 import app.reelkin.ui.components.t
-import app.reelkin.ui.hall.HallScreen
 import app.reelkin.ui.onboarding.Onboarding
 import app.reelkin.ui.settings.SettingsPage
 import app.reelkin.ui.sheets.AddSheet
@@ -70,7 +70,6 @@ import app.reelkin.ui.sheets.PickSheet
 import app.reelkin.ui.sheets.RewardSheet
 import app.reelkin.ui.sheets.SeriesSheet
 import app.reelkin.ui.sheets.ShopSheet
-import app.reelkin.ui.sheets.SignSheet
 import app.reelkin.ui.sheets.StubSheet
 import app.reelkin.ui.theme.C
 import app.reelkin.ui.theme.T
@@ -78,7 +77,7 @@ import kotlinx.coroutines.delay
 
 val LocalRu = staticCompositionLocalOf { true }
 
-enum class Tab { BOOTH, BILL, HALL }
+enum class Tab { BOOTH, BILL, SAGA, PETS }
 
 /** What is open over the tabs. */
 sealed class Overlay {
@@ -93,8 +92,17 @@ sealed class Overlay {
     data class Add(val q: String = "") : Overlay()
     data class NewTitle(val d: Draft, val edit: Long? = null) : Overlay()
     data object Pet : Overlay()
+    data object Pets : Overlay()
+    data object Cards : Overlay()
+    data object Quests : Overlay()
+    data object Menu : Overlay()
+    data object Feats : Overlay()
+    data class ShareIt(val what: app.reelkin.ui.cards.Share) : Overlay()
+    data class PetOf(val id: Long) : Overlay()
+    data class Can(val sp: app.reelkin.data.Species) : Overlay()
+    data class SagaDetail(val key: String) : Overlay()
+    data class GoalEdit(val id: Long? = null) : Overlay()
     data object Shop : Overlay()
-    data object Sign : Overlay()
     data object Award : Overlay()
     data object Settings : Overlay()
     data object Stats : Overlay()
@@ -112,16 +120,38 @@ class Nav(val go: (Overlay?) -> Unit, val tab: (Tab) -> Unit) {
     /** The booth stays alive across tabs, so the pet keeps its place and the sheets can make it hop. */
     val scene = BoothScene()
     fun say(t: String) { said = t to System.nanoTime() }
+    /** The page the saga opens on: 0 stats, 1 calendar, 2 the hall, 3 awards. */
+    var sagaPage by mutableStateOf(0)
+    /** A director or an actor the bill should show the films of, set from a film's card. */
+    var billPerson by mutableStateOf<String?>(null)
+    fun person(name: String) { billPerson = name; go(null); tab(Tab.BILL) }
+    /** Genres the bill should show, set from a pet's card. */
+    var billGenres by mutableStateOf<Set<app.reelkin.data.Genre>?>(null)
+    fun genres(g: Set<app.reelkin.data.Genre>) { billGenres = g; go(null); tab(Tab.BILL) }
+    /** What the saga counts, kept so its details open on the same span. */
+    var sagaFilter by mutableStateOf<app.reelkin.domain.Filter?>(null)
+    fun saga(page: Int) { sagaPage = page; tab(Tab.SAGA) }
     fun toast(t: String) { toast = t to System.nanoTime() }
 }
 
 val LocalNav = staticCompositionLocalOf<Nav> { error("no nav") }
 
-/** The pet's name: the one given, or the default in the phone's language. */
-fun Settings.pet(ru: Boolean) = petName.ifBlank { Words.defaultName(ru) }
+
+/** A picture cut to w×h art pixels, filling it, as many fine pixels to each as the scenes have: no blocks, no palette. */
+private fun fine(bmp: android.graphics.Bitmap, w: Int, h: Int): Buf {
+    val f = Buf.FINE
+    val k = maxOf(w * f / bmp.width.toFloat(), h * f / bmp.height.toFloat())
+    val sw = (bmp.width * k).toInt().coerceAtLeast(w * f); val sh = (bmp.height * k).toInt().coerceAtLeast(h * f)
+    val scaled = android.graphics.Bitmap.createScaledBitmap(bmp, sw, sh, true)
+    val b = Buf(w, h, f)
+    scaled.getPixels(b.d, 0, b.fw, (sw - b.fw) / 2, (sh - b.fh) / 2, b.fw, b.fh)
+    for (i in b.d.indices) b.d[i] = b.d[i] or Buf.OPAQUE
+    return b
+}
 
 /** A poster for anything with a title, a genre and maybe a picture. */
-fun poster(ctx: Context, title: String, genre: app.reelkin.data.Genre, cover: String?, w: Int, h: Int): Buf = Posters.of(title, genre, w, h, Covers.art(ctx, cover))
+fun poster(ctx: Context, title: String, genre: app.reelkin.data.Genre, cover: String?, w: Int, h: Int): Buf =
+    Covers.art(ctx, cover)?.full?.let { fine(it, w, h) } ?: Posters.of(title, genre, w, h, Covers.art(ctx, cover))
 
 /** [clock], [tab0] and [overlay0] let renders open a fixed moment on a given screen; the app passes none. */
 @Composable
@@ -134,17 +164,25 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
         val titles by c.db.dao().titles().collectAsStateWithLifecycle(initialValue = null)
         val tickets by c.db.dao().tickets().collectAsStateWithLifecycle(initialValue = null)
         val episodes by c.db.dao().episodes().collectAsStateWithLifecycle(initialValue = null)
+        val pets by c.db.dao().pets().collectAsStateWithLifecycle(initialValue = null)
+        val goals by c.db.dao().goals().collectAsStateWithLifecycle(initialValue = null)
+        // The one pet of 1.x moves into the pets table, with all it ate.
+        LaunchedEffect(Unit) { c.office.bringOldPet(); c.office.bringYearGoals() }
         var now by remember { mutableLongStateOf(clock ?: System.currentTimeMillis()) }
         LaunchedEffect(Unit) { if (clock == null) while (true) { delay(30_000); now = System.currentTimeMillis() } }
-        val cin = remember(titles, tickets, episodes, s, now) { if (titles == null || tickets == null || episodes == null) null else Cinema(titles!!, tickets!!, episodes!!, s, now) } ?: return@CompositionLocalProvider
+        val cin = remember(titles, tickets, episodes, pets, goals, s, now) { if (titles == null || tickets == null || episodes == null || pets == null || goals == null) null else Cinema(titles!!, tickets!!, episodes!!, s, now, pets!!, goals!!) } ?: return@CompositionLocalProvider
+        // A pet grown up takes its form for good.
+        LaunchedEffect(cin.pet?.stage, cin.pet?.pet?.id) {
+            val p = cin.pet ?: return@LaunchedEffect
+            if (p.pet.form == null && p.stage >= app.reelkin.data.Stage.ADULT) p.leaning?.let { f -> c.db.dao().update(p.pet.copy(form = f)) }
+        }
         var tab by rememberSaveable { mutableStateOf(tab0) }
         var overlay by remember { mutableStateOf(overlay0) }
         val nav = remember { Nav({ overlay = it }, { tab = it; overlay = null }) }
         LaunchedEffect(Unit) {
             if (nav.said.first.isEmpty()) nav.say(when {
-                cin.egg && cin.seats.isEmpty() -> if (ru) "В коробке кто-то шуршит. Отметь три фильма — и она откроется." else "Something rustles in the can. Log three films and it opens."
-                cin.hatchReady -> if (ru) "Коробка дрожит. Сейчас откроется!" else "The can is shaking. It's about to open!"
-                cin.egg -> if (ru) "Коробка дрожит. Ещё ${Cinema.HATCH_AT - cin.seats.size} — и откроется." else "The can is shaking. ${Cinema.HATCH_AT - cin.seats.size} more and it opens."
+                cin.pet == null -> if (ru) "В будке пусто. Выбери коробку — в каждой кто-то спит." else "The booth is empty. Pick a can: someone sleeps in each."
+                cin.pet?.pet?.hatched == false -> if (ru) "В коробке кто-то шуршит. Покажи ему кино — и она откроется." else "Something rustles in the can. Show it a film and it opens."
                 else -> (if (ru) "Добрый вечер. " else "Good evening. ") + Words.poke(cin, ru)
             })
         }
@@ -154,15 +192,16 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
             Box(Modifier.fillMaxSize()) {
                 BackdropLayer()
                 Column(Modifier.fillMaxSize()) {
-                    Header(cin, onSign = { tab = Tab.HALL }, onPop = { overlay = Overlay.Shop }, onMinutes = { overlay = Overlay.Pet }, onSettings = { overlay = Overlay.Settings })
+                    Header(cin, onPop = { overlay = Overlay.Shop }, onSettings = { overlay = Overlay.Settings })
                     Box(Modifier.weight(1f)) {
                         when (tab) {
                             Tab.BOOTH -> BoothScreen(cin, nav)
                             Tab.BILL -> BillScreen(cin, nav)
-                            Tab.HALL -> HallScreen(cin, nav)
+                            Tab.SAGA -> app.reelkin.ui.saga.SagaScreen(cin, nav)
+                            Tab.PETS -> app.reelkin.ui.pets.PetsScreen(cin, nav)
                         }
                     }
-                    TabBar(tab) { tab = it }
+                    Dock(tab, cin.s.seance != null, cin.newCans.size, { tab = it }, { overlay = Overlay.Menu })
                 }
                 when (val o = overlay) {
                     is Overlay.Film -> cin.title(o.id)?.let { FilmSheet(cin, it, nav) }
@@ -175,11 +214,20 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
                     is Overlay.Add -> AddSheet(o.q, nav)
                     is Overlay.NewTitle -> DraftSheet(cin, o.d, o.edit, nav)
                     Overlay.Pet -> PetSheet(cin, nav)
+                    Overlay.Pets -> LaunchedEffect(Unit) { tab = Tab.PETS; overlay = null }
+                    Overlay.Menu -> MenuSheet(cin, nav)
+                    Overlay.Feats -> app.reelkin.ui.saga.FeatsPage(cin, nav)
+                    is Overlay.ShareIt -> app.reelkin.ui.cards.ShareSheet(cin, o.what, nav)
+                    is Overlay.PetOf -> cin.pets.firstOrNull { it.pet.id == o.id }?.let { app.reelkin.ui.sheets.PetCard(cin, it, nav) }
+                    is Overlay.Can -> app.reelkin.ui.pets.CanSheet(cin, o.sp, nav)
+                    is Overlay.SagaDetail -> app.reelkin.ui.saga.SagaDetail(cin, o.key, nav)
+                    Overlay.Quests -> app.reelkin.ui.goals.QuestsSheet(cin, nav)
+                    is Overlay.GoalEdit -> app.reelkin.ui.goals.GoalSheet(cin, o.id, nav)
+                    Overlay.Cards -> app.reelkin.ui.cards.CardsPage(cin, nav)
                     Overlay.Shop -> ShopSheet(cin, nav)
-                    Overlay.Sign -> SignSheet(cin, nav)
                     Overlay.Award -> AwardSheet(cin, nav)
                     Overlay.Settings -> SettingsPage(cin, nav)
-                    Overlay.Stats -> app.reelkin.ui.bill.StatsPage(cin, nav)
+                    Overlay.Stats -> LaunchedEffect(Unit) { tab = Tab.SAGA; overlay = null }
                     Overlay.Import -> app.reelkin.ui.settings.ImportPage(cin, nav)
                     null -> Unit
                 }
@@ -190,12 +238,13 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
 }
 
 @Composable
-private fun Header(c: Cinema, onSign: () -> Unit, onPop: () -> Unit, onMinutes: () -> Unit, onSettings: () -> Unit) {
-    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(Modifier.weight(1f)) { Marquee(c.s.cinema, onClick = onSign) }
-        Column(horizontalAlignment = Alignment.End) {
-            Row(Modifier.clickable(onClick = onMinutes)) { Text(t("минут ", "minutes "), style = T.Small); Text(Words.fmt(c.minutes), style = T.Small.copy(color = C.gold)) }
-            Row(Modifier.clickable(onClick = onPop)) { Text(t("попкорна ", "popcorn "), style = T.Small); Text("${c.popcorn}", style = T.Small.copy(color = C.gold)) }
+private fun Header(c: Cinema, onPop: () -> Unit, onSettings: () -> Unit) {
+    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Reelkin", style = T.Title.copy(color = C.gold), modifier = Modifier.weight(1f))
+        Row(Modifier.clip(CircleShape).background(C.surface).clickable(onClick = onPop).padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            androidx.compose.foundation.Image(androidx.compose.ui.graphics.ImageBitmap.imageResource(app.reelkin.R.drawable.act_buffet), null, Modifier.size(16.dp),
+                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(C.gold))
+            Text("${c.popcorn}", style = T.Strong.copy(color = C.gold))
         }
         val label = t("Настройки", "Settings")
         Box(Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onSettings).semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
@@ -235,16 +284,6 @@ fun Marquee(name: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? 
     }
 }
 
-@Composable
-private fun TabBar(tab: Tab, onTab: (Tab) -> Unit) {
-    Row(Modifier.fillMaxWidth().background(C.surface).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        for ((tb, l) in listOf(Tab.BOOTH to ("Будка" to "Booth"), Tab.BILL to ("Афиша" to "Bill"), Tab.HALL to ("Зал" to "Hall"))) {
-            val on = tb == tab
-            Text(t(l.first, l.second), style = T.Button.copy(color = if (on) C.onGold else C.muted), textAlign = TextAlign.Center, maxLines = 1,
-                modifier = Modifier.weight(1f).clip(CircleShape).background(if (on) C.gold else C.surface).clickable { onTab(tb) }.padding(vertical = 10.dp))
-        }
-    }
-}
 
 @Composable
 private fun Toast(nav: Nav, modifier: Modifier) {

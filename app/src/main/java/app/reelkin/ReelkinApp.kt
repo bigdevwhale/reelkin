@@ -23,7 +23,7 @@ class AppContainer(context: Context) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     /** The cinema as it is in the store right now, for comparing before and after a stub. */
-    suspend fun cinema(): Cinema = Cinema(db.dao().titles().first(), db.dao().ticketList(), db.dao().episodes().first(), settings.now(), System.currentTimeMillis())
+    suspend fun cinema(): Cinema = Cinema(db.dao().titles().first(), db.dao().ticketList(), db.dao().episodes().first(), settings.now(), System.currentTimeMillis(), db.dao().petList(), db.dao().goalList())
 
     /** True while the demo build fills its cinema, so the first screen doesn't jump. */
     val seeding = MutableStateFlow(BuildConfig.DEMO)

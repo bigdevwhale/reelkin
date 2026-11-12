@@ -45,16 +45,22 @@ data class Settings(
     val onboarded: Boolean = false,
     /** Empty means the default name in the phone's language. */
     val petName: String = "",
-    /** Null until the film can opens. */
+    /** The pet of 1.x, kept only to bring it into the pets table once. */
     val species: Species? = null,
     val shiny: Boolean = false,
+    /** The pet in the booth (Pet.id); 0 for the last one taken out. */
+    val pet: Long = 0,
+    /** First-visit hints already read: Tip names. */
+    val tips: Set<String> = emptySet(),
+    /** The booth's wallpaper: a Wall name. */
+    val wall: String = "",
+    /** Weekly tasks whose popcorn was taken, as «week:TASK». */
+    val claimed: Set<String> = emptySet(),
     /** The name on the sign, built from the letters you own. */
     val cinema: String = "",
     /** Popcorn spent in the buffet. */
     val spent: Int = 0,
     val bought: Set<String> = emptySet(),
-    /** Traits the pet has but doesn't wear. */
-    val off: Set<Trait> = emptySet(),
     val awards: List<Award> = emptyList(),
     val goal: Int = 52,
     /** Seasons of series to finish this year; 0 = no such goal (#6). */
@@ -83,7 +89,10 @@ class SettingsStore(context: Context) {
         cinema = this[CINEMA] ?: "",
         spent = this[SPENT] ?: 0,
         bought = this[BOUGHT]?.split(',')?.filter { it.isNotBlank() }?.toSet() ?: emptySet(),
-        off = this[OFF]?.split(',')?.mapNotNull { s -> runCatching { Trait.valueOf(s) }.getOrNull() }?.toSet() ?: emptySet(),
+        pet = this[PET_ID] ?: 0L,
+        wall = this[WALL] ?: "",
+        tips = this[TIPS]?.split(',')?.filter { it.isNotBlank() }?.toSet() ?: emptySet(),
+        claimed = this[CLAIMED]?.split(',')?.filter { it.isNotBlank() }?.toSet() ?: emptySet(),
         awards = this[AWARDS]?.lines()?.mapNotNull { l -> l.split('\t').takeIf { it.size == 3 }?.let { Award(it[0].toInt(), it[1].toInt(), it[2]) } } ?: emptyList(),
         goal = this[GOAL] ?: 52,
         goalSeasons = this[GOAL_SEASONS] ?: 0,
@@ -110,7 +119,10 @@ class SettingsStore(context: Context) {
             it[CINEMA] = s.cinema
             it[SPENT] = s.spent
             it[BOUGHT] = s.bought.sorted().joinToString(",")
-            it[OFF] = s.off.map { t -> t.name }.sorted().joinToString(",")
+            it[PET_ID] = s.pet
+            it[WALL] = s.wall
+            it[TIPS] = s.tips.sorted().joinToString(",")
+            it[CLAIMED] = s.claimed.sorted().joinToString(",")
             it[AWARDS] = s.awards.joinToString("\n") { a -> "${a.year}\t${a.cat}\t${a.title.replace('\t', ' ').replace('\n', ' ')}" }
             it[GOAL] = s.goal
             it[GOAL_SEASONS] = s.goalSeasons
@@ -130,7 +142,10 @@ class SettingsStore(context: Context) {
         val CINEMA = stringPreferencesKey("cinema")
         val SPENT = intPreferencesKey("spent")
         val BOUGHT = stringPreferencesKey("bought")
-        val OFF = stringPreferencesKey("off")
+        val CLAIMED = stringPreferencesKey("claimed")
+        val WALL = stringPreferencesKey("wall")
+        val TIPS = stringPreferencesKey("tips")
+        val PET_ID = androidx.datastore.preferences.core.longPreferencesKey("pet_id")
         val AWARDS = stringPreferencesKey("awards")
         val GOAL = intPreferencesKey("goal")
         val GOAL_SEASONS = intPreferencesKey("goal_seasons")

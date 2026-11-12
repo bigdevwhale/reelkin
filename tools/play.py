@@ -28,13 +28,13 @@ SCREEN = (0xFF, 0xF2, 0xC8)
 # The order they appear in the store, with the caption over each: a line in Prata and one in gold.
 PAGES = [
     ("1-booth", ("A pet lives in the booth,", "raised by your films"), ("В будке живёт питомец.", "Его растят твои фильмы")),
+    ("12-pets", ("32 pets asleep", "in film cans"), ("32 питомца спят", "в коробках с плёнкой")),
     ("2-seance", ("Lights down,", "the reels are turning"), ("Гасим свет,", "бобины крутятся")),
-    ("5-reward", ("Every film is a stub", "and a spectator in the hall"), ("Каждый фильм — корешок", "и зритель в зале")),
-    ("4-hall", ("A hundred velvet seats", "fill up by genre"), ("Сто бархатных кресел", "заполняются по жанрам")),
+    ("4-saga", ("Your saga: hours,", "genres and decades"), ("Твоя сага: часы,", "жанры и десятилетия")),
+    ("15-feats", ("56 achievements,", "goals and weekly tasks"), ("56 достижений,", "цели и задания недели")),
+    ("14-shop", ("Popcorn buys", "the booth new things"), ("За попкорн —", "обновки для будки")),
     ("3-bill", ("Films and series,", "what's waiting and what's on"), ("Фильмы и сериалы:", "что ждёт и что идёт")),
-    ("6-pick", ("No idea what to watch?", "The pet picks for tonight"), ("Не знаешь, что смотреть?", "Питомец выберет на вечер")),
-    ("8-stub", ("Popcorn, three words,", "the day you watched it"), ("Попкорн, три слова", "и день, когда смотрел")),
-    ("7-pet", ("Every minute you watch", "helps it grow"), ("Каждая минута", "растит питомца")),
+    ("5-reward", ("Every film is a stub", "and a spectator in the hall"), ("Каждый фильм — корешок", "и зритель в зале")),
 ]
 
 
@@ -112,7 +112,7 @@ def feature(lang):
     bulbs(d, W, H - 14, step=22, r=3)
     logo = Image.open(ROOT / "docs/logo.png").convert("RGBA").resize((150, 150), Image.LANCZOS)
     g.alpha_composite(rounded(logo, 34), (64, 70))
-    name = "Reelkin" if lang == "en" else "Бобина"
+    name = "Reelkin"
     lines = ("A film diary", "with a pet in the booth") if lang == "en" else ("Дневник фильмов", "с питомцем в будке")
     d.text((62, 238), name, font=prata(84), fill=GOLD)
     d.rectangle((66, 352, 330, 354), fill=VELVET)
@@ -128,7 +128,11 @@ def feature(lang):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    Image.open(ROOT / "docs/logo.png").convert("RGB").resize((512, 512), Image.LANCZOS).save(OUT / "icon-512.png", optimize=True)
+    # Play rounds the icon itself: the logo goes on a full square of its own background, no transparent corners.
+    logo = Image.open(ROOT / "docs/logo.png").convert("RGBA").resize((512, 512), Image.LANCZOS)
+    square = Image.new("RGBA", (512, 512), logo.getpixel((256, 4)))
+    square.alpha_composite(logo)
+    square.convert("RGB").save(OUT / "icon-512.png", optimize=True)
     for lang in ("en", "ru"):
         feature(lang)
         folder = OUT / f"screenshots-{lang}"

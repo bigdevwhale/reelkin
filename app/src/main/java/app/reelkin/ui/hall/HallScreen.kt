@@ -64,26 +64,24 @@ val RU_ABC = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ".toList
 val EN_ABC = ('A'..'Z').toList()
 
 @Composable
-fun HallScreen(c: Cinema, nav: Nav) {
+/** The hall and its collections, or the awards shelf: pages of the saga. */
+fun HallScreen(c: Cinema, nav: Nav, awards: Boolean = false) {
     val ctx = LocalContext.current
     val ru = LocalRu.current
     val seats = remember(c) { c.seats.map { Seat(it.genre.who, hash(it.title)) } }
     val shown = c.s.seance?.let { poster(ctx, it.title, it.genre, it.cover, 120, 36) } ?: c.seats.lastOrNull()?.let { poster(ctx, it.title, it.genre, it.cover, 120, 36) }
     val running = c.s.seance != null
-    var page by rememberSaveable { mutableIntStateOf(0) }
     val dec = Cinema.DECADES.count { it in c.decades }
-    Column(Modifier.fillMaxSize()) {
-        Tabs(listOf(t("Зал", "Hall"), t("Вывеска", "Sign"), t("Коллекции", "Collections"), t("Премии", "Awards")), page, { page = it },
-            Modifier.padding(horizontal = 14.dp), counts = listOf(c.seats.size, c.letters.size, null, c.s.awards.size.takeIf { it > 0 }))
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (page == 0) {
+    Column(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (!awards) {
                 Box(Modifier.fillMaxWidth().clip(R8.Lg).border(1.dp, C.line, R8.Lg)) {
                     PixelCanvas(HallArt.W, HallArt.H, Modifier.fillMaxWidth().pointerInput(c.seats.size) {
                         detectTapGestures { o ->
                             val i = HallArt.seatAt(o.x * HallArt.W / size.width.toDouble(), o.y * HallArt.H / size.height.toDouble(), c.seats.size)
                             if (i >= 0) nav.go(Overlay.Stub(c.seats[i].id))
                         }
-                    }) { b, tick -> HallArt.draw(b, seats, shown, -1, running, if (running && !Art.still) tick * Art.FRAME_MS / 1000.0 else 0.0) }
+                    }, fine = app.reelkin.ui.art.Buf.FINE) { b, tick -> HallArt.draw(b, seats, shown, -1, running, if (running && !Art.still) tick * Art.FRAME_MS / 1000.0 else 0.0) }
                 }
                 Text(
                     if (ru) "Зал № ${c.seats.size / 100 + 1} · занято ${c.seats.size % 100} из 100 мест. Тронь зрителя — покажет корешок."
@@ -97,20 +95,7 @@ fun HallScreen(c: Cinema, nav: Nav) {
                 }
             }
 
-            if (page == 1) Card(Modifier.fillMaxWidth()) {
-                Head(t("Вывеска", "The sign"), t("буквы с афиш", "letters from posters"))
-                Marquee(c.s.cinema, Modifier.padding(vertical = 8.dp)) { nav.go(Overlay.Sign) }
-                Text(t("Каждый фильм дарит первую букву своего названия. Имя кинотеатра можно собрать только из своих букв.",
-                    "Every film gives the first letter of its title. The cinema's name can only be built from letters you own."), style = T.Muted)
-                Spacer(Modifier.height(10.dp))
-                val abc = if (ru) RU_ABC else EN_ABC
-                val extra = c.letters.keys.filter { it !in abc }.sorted()
-                Flow(gap = 5.dp) { for (ch in abc + extra) Letter(ch, c.letters[ch] ?: 0) }
-                Spacer(Modifier.height(10.dp))
-                Btn(t("Переставить буквы", "Rearrange letters"), { nav.go(Overlay.Sign) }, kind = Kind.SOFT, small = true)
-            }
-
-            if (page == 2) Card(Modifier.fillMaxWidth()) {
+            if (!awards) Card(Modifier.fillMaxWidth()) {
                 Head(t("Машина времени", "Time machine"), t("$dec из ${Cinema.DECADES.size}", "$dec of ${Cinema.DECADES.size}"))
                 val proj = when {
                     dec < 4 -> t("кинопередвижка", "a travelling projector")
@@ -129,14 +114,14 @@ fun HallScreen(c: Cinema, nav: Nav) {
                 }
             }
 
-            if (page == 2) Card(Modifier.fillMaxWidth()) {
+            if (!awards) Card(Modifier.fillMaxWidth()) {
                 Head(t("Кругосветка", "Around the world"), if (ru) "${c.countries.size} " + Words.plural(c.countries.size, "страна", "страны", "стран") else "${c.countries.size} countries")
                 if (c.countries.isEmpty()) Text(t("Страна каждого фильма ставит штамп.", "Each film's country leaves a stamp."), style = T.Muted)
                 Spacer(Modifier.height(6.dp))
                 Flow(gap = 10.dp) { for (cn in c.countries) Stamp(cn) }
             }
 
-            if (page == 3) Card(Modifier.fillMaxWidth()) {
+            if (awards) Card(Modifier.fillMaxWidth()) {
                 Head(t("Премия года", "Awards of the year"), t("в декабре", "in December"))
                 val shelf = c.s.awards.sortedWith(compareByDescending<app.reelkin.data.Award> { it.year }.thenBy { it.cat })
                 if (shelf.isEmpty()) Text(t("Полка пуста. В конце года ты сам выбираешь лучшее из своего года, а питомец вручает статуэтки.",

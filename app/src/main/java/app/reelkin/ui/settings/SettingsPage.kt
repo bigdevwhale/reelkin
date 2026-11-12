@@ -20,6 +20,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import app.reelkin.ui.components.Tabs
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,29 +62,59 @@ fun SettingsPage(c: Cinema, nav: Nav) {
     val ru = LocalRu.current
     val co = ctx.container
     fun open(url: String) { runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
-    var name by remember { mutableStateOf(c.s.petName) }
     var page by rememberSaveable { mutableIntStateOf(0) }
     val pickOwn = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) co.write {
             if (Backdrops.importPicked(ctx, uri)) settings.update { it.copy(backdrop = Backdrops.OWN, backdropStamp = System.currentTimeMillis()) }
         }
     }
-    Page(t("Настройки", "Settings"), { if (name.trim() != c.s.petName) co.write { settings.update { it.copy(petName = name.trim()) } }; nav.close() }) {
-        Tabs(listOf(t("Кинотеатр", "Cinema"), t("Вид", "Look"), t("Ещё", "More")), page, { page = it })
+    Page(t("Настройки", "Settings"), nav::close) {
+        Tabs(listOf(t("Основное", "General"), t("Вид", "Look"), t("Ещё", "More")), page, { page = it })
         if (page == 0) {
-            Section(t("Питомец", "The pet"))
-            Field(name, { name = it.take(16) }, Words.defaultName(ru))
-            Text(t("Пустое поле — имя по умолчанию.", "Leave it empty for the default name."), style = T.Small)
-            if (c.traits.isNotEmpty()) {
-                Text(t("Носит черты — сними любую, она не потеряется", "Traits worn: take any off, it won't be lost"), style = T.Muted)
-                Flow {
-                    for (tr in c.traits) {
-                        val on = tr !in c.s.off
-                        Chip(Words.trait(tr, ru), on, { co.write { settings.update { s -> s.copy(off = if (on) s.off + tr else s.off - tr) } } })
+            app.reelkin.ui.components.FirstVisit(app.reelkin.ui.components.Tip.SETTINGS, c.s)
+            Section(t("Питомцы", "The pets"))
+            Card(Modifier.fillMaxWidth(), onClick = { nav.go(app.reelkin.ui.Overlay.Pets) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t("Все питомцы и коробки", "Every pet and can"), style = T.Strong)
+                        Text(t("выращено ${c.pets.size}, открыто коробок ${c.hints.count { it.open }} из ${c.hints.size}", "${c.pets.size} raised, ${c.hints.count { it.open }} of ${c.hints.size} cans open"), style = T.Muted)
                     }
+                    Text("›", style = T.Title.copy(color = C.velvet))
+                }
+            }
+            Card(Modifier.fillMaxWidth(), onClick = { nav.go(app.reelkin.ui.Overlay.Cards) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t("Открытки", "Postcards"), style = T.Strong)
+                        Text(t("будка, питомец, итоги — для ленты и сторис", "the booth, the pet, your numbers – for a feed or a story"), style = T.Muted)
+                    }
+                    Text("›", style = T.Title.copy(color = C.velvet))
                 }
             }
 
+            Section(t("Режиссёры и актёры", "Directors and actors"))
+            val known = c.seats.count { it.director.isNotEmpty() } + c.titles.count { it.director.isNotEmpty() }
+            val all = c.seats.size + c.titles.size
+            var progress by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+            Card(Modifier.fillMaxWidth(), onClick = if (progress == null) ({
+                progress = 0 to 1
+                co.write {
+                    office.allPeople { n, total -> progress = n to total }
+                    progress = null
+                    nav.toast(if (ru) "Режиссёры и актёры найдены. Фильтр по ним — в афише." else "Directors and actors found. Filter by them on the bill.")
+                }
+            }) else null) {
+                Text(t("Найти режиссёров и актёров", "Find directors and actors"), style = T.Strong)
+                val p = progress
+                if (p == null) Text(if (ru) "известны у $known из $all · ищется в Wikidata по названию и году" else "known for $known of $all · looked up on Wikidata by title and year", style = T.Muted)
+                else {
+                    Text(if (ru) "ищу: ${p.first} из ${p.second}" else "looking: ${p.first} of ${p.second}", style = T.Muted)
+                    app.reelkin.ui.components.Bar(p.first / p.second.toFloat().coerceAtLeast(1f), Modifier.fillMaxWidth().padding(top = 6.dp))
+                }
+            }
+
+            if (c.s.tips.isNotEmpty()) Btn(t("Показать подсказки снова", "Show the hints again"), { co.write { settings.update { it.copy(tips = emptySet()) } }; nav.toast(if (ru) "Подсказки вернутся на каждом экране." else "The hints are back on every screen.") },
+                Modifier.fillMaxWidth(), kind = app.reelkin.ui.components.Kind.SOFT, small = true)
             Section(t("История", "History"))
             Card(Modifier.fillMaxWidth(), onClick = { nav.go(app.reelkin.ui.Overlay.Import) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -94,24 +125,8 @@ fun SettingsPage(c: Cinema, nav: Nav) {
                     Text("›", style = T.Title.copy(color = C.velvet))
                 }
             }
-
-            Section(t("Цель на год", "A goal for the year"))
-            // One at a time; held down, the number runs (#6).
-            app.reelkin.ui.components.Stepper(Words.films(c.s.goal, ru)) { d -> co.write { settings.update { it.copy(goal = (it.goal + d).coerceIn(1, 400)) } } }
-            app.reelkin.ui.components.Stepper(if (c.s.goalSeasons == 0) t("Сериалы: без цели", "Series: no goal") else t("и ", "and ") + Words.seasons(c.s.goalSeasons, ru) + t(" сериалов", " of series")) { d ->
-                co.write { settings.update { it.copy(goalSeasons = (it.goalSeasons + d).coerceIn(0, 200)) } }
-            }
-
         }
         if (page == 1) {
-            Section(t("Обложки", "Posters"))
-            Text(t("Пиксели в тон будке; «как есть» показывает настоящую картинку в афише и корешках. Будка и зал остаются пиксельными.",
-                "Pixels match the booth; «as they are» shows the real picture on the bill and the stubs. The booth and the hall stay pixel."), style = T.Muted)
-            Flow {
-                Chip(t("в пикселях", "in pixels"), c.s.pixelCovers, { co.write { settings.update { it.copy(pixelCovers = true) } } })
-                Chip(t("как есть", "as they are"), !c.s.pixelCovers, { co.write { settings.update { it.copy(pixelCovers = false) } } })
-            }
-
             Section(t("Фон", "Background"))
             Text(t("Картинка за всеми экранами, приглушённая, чтобы текст читался. «По сеансу» — жанр фильма на проекторе или сериала, который идёт.",
                 "A picture behind every screen, dimmed so the text stays clear. «What's on» follows the genre of the film on the projector or the series running."), style = T.Muted)

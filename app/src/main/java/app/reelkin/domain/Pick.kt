@@ -26,7 +26,7 @@ object Picker {
             if (f.genre in mood.genres) s += 3
             f.year?.let { y -> if (Cinema.decade(y) !in c.decades) { s += 2; why += if (ru) "заодно ${Cinema.decade(y)}-е, которых у тебя ещё нет" else "and it's the ${Cinema.decade(y)}s, which you don't have yet" } }
             if (f.country.isNotBlank() && f.country !in c.countries) { s += 2; why += if (ru) "и новый штамп: ${f.country}" else "and a new stamp: ${f.country}" }
-            if (c.nearTrait == f.genre) { s += 1; why += Words.willGet(f.genre.trait!!, ru) }
+            if (c.pet?.let { f.genre in Pets.genres(it.species) } == true) { s += 1; why += if (ru) "а я такое люблю" else "and I love those" }
             s += (hash(f.title + mood.name) % 10) / 20.0
             return s to why
         }

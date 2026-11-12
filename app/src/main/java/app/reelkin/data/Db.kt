@@ -72,12 +72,31 @@ interface CinemaDao {
     @Query("SELECT COUNT(*) FROM tickets")
     suspend fun ticketCount(): Int
 
+    @Query("SELECT * FROM pets ORDER BY id")
+    fun pets(): Flow<List<Pet>>
+
+    @Query("SELECT * FROM pets ORDER BY id")
+    suspend fun petList(): List<Pet>
+
+    @Insert suspend fun insert(p: Pet): Long
+    @Update suspend fun update(p: Pet)
+
+    @Query("SELECT * FROM goals ORDER BY id")
+    fun goals(): Flow<List<Goal>>
+
+    @Query("SELECT * FROM goals ORDER BY id")
+    suspend fun goalList(): List<Goal>
+
+    @Insert suspend fun insert(g: Goal): Long
+    @Update suspend fun update(g: Goal)
+    @Delete suspend fun delete(g: Goal)
+
     @Query("SELECT COUNT(*) FROM titles")
     suspend fun titleCount(): Int
 }
 
-@Database(entities = [Title::class, Ticket::class, Episode::class], version = 2, exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2)])
+@Database(entities = [Title::class, Ticket::class, Episode::class, Pet::class, Goal::class], version = 5, exportSchema = true,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5)])
 abstract class CinemaDb : RoomDatabase() {
     abstract fun dao(): CinemaDao
 

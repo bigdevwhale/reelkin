@@ -43,6 +43,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.Color
 import app.reelkin.container
 import app.reelkin.data.Company
 import app.reelkin.data.Credits
@@ -86,6 +91,7 @@ fun BillScreen(c: Cinema, nav: Nav) {
     // The filters live as one line, so they survive switching tabs; the order is kept in the settings.
     var kept by rememberSaveable { mutableStateOf("") }
     var filtering by remember { mutableStateOf(false) }
+    var searching by rememberSaveable { mutableStateOf(false) }
     val b = Browse.decode(kept).copy(query = q, sort = Browse.sortOf(c.s.stubSort))
     fun set(n: Browse) {
         kept = n.copy(query = "").encode()
@@ -99,21 +105,52 @@ fun BillScreen(c: Cinema, nav: Nav) {
 
     // Waiting, running, stubs: a page each; one the bill opens on is the one with something in it.
     var page by rememberSaveable { mutableIntStateOf(if (c.watch.isEmpty() && c.running.isNotEmpty()) 1 else 0) }
+    // Genres a pet loves, from its card: what's waiting in them first.
+    LaunchedEffect(nav.billGenres) {
+        val gs = nav.billGenres ?: return@LaunchedEffect
+        set(b.copy(genres = gs, person = null))
+        page = if (Browse(genres = gs).titles(c.watch).isNotEmpty()) 0 else 2
+        nav.billGenres = null
+    }
+    // A person picked on a film's card: their films, on the page that has some.
+    LaunchedEffect(nav.billPerson) {
+        val who = nav.billPerson ?: return@LaunchedEffect
+        val n = Browse(person = who)
+        set(b.copy(person = who))
+        page = when { n.titles(c.watch).isNotEmpty() -> 0; n.series(c.running + c.shelved).isNotEmpty() -> 1; else -> 2 }
+        nav.billPerson = null
+    }
 
     Column(Modifier.fillMaxSize()) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Field(q, { q = it.take(60) }, t("найти фильм или сериал", "find a film or a series"), Modifier.weight(1f), onDone = ::search)
-                Btn("+", ::search)
+        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // The name, and the glass that opens the search.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(t("Афиша", "The bill"), style = T.Title, modifier = Modifier.weight(1f))
+                Box(Modifier.size(42.dp).clip(CircleShape).background(if (searching) C.goldSoft else C.surface).border(1.dp, C.line, CircleShape)
+                    .clickable { searching = !searching; if (!searching) q = "" }, contentAlignment = Alignment.Center) { Glass(if (searching) C.gold else C.muted) }
             }
-            Tabs(listOf(t("Ждут", "Waiting"), t("Идут", "Running"), t("Корешки", "Stubs")), page, { page = it },
-                counts = listOf(watch.size, running.size + shelved.size, stubs.size))
+            app.reelkin.ui.components.FirstVisit(app.reelkin.ui.components.Tip.BILL, c.s)
+            if (searching || q.isNotEmpty()) SearchField(q, { q = it.take(60) }, t("в афише или в каталоге", "on the bill or in the catalogue"), ::search)
+            // Three words, big, the open one in ink with a short gold line under it.
+            Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+                listOf(t("Ждут", "Waiting") to watch.size, t("Идут", "Running") to running.size + shelved.size, t("Корешки", "Stubs") to stubs.size).forEachIndexed { i, (name, n) ->
+                    val on = i == page
+                    Column(Modifier.clip(R8.Sm).clickable { page = i }.padding(vertical = 4.dp)) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            Text(name, style = T.Name.copy(color = if (on) C.ink else C.faint))
+                            Text(" $n", style = T.Small.copy(color = if (on) C.gold else C.faint))
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Box(Modifier.width(22.dp).height(3.dp).clip(CircleShape).background(if (on) C.gold else Color.Transparent))
+                    }
+                }
+            }
             if (c.titles.isNotEmpty() || c.seats.isNotEmpty()) Tools(b, page == 2, ::set, onFilter = { filtering = true }, onReset = { q = ""; set(Browse(sort = b.sort)) })
         }
         // Lazy, so a collection of a thousand stubs only lays out the ones on screen; each page starts at its top.
         val list = remember(page) { LazyListState() }
         var open by rememberSaveable { mutableStateOf(false) }
-        LazyColumn(Modifier.fillMaxSize(), list, contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), list, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (q.isNotBlank()) item { Text(t("Искать «${q.trim()}» в каталоге ›", "Look «${q.trim()}» up in the catalogue ›"), style = T.Strong.copy(color = C.gold),
                 modifier = Modifier.clip(R8.Sm).clickable(onClick = ::search).padding(vertical = 4.dp)) }
             when (page) {
@@ -141,7 +178,19 @@ fun BillScreen(c: Cinema, nav: Nav) {
                     if (!b.narrowed) item { YearCard(c) { nav.go(Overlay.Stats) } }
                     if (c.seats.isEmpty()) item { Text(t("Здесь будут корешки от всего, что ты посмотришь.", "Stubs from everything you watch will be kept here."), style = T.Muted) }
                     else if (stubs.isEmpty()) item { Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted) }
-                    items(stubs, key = { "t" + it.id }) { tk -> Stub(tk, c.seatOf(tk), ru) { nav.go(Overlay.Stub(tk.id)) } }
+                    // A wall of posters, three to a row, with the month above when they go by date.
+                    val byDate = b.sort == Browse.Sort.NEWEST || b.sort == Browse.Sort.OLDEST
+                    val groups = if (byDate) stubs.groupBy { monthOf(it.at, ru) }.toList() else listOf("" to stubs)
+                    for ((month, l) in groups) {
+                        if (month.isNotEmpty()) item(key = "m$month") { Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 6.dp)) {
+                            Text(month, style = T.Strong, modifier = Modifier.weight(1f)); Text(Words.films(l.count { !it.season }, ru), style = T.Small) } }
+                        items(l.chunked(3), key = { r -> "t" + r.first().id }) { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                for (tk in row) StubTile(tk, Modifier.weight(1f)) { nav.go(Overlay.Stub(tk.id)) }
+                                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
+                    }
                 }
             }
             item { Spacer(Modifier.height(8.dp)) }
@@ -172,8 +221,59 @@ private fun Tools(b: Browse, sorting: Boolean, set: (Browse) -> Unit, onFilter: 
         if (b.stars > 0) Chip("✕ " + starsName(b.stars), true, { set(b.copy(stars = 0)) })
         b.year?.let { y -> Chip("✕ $y", true, { set(b.copy(year = null)) }) }
         b.company?.let { co -> Chip("✕ " + companyName(co, ru), true, { set(b.copy(company = null)) }) }
+        b.person?.let { who -> Chip("✕ $who", true, { set(b.copy(person = null)) }) }
         if (b.filters > 1 || b.filters > 0 && b.query.isNotBlank()) Text(if (ru) "Сбросить" else "Reset", style = T.Strong.copy(color = C.velvet),
             modifier = Modifier.clip(CircleShape).clickable(onClick = onReset).padding(horizontal = 10.dp, vertical = 8.dp))
+    }
+}
+
+private fun monthOf(ms: Long, ru: Boolean): String =
+    SimpleDateFormat("LLLL yyyy", if (ru) Locale.forLanguageTag("ru") else Locale.ENGLISH).format(Date(ms)).replaceFirstChar { it.uppercase() }
+
+@Composable
+private fun Glass(color: Color) {
+    Canvas(Modifier.size(17.dp)) {
+        val w = 2.dp.toPx(); val r = size.width * .34f
+        drawCircle(color, r, Offset(r + w, r + w), style = androidx.compose.ui.graphics.drawscope.Stroke(w))
+        drawLine(color, Offset(r * 1.7f + w, r * 1.7f + w), Offset(size.width, size.height), w, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+    }
+}
+
+/** The search as a soft pill with a glass in it; Enter looks it up in the catalogue. */
+@Composable
+private fun SearchField(q: String, onChange: (String) -> Unit, hint: String, onDone: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(CircleShape).background(C.surface).border(1.dp, C.line, CircleShape).padding(start = 14.dp, end = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Canvas(Modifier.size(16.dp)) {
+            val w = 2.dp.toPx(); val r = size.width * .34f
+            drawCircle(C.faint, r, Offset(r + w, r + w), style = androidx.compose.ui.graphics.drawscope.Stroke(w))
+            drawLine(C.faint, Offset(r * 1.7f + w, r * 1.7f + w), Offset(size.width, size.height), w, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        }
+        val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+        androidx.compose.foundation.text.BasicTextField(q, onChange, Modifier.weight(1f).padding(vertical = 12.dp).focusRequester(focus), textStyle = T.Body, singleLine = true,
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(C.gold),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { onDone() }),
+            decorationBox = { inner -> Box { if (q.isEmpty()) Text(hint, style = T.Body.copy(color = C.faint), maxLines = 1); inner() } })
+        if (q.isNotEmpty()) Text("✕", style = T.Strong.copy(color = C.faint), modifier = Modifier.clip(CircleShape).clickable { onChange("") }.padding(8.dp))
+    }
+}
+
+/** A stub on the wall: its poster with the popcorn on it, the title and the day. */
+@Composable
+private fun StubTile(tk: Ticket, modifier: Modifier, onClick: () -> Unit) {
+    val ru = LocalRu.current
+    Column(modifier.clip(R8.Md).clickable(onClick = onClick).padding(2.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(30f / 44f).clip(R8.Sm).background(C.surface2)) {
+            PosterImage(tk.title, tk.genre, tk.cover, 30, 44, Modifier.fillMaxSize(), scale = 3.6.dp)
+            if (tk.stars > 0) Text("🍿${tk.stars}", style = T.Small.copy(color = Color.White), modifier = Modifier.align(Alignment.BottomStart).padding(5.dp)
+                .clip(CircleShape).background(Color(0xCC1A1014)).padding(horizontal = 6.dp, vertical = 1.dp))
+            if (tk.season) Text(t("сезон", "season"), style = T.Small.copy(color = Color.White), modifier = Modifier.align(Alignment.TopStart).padding(5.dp)
+                .clip(CircleShape).background(Color(0xCC1A1014)).padding(horizontal = 6.dp, vertical = 1.dp))
+        }
+        Text(tk.title, style = T.Small.copy(color = C.ink), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(date(tk.at, ru), style = T.Small.copy(color = C.faint, fontSize = T.Small.fontSize * .9f), maxLines = 1)
     }
 }
 
@@ -226,6 +326,20 @@ private fun FilterSheet(c: Cinema, b: Browse, set: (Browse) -> Unit, onDismiss: 
                 for (y in years) Chip("$y", b.year == y, { set(b.copy(year = if (b.year == y) null else y)) })
             }
         }
+        // The people met most often, directors first.
+        val people = remember(c) {
+            val n = HashMap<String, Int>()
+            for ((d, cs) in c.titles.map { it.director to it.cast } + c.seats.map { it.director to it.cast }) {
+                for (p in app.reelkin.data.People.of(d)) n[p] = (n[p] ?: 0) + 3
+                for (p in app.reelkin.data.People.of(cs)) n[p] = (n[p] ?: 0) + 1
+            }
+            n.entries.filter { it.value >= 2 }.sortedByDescending { it.value }.take(18).map { it.key }
+        }
+        if (people.isNotEmpty() || b.person != null) {
+            Section(t("Режиссёры и актёры", "Directors and actors"), t("кого чаще встречаешь", "the ones you meet most"))
+            Flow { for (p in (listOfNotNull(b.person) + people).distinct()) Chip(p, b.person == p, { set(b.copy(person = if (b.person == p) null else p)) }) }
+        } else Text(t("Режиссёры и актёры появятся здесь, когда найдутся в каталоге: Настройки → «Найти режиссёров и актёров».",
+            "Directors and actors show up here once the catalogue knows them: Settings → «Find directors and actors»."), style = T.Small)
         Section(t("С кем", "Who with"))
         Flow {
             Chip(t("неважно", "anyone"), b.company == null, { set(b.copy(company = null)) })
@@ -315,21 +429,13 @@ fun TicketBook(s: Title) {
 private fun YearCard(c: Cinema, onStats: () -> Unit) {
     val ru = LocalRu.current
     val films = c.thisYear.count { !it.season }
+    val goal = c.goals.firstOrNull { !it.archived && it.kind == app.reelkin.data.GoalKind.FILMS && it.period == app.reelkin.data.Period.YEAR }
     Column(Modifier.fillMaxWidth().clip(R8.Lg).background(C.surface).border(1.dp, C.line, R8.Lg).clickable(onClick = onStats).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text("${c.year}", style = T.Name, modifier = Modifier.weight(1f))
-            Text(if (ru) "${Words.films(films, true)} из ${c.s.goal}" else "${films} of ${c.s.goal} films", style = T.Small)
+            Text(if (goal != null) (if (ru) "${Words.films(films, true)} из ${goal.target}" else "$films of ${goal.target} films") else Words.films(films, ru), style = T.Small)
         }
-        Bar(films / c.s.goal.toFloat().coerceAtLeast(1f), Modifier.fillMaxWidth())
-        // Series have their own goal, counted in finished seasons (#6).
-        if (c.s.goalSeasons > 0) {
-            val seasons = c.thisYear.count { it.season }
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(t("Сериалы", "Series"), style = T.Small, modifier = Modifier.weight(1f))
-                Text(if (ru) "${Words.seasons(seasons, true)} из ${c.s.goalSeasons}" else "$seasons of ${c.s.goalSeasons} seasons", style = T.Small)
-            }
-            Bar(seasons / c.s.goalSeasons.toFloat(), Modifier.fillMaxWidth())
-        }
+        if (goal != null) Bar(films / goal.target.toFloat().coerceAtLeast(1f), Modifier.fillMaxWidth())
         Heatmap(c)
         Text(t("Статистика ›", "Stats ›"), style = T.Strong.copy(color = C.gold))
     }

@@ -138,6 +138,6 @@ class ImportTest {
         val brought = Ticket(id = 3, title = "S · season 2", season = true, whole = true, minutes = 300, at = 2)
         val c = Cinema(emptyList(), listOf(film, tracked, brought), emptyList(), Settings(), 0)
         assertEquals(400L, c.minutes)
-        assertEquals(400L, Stats(c, null).minutes)
+        assertEquals(400L, Stats(c, app.reelkin.domain.Filter(span = app.reelkin.domain.Span.ALL)).minutes)
     }
 }

@@ -22,28 +22,31 @@ data class Browse(
     val year: Int? = null,
     val company: Company? = null,
     val sort: Sort = Sort.NEWEST,
+    /** A director or an actor: only what they're in. */
+    val person: String? = null,
 ) {
     enum class Sort { NEWEST, OLDEST, POPCORN, TITLE, LENGTH, RELEASE }
 
     /** How many filters are on (the words typed and the order aren't counted). */
-    val filters: Int get() = listOf(kind != null, genres.isNotEmpty(), stars > 0, year != null, company != null).count { it }
+    val filters: Int get() = listOf(kind != null, genres.isNotEmpty(), stars > 0, year != null, company != null, person != null).count { it }
     val narrowed: Boolean get() = filters > 0 || query.isNotBlank()
 
     private fun matches(text: String) = query.isBlank() || query.trim().lowercase().let { q -> q in text.lowercase() }
+    private fun with(director: String, cast: String) = person == null || person in app.reelkin.data.People.of(director) || person in app.reelkin.data.People.of(cast)
 
     fun titles(all: List<Title>): List<Title> = all.filter { t ->
-        matches(t.title + " " + t.country) && (kind == null || t.kind == kind) && (genres.isEmpty() || t.genre in genres) &&
+        matches(t.title + " " + t.country + " " + t.director + " " + t.cast) && with(t.director, t.cast) && (kind == null || t.kind == kind) && (genres.isEmpty() || t.genre in genres) &&
             // A title waiting has no popcorn, no day and no company yet: those filters are about stubs.
             stars == 0 && year == null && company == null
     }
 
     /** Series running or put away: only the words, the kind and the genre apply to them. */
     fun series(all: List<Title>): List<Title> = all.filter { t ->
-        matches(t.title + " " + t.country) && kind != Kind.FILM && (genres.isEmpty() || t.genre in genres)
+        matches(t.title + " " + t.country + " " + t.director + " " + t.cast) && with(t.director, t.cast) && kind != Kind.FILM && (genres.isEmpty() || t.genre in genres)
     }
 
     fun stubs(all: List<Ticket>): List<Ticket> = all.filter { t ->
-        matches(t.title + " " + t.country + " " + t.words) && (kind == null || t.season == (kind == Kind.SERIES)) &&
+        matches(t.title + " " + t.country + " " + t.words + " " + t.director + " " + t.cast) && with(t.director, t.cast) && (kind == null || t.season == (kind == Kind.SERIES)) &&
             (genres.isEmpty() || t.genre in genres) && (stars == 0 || t.stars >= stars) && (year == null || yearOf(t.at) == year) &&
             (company == null || t.company == company)
     }.let { l ->
@@ -59,7 +62,7 @@ data class Browse(
 
     /** Kept across tab switches and rotations as one line. */
     fun encode(): String = listOf(query.replace('\t', ' '), kind?.name ?: "", genres.joinToString(",") { it.name }, stars.toString(),
-        year?.toString() ?: "", company?.name ?: "", sort.name).joinToString("\t")
+        year?.toString() ?: "", company?.name ?: "", sort.name, person?.replace('\t', ' ') ?: "").joinToString("\t")
 
     companion object {
         fun yearOf(ms: Long): Int = Calendar.getInstance().apply { timeInMillis = ms }.get(Calendar.YEAR)
@@ -76,6 +79,7 @@ data class Browse(
                 year = p[4].toIntOrNull(),
                 company = p[5].takeIf { it.isNotEmpty() }?.let(Company::valueOf),
                 sort = sortOf(p[6]),
+                person = p.getOrNull(7)?.ifEmpty { null },
             )
         }.getOrDefault(Browse())
     }

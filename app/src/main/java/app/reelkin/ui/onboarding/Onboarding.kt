@@ -26,7 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.reelkin.container
 import app.reelkin.data.Species
-import app.reelkin.data.Trait
+import app.reelkin.data.Stage
 import app.reelkin.ui.LocalRu
 import app.reelkin.ui.art.Art
 import app.reelkin.ui.art.BoothLook
@@ -48,21 +48,21 @@ fun Onboarding() {
     var page by rememberSaveable { mutableIntStateOf(0) }
     val scene = remember { BoothScene() }
     val look = when (page) {
-        0 -> BoothLook(null, false, 1, emptySet(), null, emptyList(), garland = true, chair = false, neon = false, popcorn = false, night = false, seance = null, ru = ru)
-        1 -> BoothLook(Species.FOX, false, 1, emptySet(), null, emptyList(), garland = true, chair = false, neon = false, popcorn = false, night = false, seance = app.reelkin.data.Genre.ANIMATION, ru = ru)
-        else -> BoothLook(Species.CAT, false, 2, setOf(Trait.HAT, Trait.NOSE), null, emptyList(), garland = true, chair = true, neon = true, popcorn = false, night = false, seance = null, ru = ru)
+        0 -> BoothLook(Species.CAT, Stage.EGG, hatch = .6f, poster = null, cans = emptyList(), garland = true, chair = false, neon = false, popcorn = false, night = false, seance = null, ru = ru)
+        1 -> BoothLook(Species.FOX, Stage.YOUNG, poster = null, cans = emptyList(), garland = true, chair = false, neon = false, popcorn = false, night = false, seance = app.reelkin.data.Genre.ANIMATION, ru = ru)
+        else -> BoothLook(Species.DRAGON, Stage.ADULT, poster = null, cans = emptyList(), garland = true, chair = true, neon = true, popcorn = false, night = false, seance = null, ru = ru)
     }
     Column(Modifier.fillMaxSize().background(C.bg)) {
         Text("Reelkin", style = T.Display.copy(color = C.gold), modifier = Modifier.statusBarsPadding().padding(start = 20.dp, top = 16.dp, bottom = 8.dp))
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(Modifier.fillMaxWidth().clip(R8.Lg).border(1.dp, C.line, R8.Lg)) {
-                PixelCanvas(BoothScene.W, BoothScene.H, Modifier.fillMaxWidth()) { b, tick -> scene.draw(b, look, tick * Art.FRAME_MS / 1000.0, Art.FRAME_MS / 1000.0) }
+                PixelCanvas(BoothScene.W, BoothScene.H, Modifier.fillMaxWidth(), fine = BoothScene.F) { b, tick -> scene.draw(b, look, tick * Art.FRAME_MS / 1000.0, Art.FRAME_MS / 1000.0) }
             }
             when (page) {
                 0 -> {
                     Says(t("Это будка киномеханика. А в коробке с плёнкой кто-то спит.", "This is a projectionist's booth. And something is asleep in the film can."), t("будка", "the booth"))
-                    Text(t("Отмечай фильмы и сериалы, которые смотришь. После третьего фильма коробка откроется, и кто из неё вылезет, решат жанры: нуар, хоррор, мультфильмы, комедии…",
-                        "Log the films and series you watch. After the third film the can opens, and the genres decide who climbs out: noir, horror, animation, comedy…"), style = T.Body)
+                    Text(t("Отмечай фильмы и сериалы, которые смотришь. Три коробки открыты сразу: кот-сыщик, лис-аниматор и сова-критик. Остальные 29 откроются тем, как ты смотришь: хорроры, вестерны, кино после полуночи, старые фильмы, пересмотры…",
+                        "Log the films and series you watch. Three cans are open from the start: a detective cat, an animator fox and a critic owl. The other 29 open by the way you watch: horror, westerns, films after midnight, old films, rewatches…"), style = T.Body)
                 }
                 1 -> {
                     Says(t("Ставь фильм на проектор — я буду смотреть с тобой из окошка.", "Put a film on the projector and I'll watch it with you from the port."), t("питомец", "the pet"))
@@ -70,7 +70,7 @@ fun Onboarding() {
                         "Every minute you watch helps the pet grow. Each film is a ticket stub and a spectator in a hundred-seat hall. Its first letter goes on the sign, its country on the map, its decade into the time machine."), style = T.Body)
                 }
                 else -> {
-                    Says(t("Третий нуар — и у меня шляпа. Третья комедия — красный нос.", "A third noir and I get a hat. A third comedy, a red nose."), t("питомец", "the pet"))
+                    Says(t("Я дракончик и люблю длинное кино. У каждого из нас свои любимые фильмы — они кормят в полтора раза сытнее.", "I'm a little dragon and I love long films. Each of us has favourites: they feed us one and a half times as much."), t("питомец", "the pet"))
                     Text(t("Сериалы идут по абонементу: серия — корешок, финал сезона — салют. Брошенный сериал можно снять с проката без угрызений. Никто не голодает и не обижается: смотри, когда хочется.",
                         "Series run on a season ticket: an episode tears a ticket, a finale sets off fireworks. A dropped series can be taken off with no guilt. Nobody starves or sulks: watch when you feel like it."), style = T.Body)
                 }

@@ -121,6 +121,8 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     var year by remember { mutableStateOf(d.year?.toString() ?: "") }
     var minutes by remember { mutableStateOf(d.minutes?.toString() ?: "") }
     var country by remember { mutableStateOf(d.country) }
+    var director by remember { mutableStateOf(old?.director?.takeIf { it != "?" } ?: d.director) }
+    var cast by remember { mutableStateOf(old?.cast ?: d.cast) }
     var genre by remember { mutableStateOf(d.genre) }
     var kind by remember { mutableStateOf(d.kind) }
     var perSeason by remember { mutableStateOf((d.perSeason ?: 10).toString()) }
@@ -152,6 +154,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             minutes = minutes.toIntOrNull() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
             season = sn, episode = if (same) old!!.episode else 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 99) ?: 10, cliff = same && old!!.cliff,
             plan = plan, planAt = planAt, show = show,
+            director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(),
         )
     }
     Sheet(nav::close) {
@@ -167,6 +170,8 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             }
         }
         Field(country, { country = it }, t("страна", "country"))
+        Field(director, { director = it.take(80) }, t("режиссёр", "director"))
+        Field(cast, { cast = it.take(160) }, t("в ролях, через запятую", "starring, comma-separated"))
         Flow { Chip(t("фильм", "film"), kind == TKind.FILM, { kind = TKind.FILM }); Chip(t("сериал", "series"), kind == TKind.SERIES, { kind = TKind.SERIES }) }
         if (kind == TKind.SERIES) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {

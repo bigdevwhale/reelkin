@@ -21,10 +21,12 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
 
     /** Tears a stub; a film from the bill leaves it, a running seance ends. Returns the stub with its id. */
     suspend fun tear(t: Ticket, from: Long?): Ticket {
-        val id = dao.insert(t)
-        if (from != null) dao.title(from)?.takeIf { it.kind == Kind.FILM }?.let { dao.delete(it) }
+        val title = from?.let { dao.title(it) }
+        val tk = if (title != null && t.director.isEmpty()) t.copy(director = title.director, cast = title.cast) else t
+        val id = dao.insert(tk)
+        if (title != null && title.kind == Kind.FILM) dao.delete(title)
         settings.update { it.copy(seance = null) }
-        return t.copy(id = id)
+        return tk.copy(id = id)
     }
 
     suspend fun update(t: Ticket) = dao.update(t)
@@ -149,6 +151,81 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
         val e = dao.lastEpisode(s.id) ?: return
         dao.delete(e)
         dao.update(s.copy(episode = s.episode - 1, cliff = false))
+    }
+
+    /** Opens a can: the pet goes into the booth and whoever was there goes to rest. */
+    suspend fun takePet(sp: Species): Long {
+        val now = System.currentTimeMillis()
+        val all = dao.petList()
+        all.filter { it.spans.endsWith("-0") }.forEach { dao.update(it.copy(spans = it.spans.dropLast(1) + now)) }
+        val id = dao.insert(app.reelkin.domain.Pets.hatch(sp, now))
+        settings.update { it.copy(pet = id) }
+        return id
+    }
+
+    /** Brings a pet back into the booth. */
+    suspend fun callPet(p: Pet) {
+        val now = System.currentTimeMillis()
+        val all = dao.petList()
+        for (o in app.reelkin.domain.Pets.swap(all, p, now)) dao.update(o)
+        settings.update { it.copy(pet = p.id) }
+    }
+
+    /** The one pet of 1.x becomes the first in the pets table, fed by everything since the first stub. */
+    suspend fun bringOldPet() {
+        val s = settings.now()
+        val sp = s.species ?: return
+        if (dao.petList().isNotEmpty()) return
+        val id = dao.insert(Pet(species = sp, name = s.petName, laid = 0, shiny = s.shiny,
+            nature = Nature.entries[(sp.ordinal + s.petName.length) % Nature.entries.size], spans = "0-0", hatched = true))
+        settings.update { it.copy(pet = id, species = null) }
+    }
+
+    /** The catalogue's guess at a film or a series by its name and year: its director and leading actors, or null when offline. */
+    private suspend fun peopleOf(title: String, year: Int?, series: Boolean): Pair<String, String>? {
+        val ru = Regex("[а-яё]", RegexOption.IGNORE_CASE).containsMatchIn(title)
+        val found = Catalog.search(title.substringBefore(" · "), ru) ?: return null
+        val kind = if (series) Kind.SERIES else Kind.FILM
+        val d = found.firstOrNull { it.kind == kind && (year == null || it.year == null || kotlin.math.abs(it.year - year) <= 1) && (it.director.isNotEmpty() || it.cast.isNotEmpty()) }
+            ?: return "?" to ""
+        return d.director.ifEmpty { "?" } to d.cast
+    }
+
+    /** Fills in who made a title and who's in it, once; returns it as it is now. */
+    suspend fun people(t: Title): Title {
+        if (t.director.isNotEmpty()) return t
+        val (d, c) = peopleOf(t.title, t.year, t.kind == Kind.SERIES) ?: return t
+        return t.copy(director = d, cast = c).also { dao.update(it) }
+    }
+
+    suspend fun people(t: Ticket): Ticket {
+        if (t.director.isNotEmpty()) return t
+        val (d, c) = peopleOf(t.title, t.year, t.season) ?: return t
+        // Every stub of the same film learns it at once.
+        for (o in dao.ticketList().filter { it.title == t.title && it.year == t.year && it.director.isEmpty() }) dao.update(o.copy(director = d, cast = c))
+        return t.copy(director = d, cast = c)
+    }
+
+    /** Looks up the people of everything on the bill and every stub, a few at a time; [onStep] hears how far it got. */
+    suspend fun allPeople(onStep: (Int, Int) -> Unit) {
+        val titles = dao.titleList().filter { it.director.isEmpty() }
+        val stubs = dao.ticketList().filter { it.director.isEmpty() }.distinctBy { it.title + "|" + it.year }
+        val total = titles.size + stubs.size
+        var n = 0
+        for (t in titles) { people(t); onStep(++n, total) }
+        for (t in stubs) { people(t); onStep(++n, total) }
+    }
+
+    /** The year's goals of 1.x (films, seasons) become goals like any other, once. */
+    suspend fun bringYearGoals() {
+        if (settings.done("year_goals")) return
+        val s = settings.now()
+        val year = java.util.Calendar.getInstance().apply { set(java.util.Calendar.DAY_OF_YEAR, 1); set(java.util.Calendar.HOUR_OF_DAY, 0) }.timeInMillis
+        if (dao.goalList().isEmpty()) {
+            dao.insert(Goal(kind = GoalKind.FILMS, target = s.goal, period = Period.YEAR, created = year))
+            if (s.goalSeasons > 0) dao.insert(Goal(kind = GoalKind.SEASONS, target = s.goalSeasons, period = Period.YEAR, created = year))
+        }
+        settings.markDone("year_goals")
     }
 
     suspend fun startSeance(se: Seance) = settings.update { it.copy(seance = se) }

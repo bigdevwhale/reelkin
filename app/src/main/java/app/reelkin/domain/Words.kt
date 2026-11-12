@@ -5,7 +5,9 @@ import app.reelkin.data.Genre
 import app.reelkin.data.Seasons
 import app.reelkin.data.Species
 import app.reelkin.data.Title
-import app.reelkin.data.Trait
+import app.reelkin.data.Form
+import app.reelkin.data.Nature
+import app.reelkin.data.Stage
 import app.reelkin.data.Who
 import kotlin.random.Random
 
@@ -34,37 +36,130 @@ object Words {
         else -> "Ещё один ${genre(g, true)}"
     }
 
-    fun trait(t: Trait, ru: Boolean) = when (t) {
-        Trait.HAT -> if (ru) "шляпа-федора" else "a fedora"
-        Trait.ANTENNA -> if (ru) "антенна" else "an antenna"
-        Trait.BLUSH -> if (ru) "румянец" else "blushing cheeks"
-        Trait.NOSE -> if (ru) "красный нос" else "a red nose"
-        Trait.GLASSES -> if (ru) "круглые очки" else "round glasses"
-        Trait.BOLTS -> if (ru) "болты на шее" else "neck bolts"
-        Trait.BANDANA -> if (ru) "шейный платок" else "a neckerchief"
-        Trait.GLOVES -> if (ru) "белые перчатки" else "white gloves"
-        Trait.BOW -> if (ru) "бабочка" else "a bow tie"
-    }
-
-    /** "…and I'll get X" in the pet's words. */
-    fun willGet(t: Trait, ru: Boolean) = if (!ru) "I'll get ${trait(t, false)}" else when (t) {
-        Trait.HAT -> "у меня появится шляпа"
-        Trait.ANTENNA -> "у меня вырастет антенна"
-        Trait.BLUSH -> "у меня появится румянец"
-        Trait.NOSE -> "у меня покраснеет нос"
-        Trait.GLASSES -> "мне понадобятся очки"
-        Trait.BOLTS -> "у меня вырастут болты на шее"
-        Trait.BANDANA -> "у меня появится шейный платок"
-        Trait.GLOVES -> "у меня появятся белые перчатки"
-        Trait.BOW -> "у меня появится бабочка"
-    }
-
     fun species(s: Species, ru: Boolean) = when (s) {
-        Species.CAT -> if (ru) "кот" else "cat"
-        Species.FOX -> if (ru) "лис" else "fox"
-        Species.COON -> if (ru) "енот" else "raccoon"
+        Species.CAT -> if (ru) "кот-сыщик" else "detective cat"
+        Species.FOX -> if (ru) "лис-аниматор" else "animator fox"
+        Species.OWL -> if (ru) "сова-критик" else "critic owl"
         Species.BAT -> if (ru) "нетопырь" else "bat"
-        Species.OWL -> if (ru) "сыч" else "owlet"
+        Species.COON -> if (ru) "енот-комик" else "comic raccoon"
+        Species.HAMSTER -> if (ru) "хомяк-космонавт" else "astro hamster"
+        Species.ARMADILLO -> if (ru) "броненосец-шериф" else "sheriff armadillo"
+        Species.LOVEBIRD -> if (ru) "неразлучник" else "lovebird"
+        Species.MONKEY -> if (ru) "мартышка-путешественница" else "explorer monkey"
+        Species.FROG -> if (ru) "лягушка-чечёточница" else "tap-dancing frog"
+        Species.MOTH -> if (ru) "мотылёк" else "moth"
+        Species.SLOTH -> if (ru) "ленивец" else "sloth"
+        Species.PENGUIN -> if (ru) "пингвин из немого кино" else "silent-film penguin"
+        Species.REDPANDA -> if (ru) "малая панда" else "red panda"
+        Species.PUG -> if (ru) "мопс" else "pug"
+        Species.MOUSE -> if (ru) "мышка-билетёр" else "usher mouse"
+        Species.GOLDFISH -> if (ru) "золотая рыбка" else "goldfish"
+        Species.SQUIRREL -> if (ru) "белка" else "squirrel"
+        Species.GHOST -> if (ru) "призрак последнего ряда" else "back-row ghost"
+        Species.DRAGON -> if (ru) "дракончик" else "little dragon"
+        Species.UNICORN -> if (ru) "единорог" else "unicorn"
+        Species.PHOENIX -> if (ru) "феникс" else "phoenix"
+        Species.KITSUNE -> if (ru) "кицунэ" else "kitsune"
+        Species.YETI -> if (ru) "йети" else "yeti"
+        Species.GRIFFIN -> if (ru) "грифон" else "griffin"
+        Species.GOLEM -> if (ru) "голем из коробок" else "can golem"
+        Species.ROBOT -> if (ru) "жестяной робот" else "tin robot"
+        Species.FAIRY -> if (ru) "фея свиданий" else "date-night fairy"
+        Species.POPKIN -> if (ru) "попкорник" else "popkin"
+        Species.GARGOYLE -> if (ru) "горгулья" else "gargoyle"
+        Species.SPHINX -> if (ru) "сфинкс" else "sphinx"
+        Species.WISP -> if (ru) "огонёк" else "wisp"
+    }
+
+    /** What a species loves, in a few words. */
+    fun loves(s: Species, ru: Boolean): String = when (s) {
+        Species.CAT -> if (ru) "детективы, триллеры и драмы" else "mysteries, thrillers and dramas"
+        Species.FOX -> if (ru) "мультфильмы" else "animation"
+        Species.OWL -> if (ru) "документальное кино и корешки со словами" else "documentaries and stubs with words on them"
+        Species.BAT -> if (ru) "хорроры" else "horror"
+        Species.COON -> if (ru) "комедии и реалити-шоу" else "comedies and reality shows"
+        Species.HAMSTER -> if (ru) "фантастику" else "sci-fi"
+        Species.ARMADILLO -> if (ru) "вестерны" else "westerns"
+        Species.LOVEBIRD -> if (ru) "мелодрамы" else "romance"
+        Species.MONKEY -> if (ru) "приключения" else "adventure"
+        Species.FROG -> if (ru) "мюзиклы" else "musicals"
+        Species.MOTH -> if (ru) "кино после 23:00" else "films after 11 pm"
+        Species.SLOTH -> if (ru) "долгие вечера у экрана, от трёх часов в день" else "long evenings, three hours a day and more"
+        Species.PENGUIN -> if (ru) "фильмы старше 1970 года" else "films from before 1970"
+        Species.REDPANDA -> if (ru) "первый фильм из новой страны" else "the first film from a new country"
+        Species.PUG -> if (ru) "кино в компании" else "films watched with others"
+        Species.MOUSE -> if (ru) "сцены после титров" else "post-credits scenes"
+        Species.GOLDFISH -> if (ru) "пересмотры (она всё равно забыла концовку)" else "rewatches (it forgot the ending anyway)"
+        Species.SQUIRREL -> if (ru) "серии сериалов" else "episodes of series"
+        Species.GHOST -> if (ru) "кино в одиночку после 22:00" else "films alone after 10 pm"
+        Species.DRAGON -> if (ru) "длинные фильмы, от двух с половиной часов" else "long films, two and a half hours and more"
+        Species.UNICORN -> if (ru) "фильмы на пять попкорнов" else "five-popcorn films"
+        Species.PHOENIX -> if (ru) "первый фильм после перерыва в три дня и больше" else "the first film after three days and more without any"
+        Species.KITSUNE -> if (ru) "кино из Японии, Кореи и Китая" else "films from Japan, Korea and China"
+        Species.YETI -> if (ru) "кино зимой" else "films in winter"
+        Species.GRIFFIN -> if (ru) "первый фильм из нового десятилетия" else "the first film from a new decade"
+        Species.GOLEM -> if (ru) "любые фильмы, без разбора" else "any film at all"
+        Species.ROBOT -> if (ru) "кино каждый день, без пропусков" else "something every day, no gaps"
+        Species.FAIRY -> if (ru) "кино вдвоём" else "films for two"
+        Species.POPKIN -> if (ru) "фильмы на четыре попкорна и больше" else "films of four popcorn and more"
+        Species.GARGOYLE -> if (ru) "кино в выходные" else "weekend films"
+        Species.SPHINX -> if (ru) "фильмы старше 1950 года" else "films from before 1950"
+        Species.WISP -> if (ru) "короткие фильмы, до полутора часов" else "short films, an hour and a half or less"
+    }
+
+    /** What opens a species' can. */
+    fun opens(h: Hint, ru: Boolean): String {
+        val n = h.need
+        return when (h.species) {
+            Species.CAT, Species.FOX, Species.OWL -> if (ru) "открыта с самого начала" else "open from the start"
+            Species.BAT -> if (ru) "$n хорроров" else "$n horror films"
+            Species.COON -> if (ru) "$n комедий или реалити" else "$n comedies or reality shows"
+            Species.HAMSTER -> if (ru) "$n фантастических фильмов" else "$n sci-fi films"
+            Species.ARMADILLO -> if (ru) "$n вестерна" else "$n westerns"
+            Species.LOVEBIRD -> if (ru) "$n мелодрам" else "$n romances"
+            Species.MONKEY -> if (ru) "$n приключенческих фильмов" else "$n adventure films"
+            Species.FROG -> if (ru) "$n мюзикла" else "$n musicals"
+            Species.MOTH -> if (ru) "кино после 23:00 в $n разных вечеров" else "films after 11 pm on $n nights"
+            Species.SLOTH -> if (ru) "$n дня, когда за день 4 серии и больше" else "$n days of 4 episodes or more"
+            Species.PENGUIN -> if (ru) "$n фильмов старше 1970 года" else "$n films from before 1970"
+            Species.REDPANDA -> if (ru) "фильмы из $n стран" else "films from $n countries"
+            Species.PUG -> if (ru) "$n фильмов в компании" else "$n films watched with others"
+            Species.MOUSE -> if (ru) "$n сцены после титров" else "$n post-credits scenes"
+            Species.GOLDFISH -> if (ru) "$n пересмотра" else "$n rewatches"
+            Species.SQUIRREL -> if (ru) "$n досмотренных сезона" else "$n seasons finished"
+            Species.GHOST -> if (ru) "$n фильма в одиночку после полуночи" else "$n films alone after midnight"
+            Species.DRAGON -> if (ru) "$n фильма от двух с половиной часов" else "$n films of two and a half hours or more"
+            Species.UNICORN -> if (ru) "$n фильмов на пять попкорнов" else "$n five-popcorn films"
+            Species.PHOENIX -> if (ru) "вернуться к кино после месяца без него" else "come back to films after a month without"
+            Species.KITSUNE -> if (ru) "$n фильма из Японии, Кореи или Китая" else "$n films from Japan, Korea or China"
+            Species.YETI -> if (ru) "$n фильмов зимой" else "$n films in winter"
+            Species.GRIFFIN -> if (ru) "фильмы из $n десятилетий" else "films from $n decades"
+            Species.GOLEM -> if (ru) "$n фильмов" else "$n films"
+            Species.ROBOT -> if (ru) "кино $n дней подряд" else "something watched $n days in a row"
+            Species.FAIRY -> if (ru) "$n фильмов вдвоём" else "$n films for two"
+            Species.POPKIN -> if (ru) "$n покупки в буфете" else "$n things from the buffet"
+            Species.GARGOYLE -> if (ru) "$n фильмов в выходные" else "$n weekend films"
+            Species.SPHINX -> if (ru) "$n фильма старше 1950 года" else "$n films from before 1950"
+            Species.WISP -> if (ru) "кино в $n разных дней" else "films on $n different days"
+        }
+    }
+
+    fun nature(n: Nature, ru: Boolean): String = when (n) {
+        Nature.CALM -> if (ru) "спокойный: смотрит что угодно и не жалуется" else "calm: watches anything and never complains"
+        Nature.SLEEPY -> if (ru) "соня: засыпает на титрах" else "sleepy: dozes off at the credits"
+        Nature.JUMPY -> if (ru) "пугливый: прячется на страшных сценах" else "jumpy: hides at the scary bits"
+        Nature.CURIOUS -> if (ru) "любопытный: +5 попкорна за каждую новую страну и десятилетие" else "curious: +5 popcorn for every new country and decade"
+        Nature.SHY -> if (ru) "застенчивый: говорит мало, но метко" else "shy: says little, but to the point"
+        Nature.CHATTY -> if (ru) "болтун: комментирует весь фильм" else "chatty: comments on the whole film"
+        Nature.GREEDY -> if (ru) "обжора: растёт на десятую часть быстрее" else "greedy: grows a tenth faster"
+    }
+
+    fun form(f: Form, ru: Boolean): String = when (f) {
+        Form.SHADOW -> if (ru) "Тень (детективы и хорроры)" else "Shadow (mysteries and horror)"
+        Form.STAR -> if (ru) "Звезда (фантастика и приключения)" else "Star (sci-fi and adventure)"
+        Form.HEART -> if (ru) "Сердце (мелодрамы, драмы, мюзиклы)" else "Heart (romance, drama, musicals)"
+        Form.LAUGH -> if (ru) "Смех (комедии, мультфильмы, реалити)" else "Laugh (comedy, animation, reality)"
+        Form.DUST -> if (ru) "Пыль дорог (вестерны и документальное)" else "Road dust (westerns and documentaries)"
     }
 
     fun who(w: Who, ru: Boolean) = when (w) {
@@ -82,9 +177,49 @@ object Words {
         Who.SELFIE -> if (ru) "зритель с телефоном" else "a fan filming on a phone"
     }
 
-    fun stage(n: Int, ru: Boolean) = when (n) { 1 -> if (ru) "малыш" else "little one"; 2 -> if (ru) "подросток" else "half-grown"; else -> if (ru) "взрослый" else "grown-up" }
+    fun stage(st: Stage, ru: Boolean) = when (st) {
+        Stage.EGG -> if (ru) "в коробке" else "in its can"
+        Stage.BABY -> if (ru) "малыш" else "little one"
+        Stage.YOUNG -> if (ru) "подросток" else "half-grown"
+        Stage.ADULT -> if (ru) "взрослый" else "grown-up"
+        Stage.ANCIENT -> if (ru) "старожил" else "old-timer"
+    }
 
-    fun defaultName(ru: Boolean) = if (ru) "Люмик" else "Lumi"
+    /** A pet's name before it's given one: Lumi for the cat, as it always was, then one per species. */
+    fun defaultName(sp: Species?, ru: Boolean) = when (sp) {
+        null, Species.CAT -> if (ru) "Люмик" else "Lumi"
+        Species.FOX -> if (ru) "Рыжик" else "Rusty"
+        Species.OWL -> if (ru) "Профессор" else "Professor"
+        Species.BAT -> if (ru) "Носферату" else "Nosferatu"
+        Species.COON -> if (ru) "Хрум" else "Crunch"
+        Species.HAMSTER -> if (ru) "Гагарин" else "Orbit"
+        Species.ARMADILLO -> if (ru) "Шериф" else "Sheriff"
+        Species.LOVEBIRD -> if (ru) "Ромео" else "Romeo"
+        Species.MONKEY -> if (ru) "Джонс" else "Jones"
+        Species.FROG -> if (ru) "Фред" else "Fred"
+        Species.MOTH -> if (ru) "Луч" else "Beam"
+        Species.SLOTH -> if (ru) "Плед" else "Blanket"
+        Species.PENGUIN -> if (ru) "Чарли" else "Charlie"
+        Species.REDPANDA -> if (ru) "Паспорт" else "Passport"
+        Species.PUG -> if (ru) "Компот" else "Buddy"
+        Species.MOUSE -> if (ru) "Титрик" else "Credits"
+        Species.GOLDFISH -> if (ru) "Дежавю" else "Déjà vu"
+        Species.SQUIRREL -> if (ru) "Запаска" else "Stash"
+        Species.GHOST -> if (ru) "Шорох" else "Rustle"
+        Species.DRAGON -> if (ru) "Эпос" else "Epic"
+        Species.UNICORN -> if (ru) "Пятёрка" else "Five"
+        Species.PHOENIX -> if (ru) "Уголёк" else "Ember"
+        Species.KITSUNE -> if (ru) "Юки" else "Yuki"
+        Species.YETI -> if (ru) "Сугроб" else "Snowdrift"
+        Species.GRIFFIN -> if (ru) "Хронос" else "Chronos"
+        Species.GOLEM -> if (ru) "Жестянка" else "Tinny"
+        Species.ROBOT -> if (ru) "Будильник" else "Tick"
+        Species.FAIRY -> if (ru) "Искорка" else "Sparkle"
+        Species.POPKIN -> if (ru) "Хрустик" else "Kernel"
+        Species.GARGOYLE -> if (ru) "Суббота" else "Saturday"
+        Species.SPHINX -> if (ru) "Люмьер" else "Lumière"
+        Species.WISP -> if (ru) "Светлячок" else "Glim"
+    }
 
     fun seat(i: Int, ru: Boolean) = if (ru) "ряд ${i / 10 + 1}, место ${i % 10 + 1}" else "row ${i / 10 + 1}, seat ${i % 10 + 1}"
 
@@ -116,7 +251,9 @@ object Words {
             l += if (ru) "В $d-х у нас пусто. " + (w?.let { "В афише есть «${it.title}»." } ?: "Говорят, там было хорошее кино.")
             else "Nothing from the ${d}s yet. " + (w?.let { "${it.title} is on the bill." } ?: "They say films were good then.")
         }
-        c.nearTrait?.let { g -> l += if (ru) "${oneMore(g, true)} — и ${willGet(g.trait!!, true)}." else "${oneMore(g, false)} and ${willGet(g.trait!!, false)}." }
+        c.nearCan?.let { h -> l += if (ru) "Слышишь? В коробке «${species(h.species, true)}» кто-то шуршит. Осталось чуть-чуть: ${opens(h, true)}." else "Hear that? Something rustles in the ${species(h.species, false)}'s can. Nearly there: ${opens(h, false)}." }
+        c.pet?.takeIf { !it.egg }?.let { p -> l += if (ru) "Я люблю ${loves(p.species, true)}. Такое кино кормит меня в полтора раза сытнее." else "I love ${loves(p.species, false)}. They feed me one and a half times as much." }
+        if (c.newCans.isNotEmpty()) l += if (ru) "Открылась новая коробка. Загляни к питомцам." else "A new can has opened. Have a look at the pets."
         c.scenes.lastOrNull()?.let { l += if (ru) "Ты досидел до конца титров «${it.title}». Я тоже." else "You sat through the credits of ${it.title.trimEnd('.')}. So did I." }
         if (c.seats.isNotEmpty()) l += if (ru) "Мы вместе просмотрели кино на ${minutes(c.minutes, true).substringBeforeLast(' ')} мин. Я считал." else "We've watched ${minutes(c.minutes, false)} together. I counted."
         l += if (ru) "Сегодня можно ничего не смотреть. Я протру объектив." else "We don't have to watch anything today. I'll polish the lens."

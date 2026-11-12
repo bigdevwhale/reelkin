@@ -8,12 +8,16 @@ import app.reelkin.data.Species
 import app.reelkin.data.Status
 import app.reelkin.data.Ticket
 import app.reelkin.data.Title
-import app.reelkin.data.Trait
+import app.reelkin.data.Pet
+import app.reelkin.data.Stage
 import app.reelkin.domain.Browse
 import app.reelkin.domain.Cinema
 import app.reelkin.domain.Stats
+import app.reelkin.domain.Filter
+import app.reelkin.domain.Span
 import app.reelkin.domain.Mood
 import app.reelkin.domain.Picker
+import app.reelkin.domain.Pets
 import app.reelkin.domain.gains
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -28,22 +32,33 @@ class ReelkinTest {
     @Test fun minutesAndPopcorn() {
         val c = cin(listOf(tk("A", Genre.NOIR, m = 100), tk("B", Genre.NOIR, m = 50, at = 1, cr = Credits.SCENE)))
         assertEquals(150L, c.minutes)
-        assertEquals(25, c.earned)
+        // 10 a film, 5 more for the post-credits scene, and the achievements their steps.
+        assertEquals(25 + c.feats.sumOf { it.level } * app.reelkin.domain.Feats.REWARD, c.earned)
     }
 
-    @Test fun thirdFilmOfAGenreGivesItsTrait() {
-        val two = cin(listOf(tk("A", Genre.NOIR), tk("B", Genre.NOIR, at = 1)))
-        assertTrue(Trait.HAT !in two.traits)
-        assertEquals(Genre.NOIR, two.nearTrait)
-        val three = cin(two.seats + tk("C", Genre.NOIR, at = 2))
-        assertTrue(Trait.HAT in three.traits)
-        assertEquals(listOf(Trait.HAT), gains(two, three, three.seats.last()).traits)
+    @Test fun aPetEatsWhatIsWatchedWhileItIsOutAndLovesItsGenres() {
+        val cat = Pet(id = 1, species = Species.CAT, laid = 0, hatched = true)
+        val films = listOf(tk("A", Genre.NOIR, m = 100), tk("B", Genre.COMEDY, m = 100, at = 1))
+        val c = Cinema(emptyList(), films, emptyList(), Settings(pet = 1), 0, listOf(cat))
+        val p = c.pet!!
+        // Noir is the cat's favourite: half again.
+        assertEquals(250, p.fed)
+        assertEquals(Stage.BABY, p.stage)
+        // A pet laid after the films ate none of them.
+        val late = Pets.state(Pet(id = 2, species = Species.FOX, laid = 10), Pets.watches(c))
+        assertEquals(0, late.fed)
+        assertEquals(Stage.EGG, late.stage)
     }
 
-    @Test fun firstThreeFilmsDecideTheSpecies() {
-        assertEquals(Species.BAT, Cinema.speciesFor(listOf(tk("A", Genre.HORROR), tk("B", Genre.COMEDY, at = 1), tk("C", Genre.HORROR, at = 2))))
-        assertEquals(Species.CAT, Cinema.speciesFor(listOf(tk("A", Genre.NOIR), tk("B", Genre.COMEDY, at = 1), tk("C", Genre.DOC, at = 2))))
-        assertTrue(cin(listOf(tk("A", Genre.NOIR), tk("B", Genre.NOIR, at = 1), tk("C", Genre.NOIR, at = 2))).hatchReady)
+    @Test fun cansOpenByTheWayYouWatch() {
+        val horror = (0 until 5).map { tk("H$it", Genre.HORROR, at = it.toLong()) }
+        val before = cin(horror.dropLast(1))
+        val after = cin(horror)
+        assertTrue(after.open(Species.CAT))
+        assertTrue(!before.open(Species.BAT))
+        assertTrue(after.open(Species.BAT))
+        assertEquals(listOf(Species.BAT), gains(before, after, horror.last()).cans)
+        assertEquals(32, after.hints.size)
     }
 
     @Test fun lettersDecadesCountries() {
@@ -87,12 +102,12 @@ class ReelkinTest {
         val f1 = tk("A", Genre.NOIR, m = 80, cn = "France").copy(stars = 4)
         val f2 = tk("B", Genre.NOIR, m = 130, at = 1, cn = "France").copy(stars = 2)
         val sn = tk("S · season 1", Genre.DRAMA, m = 400, at = 2).copy(season = true)
-        val st = Stats(cin(listOf(f1, f2, sn)), null)
+        val st = Stats(cin(listOf(f1, f2, sn)), Filter(span = Span.ALL))
         assertEquals(2, st.films.size)
         assertEquals(1, st.seasons)
         assertEquals(210L, st.minutes)
         assertEquals(3.0, st.avgPopcorn!!, 0.001)
-        assertEquals(listOf(Genre.NOIR to 2), st.genres)
+        assertEquals(listOf(Genre.NOIR to 2), st.genreCounts)
         assertEquals(listOf(1, 0, 1, 0), st.lengths)
         assertEquals(listOf("France" to 2), st.countries)
     }
