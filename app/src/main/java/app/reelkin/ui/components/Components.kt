@@ -182,7 +182,9 @@ fun NoPoster(title: String, genre: app.reelkin.data.Genre, modifier: Modifier = 
 fun PosterImage(title: String, genre: app.reelkin.data.Genre, cover: String?, w: Int, h: Int, modifier: Modifier = Modifier, scale: Dp) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     // The file is read and decoded off the main thread; the title card stands in until it's ready.
+    // produceState keeps its value across key changes, so reset it here, or a reused slot would keep showing the previous cover.
     val art by androidx.compose.runtime.produceState(app.reelkin.data.Covers.peek(cover)?.takeIf { it.ready }, cover) {
+        value = app.reelkin.data.Covers.peek(cover)?.takeIf { it.ready }
         if (value == null && cover != null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             app.reelkin.data.Covers.art(ctx, cover)?.also { it.full }
         }

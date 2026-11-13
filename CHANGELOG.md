@@ -6,6 +6,15 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.0.2] - 2026-11-13
+
+### Fixed
+- «What's on tonight?»: the poster changes with the film after «Something else» – it used to keep showing the first pick's cover. The same fix applies to every poster that changes in place.
+
+<!-- tg
+Исправлено: в «Что ставим?» после «Другое» постер теперь меняется вместе с фильмом, а не остаётся от первого.
+-->
+
 ## [2.0.1] - 2026-11-13
 
 ### Fixed

@@ -44,6 +44,24 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "aab=$(ls dist/*.aab | head -1)" >> "$GITHUB_OUTPUT"
 
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.rel.outputs.tag }}
+          path: src
+          sparse-checkout: docs/google-play/listing
+
+      - name: Release notes (what's new) from the listing at the tag
+        run: |
+          mkdir -p whatsnew
+          for d in src/docs/google-play/listing/*/; do
+            l=$(basename "$d")
+            [ -s "$d/release_notes.txt" ] && cp "$d/release_notes.txt" "whatsnew/whatsnew-$l"
+          done
+          for f in whatsnew/*; do
+            n=$(wc -m < "$f"); echo "$f ($n chars)"; cat "$f"; echo
+            [ "$n" -le 500 ] || { echo "::error::$f is over Play's 500-character limit"; exit 1; }
+          done
+
       - id: auth
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed  # v2
         with:
@@ -57,5 +75,6 @@ jobs:
           packageName: app.reelkin
           releaseFiles: ${{ steps.rel.outputs.aab }}
           releaseName: ${{ steps.rel.outputs.tag }}
+          whatsNewDirectory: whatsnew
           tracks: ${{ github.event.inputs.track || 'production' }}
           status: completed
