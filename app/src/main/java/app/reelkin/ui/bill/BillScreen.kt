@@ -133,7 +133,7 @@ fun BillScreen(c: Cinema, nav: Nav) {
             if (searching || q.isNotEmpty()) SearchField(q, { q = it.take(60) }, t("в афише или в каталоге", "on the bill or in the catalogue"), ::search)
             // Three words, big, the open one in ink with a short gold line under it.
             Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                listOf(t("Ждут", "Waiting") to watch.size, t("Идут", "Running") to running.size + shelved.size, t("Корешки", "Stubs") to stubs.size).forEachIndexed { i, (name, n) ->
+                listOf(t("Ждут", "Waiting") to watch.size, t("Идут", "Running") to running.size, t("Корешки", "Stubs") to stubs.size).forEachIndexed { i, (name, n) ->
                     val on = i == page
                     Column(Modifier.clip(R8.Sm).clickable { page = i }.padding(vertical = 4.dp)) {
                         Row(verticalAlignment = Alignment.Top) {

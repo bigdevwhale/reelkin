@@ -142,8 +142,10 @@ private fun KinopoiskTab(c: Cinema, nav: Nav, seen: MutableMap<Int, Kinopoisk.Se
         }
     }
     Text(t("У Кинопоиска нет выгрузки, поэтому оценки читаются прямо с его страниц. Открой свой профиль здесь и листай оценки: фильмы собираются с каждой открытой страницы. " +
+        "Кинопоиск показывает по 50 фильмов на странице: чтобы перенести все, пройди все страницы кнопкой «Следующая страница». " +
         "Если профиль закрыт или Кинопоиск спросит, не робот ли ты, — войди или ответь там же.",
         "Kinopoisk has no export, so the ratings are read off its pages. Open your profile here and go through your ratings: films are picked up from every page you open. " +
+        "Kinopoisk shows 50 films a page: to bring them all, go through every page with «Next page». " +
         "If the profile is private or Kinopoisk asks whether you're a robot, sign in or answer right there."), style = T.Muted)
     Field(profile, { profile = it }, t("ссылка на профиль или его номер", "profile link or its number"))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -231,6 +233,8 @@ private fun KinopoiskBrowser(start: String, seen: MutableMap<Int, Kinopoisk.Seen
     Column(Modifier.fillMaxSize().background(C.surface)) {
         Column(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(t("Собрано: ${Words.films(seen.size, true)}", "Picked up: ${Words.films(seen.size, false)}") + if (last > 0) t(" · на странице $last", " · $last on this page") else "", style = T.Strong)
+            // Only one page of 50 gets read unless you go on (#7).
+            Text(t("На странице до 50 фильмов. Жми «Следующая страница», пока они не кончатся, потом «Готово».", "Up to 50 films a page. Press «Next page» until they run out, then «Done»."), style = T.Small)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val next = Kinopoisk.next(url)
                 Btn(t("Следующая страница", "Next page"), { next?.let { n -> web?.loadUrl(n) } }, Modifier.weight(1f), kind = Kind.SOFT, small = true, enabled = next != null)

@@ -6,6 +6,17 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.0.1] - 2026-11-13
+
+### Fixed
+- The «Running» tab counts only the series you're watching; shelved ones still sit in the tab but no longer add to the number (#8).
+- The Kinopoisk import says up front that its ratings come 50 to a page and every page needs «Next page» – only the first page used to be read (#7).
+
+<!-- tg
+Исправлено: в «Идут» число показывает только сериалы, которые смотришь сейчас, без снятых с проката.
+При переносе с Кинопоиска теперь видно, что фильмы идут по 50 на страницу и нужно пролистать все страницы.
+-->
+
 ## [2.0.0] - 2026-11-12
 
 - 32 pets instead of 5, fairy-tale ones too (a little dragon, a unicorn, a phoenix, a kitsune, a back-row ghost…):
