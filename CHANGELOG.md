@@ -6,6 +6,17 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.3.0] - 2026-11-14
+
+### Added
+- More genres besides the main one. The main genre still sets the poster, the spectator and the pet's form and feeds a pet that loves it half again; a loved genre among the others feeds it a quarter more. The bill's genre filter finds a title by any of its genres. Plain genre names from the search and the imports fill them in.
+
+<!-- tg
+Теперь у фильма может быть несколько жанров: главный и дополнительные.
+Если питомец любит главный жанр – сытнее в полтора раза, если один из дополнительных – на четверть.
+Фильтр в афише находит фильм по любому из его жанров.
+-->
+
 ## [2.2.0] - 2026-11-14
 
 ### Added

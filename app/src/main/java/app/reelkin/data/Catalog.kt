@@ -29,6 +29,8 @@ data class Draft(
     val cast: String = "",
     /** Subgenres, as on a title. */
     val sub: String = "",
+    /** Genres besides [genre], as on a title. */
+    val also: String = "",
 )
 
 /**
@@ -87,6 +89,25 @@ object Catalog {
             "adventure" in t || "action" in t || "fantasy" in t || "war" in t -> Genre.ADVENTURE
             else -> Genre.DRAMA
         }
+    }
+
+    private val plain = mapOf(
+        "drama" to Genre.DRAMA, "comedy" to Genre.COMEDY, "horror" to Genre.HORROR, "science fiction" to Genre.SCIFI, "sci fi" to Genre.SCIFI,
+        "romance" to Genre.ROMANCE, "romantic" to Genre.ROMANCE, "melodrama" to Genre.ROMANCE, "western" to Genre.WESTERN, "musical" to Genre.MUSICAL,
+        "documentary" to Genre.DOC, "animated" to Genre.ANIMATION, "animation" to Genre.ANIMATION, "adventure" to Genre.ADVENTURE, "action" to Genre.ADVENTURE,
+        "fantasy" to Genre.ADVENTURE, "war" to Genre.ADVENTURE, "thriller" to Genre.NOIR, "mystery" to Genre.NOIR, "crime" to Genre.NOIR,
+        "detective" to Genre.NOIR, "reality" to Genre.REALITY, "reality show" to Genre.REALITY,
+    )
+
+    /**
+     * Genres besides [main] from genre names (English, as Wikidata gives them, or MyShows aliases). Only plain genre
+     * names count («comedy film», «drama television series»), not finer ones («black comedy», «neo-western»): those are
+     * subgenres, and taking them for genres would feed the wrong pets. At most two.
+     */
+    fun guessAlso(labels: List<String>, main: Genre): String {
+        val suffix = Regex("""\s+(film|movie|television series|tv series|television program|television programme|series|anime|show)$""")
+        val found = labels.mapNotNull { l -> plain[l.lowercase().replace('-', ' ').trim().replace(suffix, "").trim()] }
+        return Genres.join(found.distinct().filter { it != main }.take(2))
     }
 
     /** Subgenres from English genre names; animation from Japan is anime. */
@@ -154,6 +175,7 @@ object Catalog {
                     Draft(
                         kind = r.kind, title = r.label, year = r.year, country = country, genre = g,
                         sub = guessSub(r.genres.mapNotNull { en[it] }, g, r.countries.mapNotNull { en[it] }.firstOrNull() ?: country),
+                        also = guessAlso(r.genres.mapNotNull { en[it] }, g),
                         minutes = r.minutes, perSeason = if (r.eps != null && r.seasons != null && r.seasons > 0) (r.eps / r.seasons).coerceAtLeast(1) else null,
                         about = r.genres.mapNotNull { names[it] }.take(2).joinToString(", "),
                         coverUrl = poster(r.ruw, "ru") ?: poster(r.en, "en"), tvmaze = r.tvmaze, imdb = r.imdb,
@@ -257,7 +279,7 @@ object Catalog {
                 out[id] = Found(
                     Draft(kind, label, v("d")?.take(4)?.toIntOrNull(), v("c").orEmpty(), g, v("min")?.toDoubleOrNull()?.toInt()?.takeIf { it in 1..1000 },
                         if (eps != null && ss != null && ss > 0) (eps / ss).coerceAtLeast(1) else null, tvmaze = v("tv")?.toIntOrNull(),
-                        sub = guessSub(v("g").orEmpty().split('|'), g, v("c").orEmpty())),
+                        sub = guessSub(v("g").orEmpty().split('|'), g, v("c").orEmpty()), also = guessAlso(v("g").orEmpty().split('|'), g)),
                     page(v("enwiki")), page(v("ruwiki")),
                 )
             }

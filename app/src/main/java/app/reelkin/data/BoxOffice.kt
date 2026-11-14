@@ -45,7 +45,7 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
         val n = s.episode + 1
         if (n < s.perSeason) { dao.update(s.copy(episode = n, cliff = false, status = Status.RUNNING)); return null }
         val stub = Ticket(title = s.title + if (ru) " · сезон ${s.season}" else " · season ${s.season}", season = true, year = s.year, country = s.country,
-            genre = s.genre, sub = s.sub, minutes = s.minutes * s.perSeason, stars = 0, cover = s.cover)
+            genre = s.genre, sub = s.sub, also = s.also, minutes = s.minutes * s.perSeason, stars = 0, cover = s.cover)
         val id = dao.insert(stub)
         // The next season takes its length from the catalogue, and waits in the cupboard if it isn't out yet.
         val next = s.season + 1
@@ -64,7 +64,7 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
         val missing = (1 until before).filter { n -> "${s.title} · сезон $n" !in torn && "${s.title} · season $n" !in torn }
         dao.insertTickets(missing.map { n ->
             Ticket(title = s.title + if (ru) " · сезон $n" else " · season $n", season = true, past = true, year = s.year, country = s.country,
-                genre = s.genre, sub = s.sub, minutes = s.minutes * (Seasons.episodes(s, n) ?: s.perSeason), cover = s.cover,
+                genre = s.genre, sub = s.sub, also = s.also, minutes = s.minutes * (Seasons.episodes(s, n) ?: s.perSeason), cover = s.cover,
                 director = s.director.takeIf { it != "?" } ?: "", cast = s.cast, at = at - (before - n) * 60_000L)
         })
         return missing.size

@@ -27,15 +27,17 @@ data class Seance(
     val started: Long,
     /** Subgenres, as on the title. */
     val sub: String = "",
+    /** Genres besides [genre], as on the title. */
+    val also: String = "",
 ) {
     fun json(): String = JSONObject().put("t", title).put("m", minutes).put("g", genre.name).put("y", year ?: 0).put("c", country)
-        .put("cv", cover ?: "").put("id", titleId).put("re", rewatch).put("s", started).put("sub", sub).toString()
+        .put("cv", cover ?: "").put("id", titleId).put("re", rewatch).put("s", started).put("sub", sub).put("also", also).toString()
 
     companion object {
         fun of(s: String?): Seance? = runCatching {
             val o = JSONObject(s ?: return null)
             Seance(o.getString("t"), o.getInt("m"), Genre.valueOf(o.getString("g")), o.optInt("y").takeIf { it > 0 }, o.optString("c"),
-                o.optString("cv").ifBlank { null }, o.optLong("id", -1), o.optBoolean("re"), o.getLong("s"), o.optString("sub"))
+                o.optString("cv").ifBlank { null }, o.optLong("id", -1), o.optBoolean("re"), o.getLong("s"), o.optString("sub"), o.optString("also"))
         }.getOrNull()
     }
 }

@@ -131,6 +131,7 @@ object MyShows {
         val aliases = (src.optJSONArray("genres") ?: sh.optJSONArray("genres"))?.let { a -> (0 until a.length()).joinToString(" ") { a.optJSONObject(it)?.optString("alias").orEmpty() } }.orEmpty()
         val genre = if ("anim" in aliases) Genre.ANIMATION else Catalog.guessGenre(aliases)
         val sub = Catalog.guessSub(aliases.split(' ').map { it.replace('-', ' ') }, genre, country)
+        val also = Catalog.guessAlso(aliases.split(' '), genre)
         val runtime = (full?.optInt("runtime") ?: 0).takeIf { it > 0 } ?: item.optInt("runtime").takeIf { it > 0 } ?: 45
         val stars = item.optInt("rating").coerceIn(0, 5)
         val status = item.optString("watchStatus")
@@ -152,11 +153,11 @@ object MyShows {
         val cover = CoverHint(name = src.optString("titleOriginal").ifBlank { name }, year = year, series = true,
             url = sh.optString("image").ifBlank { null }?.takeIf { it.startsWith("https://") })
         fun stub(n: Int, l: List<Ep>) = Ticket(
-            title = name + if (ru) " · сезон $n" else " · season $n", season = true, whole = true, year = year, country = country, genre = genre, sub = sub,
+            title = name + if (ru) " · сезон $n" else " · season $n", season = true, whole = true, year = year, country = country, genre = genre, sub = sub, also = also,
             minutes = runtime * l.size, stars = stars, at = noonOf(l.mapNotNull { it.air }.maxOrNull() ?: now, now), ref = "myshows:$id:$n",
         )
         fun title(st: Status, season: Int, episode: Int) = Title(
-            kind = Kind.SERIES, title = name, year = year, country = country, genre = genre, sub = sub, minutes = runtime, status = st,
+            kind = Kind.SERIES, title = name, year = year, country = country, genre = genre, sub = sub, also = also, minutes = runtime, status = st,
             season = season, episode = episode, perSeason = seasons[season]?.size?.takeIf { it > 0 } ?: plan.lastOrNull()?.episodes?.takeIf { it > 0 } ?: 10,
             plan = Seasons.encode(plan), planAt = now, show = "myshows:$id",
         )
@@ -204,7 +205,7 @@ object MyShows {
                 ?: m.optString("country").takeIf { it.length == 2 }?.let { Locale("", it).getDisplayCountry(if (ru) Locale("ru") else Locale.ENGLISH) }.orEmpty()
             val genre = if ("anim" in aliases) Genre.ANIMATION else Catalog.guessGenre(aliases)
             Haul(null, listOf(Ticket(title = name, year = year, country = country, genre = genre,
-                sub = Catalog.guessSub(aliases.split(' ').map { it.replace('-', ' ') }, genre, country),
+                sub = Catalog.guessSub(aliases.split(' ').map { it.replace('-', ' ') }, genre, country), also = Catalog.guessAlso(aliases.split(' '), genre),
                 minutes = m.optInt("runtime").coerceAtLeast(0), stars = item.optInt("rating").coerceIn(0, 5), at = noonOf(at ?: now, now), ref = "myshows-movie:${m.optInt("id")}")),
                 cover = CoverHint(name = m.optString("titleOriginal").ifBlank { name }, year = year))
         }
@@ -292,7 +293,7 @@ object Kinopoisk {
             val year = d?.year ?: s.name?.let { Regex("""\((\d{4})""").find(it)?.groupValues?.get(1)?.toIntOrNull() }
             val series = s.series || d?.kind == Kind.SERIES
             Haul(null, listOf(Ticket(
-                title = name, season = series, whole = series, year = year, country = d?.country.orEmpty(), genre = d?.genre ?: Genre.DRAMA, sub = d?.sub.orEmpty(),
+                title = name, season = series, whole = series, year = year, country = d?.country.orEmpty(), genre = d?.genre ?: Genre.DRAMA, sub = d?.sub.orEmpty(), also = d?.also.orEmpty(),
                 minutes = if (series) 0 else d?.minutes ?: 0, stars = s.stars ?: 0, at = noonOf(s.at ?: now, now), ref = "kinopoisk:${s.id}",
             )), cover = CoverHint(url = Kinopoisk.poster(s.id), ruwiki = f?.ruwiki, enwiki = f?.enwiki, name = if (f == null) null else name, year = year, series = series))
         }

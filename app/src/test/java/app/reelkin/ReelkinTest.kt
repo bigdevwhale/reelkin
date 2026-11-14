@@ -46,6 +46,20 @@ class ReelkinTest {
         assertEquals(emptyList<Int>(), c2.missingSeasons("Lost", 2))
     }
 
+    @Test fun aGenreBesidesTheMainOneFeedsAQuarterMore() {
+        val bat = Pet(id = 1, species = Species.BAT, laid = 0, spans = "0-0", hatched = true)
+        fun fed(t: Ticket) = Pets.state(bat, Pets.watches(Cinema(emptyList(), listOf(t), emptyList(), Settings(), 0, listOf(bat)))).fed
+        assertEquals(150, fed(Ticket(id = 1, title = "A", genre = Genre.HORROR, minutes = 100)))
+        assertEquals(125, fed(Ticket(id = 1, title = "A", genre = Genre.COMEDY, also = "HORROR", minutes = 100)))
+        assertEquals(100, fed(Ticket(id = 1, title = "A", genre = Genre.COMEDY, minutes = 100)))
+        // Only plain genre names make another genre; finer ones are subgenres.
+        assertEquals("DRAMA,COMEDY", app.reelkin.data.Catalog.guessAlso(listOf("drama film", "black comedy", "comedy film", "crime film"), Genre.NOIR))
+        assertEquals("ROMANCE", app.reelkin.data.Genres.toggle("", Genre.COMEDY, Genre.ROMANCE))
+        assertEquals("", app.reelkin.data.Genres.toggle("ROMANCE", Genre.COMEDY, Genre.ROMANCE))
+        // The bill's genre filter finds a title by any of its genres.
+        assertEquals(1, Browse(genres = setOf(Genre.HORROR)).stubs(listOf(Ticket(id = 1, title = "A", genre = Genre.COMEDY, also = "HORROR"))).size)
+    }
+
     @Test fun subgenresComeFromTheCatalogueAndAreSearchedInBothLanguages() {
         val S = app.reelkin.data.Subgenres
         assertEquals("slasher,supernatural", app.reelkin.data.Catalog.guessSub(listOf("slasher film", "supernatural horror film", "horror film"), Genre.HORROR, ""))

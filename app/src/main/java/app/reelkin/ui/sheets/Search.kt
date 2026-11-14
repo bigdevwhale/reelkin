@@ -31,6 +31,7 @@ import app.reelkin.data.Catalog
 import app.reelkin.data.Covers
 import app.reelkin.data.Draft
 import app.reelkin.data.Genre
+import app.reelkin.data.Genres
 import app.reelkin.data.Kind as TKind
 import app.reelkin.data.Seance
 import app.reelkin.data.Seasons
@@ -125,6 +126,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     var cast by remember { mutableStateOf(old?.cast ?: d.cast) }
     var genre by remember { mutableStateOf(d.genre) }
     var sub by remember { mutableStateOf(old?.sub ?: d.sub) }
+    var also by remember { mutableStateOf(old?.also ?: d.also) }
     var kind by remember { mutableStateOf(d.kind) }
     // Seasons before the one you're on are taken as watched: stubs for those not torn yet.
     var earlier by remember { mutableStateOf(old == null) }
@@ -157,7 +159,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             minutes = minutes.toIntOrNull() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
             season = sn, episode = if (same) old!!.episode else 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 99) ?: 10, cliff = same && old!!.cliff,
             plan = plan, planAt = planAt, show = show,
-            director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(), sub = sub,
+            director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(), sub = sub, also = Genres.join(Genres.parse(also) - genre),
         )
     }
     val sn = season.toIntOrNull()?.coerceIn(1, 99) ?: 1
@@ -210,6 +212,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
         }
         Text(t("Жанр — от него афиша, зритель в зале и черта питомца", "Genre: it sets the poster, the spectator and the pet's trait").uppercase(), style = T.Eyebrow)
         Flow { for (g in Genre.entries) Chip(Words.genre(g, ru), genre == g, { genre = g }, color = C.genre(g)) }
+        AlsoPicker(genre, also) { also = it }
         SubPicker(genre, sub) { sub = it }
         if (old != null) Btn(t("Сохранить", "Save"), {
             co.write { val cv = saveCover(); val tt = build(old.status).copy(cover = cv); office.update(tt); if (marks) office.earlierSeasons(tt, sn, ru, old.added) }; nav.close()
@@ -231,7 +234,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
                 co.write {
                     val cv = saveCover(); val tt = build(Status.SHELVED).copy(cover = cv)
                     val stub = Seance(tt.title + if (ru) " · сезон ${tt.season}" else " · season ${tt.season}", tt.minutes * tt.perSeason, tt.genre, tt.year, tt.country, cv, -1, false,
-                        System.currentTimeMillis(), tt.sub)
+                        System.currentTimeMillis(), tt.sub, tt.also)
                     nav.go(Overlay.Log(stub, tt.copy(season = tt.season + 1, episode = 0, perSeason = Seasons.episodes(tt, tt.season + 1) ?: tt.perSeason), if (marks) tt.season else 0))
                 }
             }, Modifier.fillMaxWidth(), kind = Kind.GOLD)
@@ -242,7 +245,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
                 nav.toast(if (ru) "«${title.trim()}» в афише." else "${title.trim()} is on the bill.")
             }, Modifier.weight(1f), kind = Kind.GHOST)
             Btn(t("Уже посмотрел", "Watched it"), {
-                co.write { val cv = saveCover(); val tt = build(Status.WATCH); nav.go(Overlay.Log(Seance(tt.title, tt.minutes, tt.genre, tt.year, tt.country, cv, -1, false, System.currentTimeMillis(), tt.sub))) }
+                co.write { val cv = saveCover(); val tt = build(Status.WATCH); nav.go(Overlay.Log(Seance(tt.title, tt.minutes, tt.genre, tt.year, tt.country, cv, -1, false, System.currentTimeMillis(), tt.sub, tt.also))) }
             }, Modifier.weight(1f))
         }
         Box(Modifier.size(1.dp))

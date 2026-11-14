@@ -126,6 +126,8 @@ data class Gains(
     val minutes: Long,
     /** The pet loved it. */
     val fav: Boolean = false,
+    /** It liked it: a genre it loves was there, though not the main one. */
+    val part: Boolean = false,
 )
 
 fun gains(before: Cinema, after: Cinema, t: Ticket): Gains = Gains(
@@ -139,4 +141,5 @@ fun gains(before: Cinema, after: Cinema, t: Ticket): Gains = Gains(
     popcorn = after.earned - before.earned,
     fav = after.pet?.let { a -> before.pets.firstOrNull { it.pet.id == a.pet.id }?.let { a.favCount > it.favCount } } == true,
     minutes = after.minutes - before.minutes,
+    part = after.pet?.let { a -> a.pet.hatched && t.genre !in Pets.genres(a.species) && t.genres.any { it in Pets.genres(a.species) } } == true,
 )

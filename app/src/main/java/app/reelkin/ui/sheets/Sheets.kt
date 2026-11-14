@@ -87,8 +87,8 @@ import app.reelkin.data.DAY
 import androidx.compose.runtime.mutableLongStateOf
 import java.util.Calendar
 
-fun Title.seance(rewatch: Boolean = false) = Seance(title, minutes, genre, year, country, cover, id, rewatch, System.currentTimeMillis(), sub)
-fun Ticket.seance() = Seance(title, minutes, genre, year, country, cover, -1, true, System.currentTimeMillis(), sub)
+fun Title.seance(rewatch: Boolean = false) = Seance(title, minutes, genre, year, country, cover, id, rewatch, System.currentTimeMillis(), sub, also)
+fun Ticket.seance() = Seance(title, minutes, genre, year, country, cover, -1, true, System.currentTimeMillis(), sub, also)
 
 @Composable
 fun BigPoster(title: String, genre: app.reelkin.data.Genre, cover: String?, scale: Float = 3.4f) {
@@ -102,12 +102,14 @@ fun Facts(year: Int?, country: String, minutes: Int) =
 
 /** What watching this film would bring, so the bill reads like a promise. */
 @Composable
-fun Brings(c: Cinema, title: String, genre: app.reelkin.data.Genre, year: Int?, country: String) {
+fun Brings(c: Cinema, title: String, genre: app.reelkin.data.Genre, year: Int?, country: String, also: String = "") {
     val ru = LocalRu.current
     val l = ArrayList<String>()
     year?.let { if (Cinema.decade(it) !in c.decades) l += if (ru) "новое десятилетие: ${Cinema.decade(it)}-е" else "a new decade: the ${Cinema.decade(it)}s" }
     if (country.isNotBlank() && country !in c.countries) l += if (ru) "штамп: $country" else "a stamp: $country"
     c.pet?.takeIf { it.pet.hatched && genre in app.reelkin.domain.Pets.genres(it.species) }?.let { l += if (ru) "${c.name(it, true)} такое любит: сытнее в полтора раза" else "${c.name(it, false)} loves these: one and a half times the food" }
+    c.pet?.takeIf { it.pet.hatched && genre !in app.reelkin.domain.Pets.genres(it.species) && app.reelkin.data.Genres.parse(also).any { g -> g in app.reelkin.domain.Pets.genres(it.species) } }
+        ?.let { l += if (ru) "${c.name(it, true)} любит один из жанров: на четверть сытнее" else "${c.name(it, false)} loves one of its genres: a quarter more food" }
     l += (if (ru) "в зал придёт " else "in comes ") + Words.who(genre.who, ru)
     Column(Modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(t("Если посмотреть", "If you watch it").uppercase(), style = T.Eyebrow)
@@ -148,7 +150,7 @@ fun FilmSheet(c: Cinema, f: Title, nav: Nav) {
     val co = LocalContext.current.container
     var sure by remember { mutableStateOf(false) }
     Sheet(nav::close) {
-        Hero(f.title, f.genre, f.cover, f.year, f.country, f.minutes, eyebrow = t("в афише", "on the bill"), sub = f.sub)
+        Hero(f.title, f.genre, f.cover, f.year, f.country, f.minutes, eyebrow = t("в афише", "on the bill"), sub = f.sub, also = f.also)
         app.reelkin.ui.components.FirstVisit(app.reelkin.ui.components.Tip.FILM, c.s)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("На проектор", "Put it on"), {
@@ -158,7 +160,7 @@ fun FilmSheet(c: Cinema, f: Title, nav: Nav) {
             Btn(t("Уже посмотрел", "Watched it"), { nav.go(Overlay.Log(f.seance())) }, Modifier.weight(1f), kind = Kind.GOLD)
         }
         PeopleBlock(f.director, f.cast, nav) { co.office.people(f) }
-        Brings(c, f.title, f.genre, f.year, f.country)
+        Brings(c, f.title, f.genre, f.year, f.country, f.also)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("Изменить", "Edit"), { nav.go(Overlay.NewTitle(f.draft(), f.id)) }, Modifier.weight(1f), kind = Kind.GHOST, small = true)
             Btn(if (sure) t("Точно убрать?", "Sure?") else t("Убрать из афиши", "Take off"), {
@@ -168,7 +170,7 @@ fun FilmSheet(c: Cinema, f: Title, nav: Nav) {
     }
 }
 
-fun Title.draft() = app.reelkin.data.Draft(kind, title, year, country, genre, minutes.takeIf { it > 0 }, perSeason, director = director.takeIf { it != "?" } ?: "", cast = cast, sub = sub)
+fun Title.draft() = app.reelkin.data.Draft(kind, title, year, country, genre, minutes.takeIf { it > 0 }, perSeason, director = director.takeIf { it != "?" } ?: "", cast = cast, sub = sub, also = also)
 
 /* ---------------- a series ---------------- */
 
@@ -184,7 +186,7 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
             app.reelkin.data.Seasons.refresh(s)?.let { (tv, plan) -> co.office.setPlan(s.id, tv, plan) }
     }
     Sheet(nav::close) {
-        Hero(s.title, s.genre, s.cover, s.year, s.country, s.minutes, eyebrow = t("сериал", "a series"), sub = s.sub) {
+        Hero(s.title, s.genre, s.cover, s.year, s.country, s.minutes, eyebrow = t("сериал", "a series"), sub = s.sub, also = s.also) {
                 Text(when (s.status) {
                     Status.WATCH -> t("ещё не начат", "not started yet")
                     Status.SHELVED -> t("снят с проката", "taken off")
@@ -229,7 +231,7 @@ fun StubSheet(c: Cinema, tk: Ticket, nav: Nav) {
     var sure by remember { mutableStateOf(false) }
     val seat = c.seatOf(tk)
     Sheet({ if (words != tk.words) co.write { office.update(tk.copy(words = words.trim())) }; nav.close() }) {
-        Hero(tk.title, tk.genre, tk.cover, tk.year, tk.country, tk.minutes, eyebrow = Words.seat(seat, ru) + " · " + app.reelkin.ui.bill.date(tk.at, ru), sub = tk.sub)
+        Hero(tk.title, tk.genre, tk.cover, tk.year, tk.country, tk.minutes, eyebrow = Words.seat(seat, ru) + " · " + app.reelkin.ui.bill.date(tk.at, ru), sub = tk.sub, also = tk.also)
         ShareLine(t("Поделиться отзывом", "Share a review"), t("открытка с постером, попкорном и словами", "a card with the poster, popcorn and words")) { nav.go(Overlay.ShareIt(app.reelkin.ui.cards.Share.Review(tk.id))) }
         Column(Modifier.fillMaxWidth().clip(R8.Lg).background(C.surface2).padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(t("Твой попкорн", "Your popcorn").uppercase(), style = T.Eyebrow)
@@ -247,6 +249,7 @@ fun StubSheet(c: Cinema, tk: Ticket, nav: Nav) {
             if (tk.credits == Credits.SCENE) append(if (ru) " Была сцена после титров." else " There was a post-credits scene.")
         }, style = T.Muted)
         WatchedOn(tk.at) { at -> co.write { office.update(tk.copy(at = at, words = words.trim())) } }
+        AlsoPicker(tk.genre, tk.also) { a -> co.write { office.update(tk.copy(also = a, words = words.trim())) } }
         SubPicker(tk.genre, tk.sub) { sub -> co.write { office.update(tk.copy(sub = sub, words = words.trim())) } }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (!tk.season) Btn(t("Пересмотреть", "Watch again"), {
@@ -295,7 +298,7 @@ fun LogSheet(c: Cinema, s: Seance, nav: Nav, series: Title? = null, earlier: Int
         WatchedOn(at) { at = it }
         Btn(t("Оторвать корешок", "Tear the stub"), {
             val tk = Ticket(title = s.title, year = s.year, country = s.country, genre = s.genre, minutes = s.minutes, stars = stars, words = words.trim(),
-                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at, season = series != null, whole = series != null, sub = s.sub)
+                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at, season = series != null, whole = series != null, sub = s.sub, also = s.also)
             co.write {
                 val before = cinema()
                 series?.let { office.add(it) }
@@ -333,6 +336,7 @@ fun RewardSheet(c: Cinema, tk: Ticket, g: Gains, nav: Nav) {
         rows += { Gain({ BufImage(Icons.seated(tk.genre.who, hash(tk.title)), scale = 3.dp) }, (if (ru) "В зал пришёл " else "In comes ") + Words.who(tk.genre.who, ru), Words.seat(g.seat, ru)) }
         for (d in g.decades) rows += { Gain({ Text("$d", style = T.Small.copy(color = C.onGold), modifier = Modifier.clip(R8.Sm).background(C.gold).padding(8.dp)) }, if (ru) "Десятилетие: $d-е" else "A decade: the ${d}s", t("в будке прибавилось техники", "the booth gets new gear")) }
         for (cn in g.countries) rows += { Gain({ Box(Modifier.size(56.dp)) { Stamp(cn) } }, if (ru) "Штамп: $cn" else "A stamp: $cn", t("новая страна в кругосветке", "a new country on the map")) }
+        if (g.part && !g.fav && p != null) rows += { Gain({ BufImage(PetArt.still(Pose(p.species, p.stage, p.pet.shiny, p.form, mood = PetMood.HAPPY)), scale = 1.dp) }, if (ru) "$name доволен" else "$name likes it", if (ru) "любимый жанр среди прочих: на четверть сытнее" else "a favourite genre among the others: a quarter more") }
         if (g.fav && p != null) rows += { Gain({ BufImage(PetArt.still(Pose(p.species, p.stage, p.pet.shiny, p.form, mood = PetMood.HAPPY)), scale = 1.dp) }, if (ru) "$name в восторге" else "$name loves it", if (ru) "любимое: в зачёт в полтора раза" else "a favourite: it counts one and a half times") }
         g.grew?.let { st -> if (p != null) rows += { Gain({ BufImage(PetArt.still(Pose(p.species, st, p.pet.shiny, p.form, mood = PetMood.HAPPY)), scale = 1.dp) }, if (ru) "$name подрос!" else "$name has grown!", Words.stage(st, ru)) } }
         for (sp in g.cans) rows += { Gain({ BufImage(PetArt.still(Pose(sp, app.reelkin.data.Stage.EGG)), scale = 1.dp) }, if (ru) "Открылась коробка: ${Words.species(sp, true)}" else "A can opened: ${Words.species(sp, false)}", t("загляни к питомцам", "have a look at the pets")) }

@@ -1,2 +1,3 @@
-• Subgenres under each genre: cyberpunk, slasher, black comedy, space opera, 81 in all, or your own. They come from the search and the imports, show on cards and stubs and are searchable; the pets still go by the genre.
-• Started a series mid-way? Mark the seasons before as watched. They stay in the diary as «seen before» and don't feed the pets or count in the statistics.
+• More genres besides the main one. A pet that loves the main genre still eats half again; if its genre is among the others, a quarter more.
+• The bill's genre filter finds a title by any of its genres.
+• Extra genres come in by themselves from the search and the imports.

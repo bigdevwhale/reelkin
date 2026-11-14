@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.reelkin.data.Covers
 import app.reelkin.data.Genre
+import app.reelkin.data.Genres
 import app.reelkin.data.People
 import app.reelkin.data.Subgenres
 import app.reelkin.domain.Words
@@ -58,7 +59,7 @@ import kotlinx.coroutines.withContext
  * pills. [eyebrow] goes above the name, [under] below the pills.
  */
 @Composable
-fun Hero(title: String, genre: Genre, cover: String?, year: Int?, country: String, minutes: Int, eyebrow: String? = null, sub: String = "",
+fun Hero(title: String, genre: Genre, cover: String?, year: Int?, country: String, minutes: Int, eyebrow: String? = null, sub: String = "", also: String = "",
          under: @Composable ColumnScope.() -> Unit = {}) {
     val ctx = LocalContext.current
     val ru = LocalRu.current
@@ -79,6 +80,7 @@ fun Hero(title: String, genre: Genre, cover: String?, year: Int?, country: Strin
                 Text(title, style = T.Title, maxLines = 4, overflow = TextOverflow.Ellipsis)
                 Flow(gap = 5.dp) {
                     Pill(Words.genre(genre, ru), tint)
+                    for (g in Genres.parse(also)) if (g != genre) Pill(Words.genre(g, ru), Color(0xFF000000 or g.color.toLong()).copy(alpha = .8f))
                     for (n in Subgenres.names(sub, ru)) Pill(n, tint.copy(alpha = .55f))
                     year?.let { Pill("$it") }
                     if (country.isNotBlank()) Pill(country)
@@ -88,6 +90,17 @@ fun Hero(title: String, genre: Genre, cover: String?, year: Int?, country: Strin
             }
         }
     }
+}
+
+/** Genres besides the main one: a pet that loves one of them gets a quarter more instead of half. */
+@Composable
+fun AlsoPicker(genre: Genre, also: String, onChange: (String) -> Unit) {
+    val ru = LocalRu.current
+    val picked = Genres.parse(also)
+    Text(t("Ещё жанры", "More genres").uppercase(), style = T.Eyebrow)
+    Text(t("Питомец, который любит один из них, наестся на четверть больше — за главный жанр в полтора раза.",
+        "A pet that loves one of these eats a quarter more; the main genre gives half again."), style = T.Small)
+    Flow { for (g in Genre.entries) if (g != genre) Chip(Words.genre(g, ru), g in picked, { onChange(Genres.toggle(also, genre, g)) }, color = C.genre(g)) }
 }
 
 /**

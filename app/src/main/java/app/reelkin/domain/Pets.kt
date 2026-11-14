@@ -45,6 +45,8 @@ class Watch(
     val fresh: Boolean = false,
     /** For anime: whole days since the anime before it. */
     val animeGap: Int = 0,
+    /** Genres besides the main one: a pet that loves one of them gets a quarter more, not half. */
+    val also: Set<Genre> = emptySet(),
 ) {
     val late get() = hour >= 23 || hour < 4
     /** A full-length film, not an episode or a season. */
@@ -135,6 +137,9 @@ object Pets {
         else -> w.genre in genres(sp)
     }
 
+    /** A genre it loves is only among the ones besides the main genre: it feeds a quarter more, not half. */
+    fun partly(sp: Species, w: Watch): Boolean = w.also.any { it in genres(sp) } && !favourite(sp, w)
+
     private val EAST = listOf("япон", "japan", "коре", "korea", "китай", "china", "гонконг", "hong kong", "тайван", "taiwan")
     fun eastAsia(country: String): Boolean = country.lowercase().let { c -> c.isNotEmpty() && EAST.any { it in c } }
 
@@ -175,7 +180,8 @@ object Pets {
                 words = t?.words?.isNotBlank() == true, newCountry = nc, newDecade = nd, longDay = (perDay[day] ?: 0) >= 180,
                 hour = cal.get(Calendar.HOUR_OF_DAY), stars = t?.stars ?: 0, month = cal.get(Calendar.MONTH),
                 weekend = dow == Calendar.SATURDAY || dow == Calendar.SUNDAY, gap = gap, running = running,
-                anime = anime, fresh = year != null && year >= cal.get(Calendar.YEAR), animeGap = animeGap)
+                anime = anime, fresh = year != null && year >= cal.get(Calendar.YEAR), animeGap = animeGap,
+                also = ((t?.genres ?: r.title?.genres).orEmpty() - genre))
         }
     }
 
@@ -188,7 +194,7 @@ object Pets {
 
     fun state(p: Pet, ws: List<Watch>): PetState {
         val ranges = spans(p)
-        var min = 0; var fav = 0; var favN = 0; var found = 0
+        var min = 0; var fav = 0; var favN = 0; var found = 0; var part = 0
         val g = HashMap<Genre, Int>()
         for (w in ws) if (ranges.any { w.at in it }) {
             min += w.minutes
@@ -196,10 +202,11 @@ object Pets {
             if (w.newCountry) found++
             if (w.newDecade) found++
             if (favourite(p.species, w)) { fav += w.minutes; favN += if (w.episode) 1 else 5 }
+            else if (partly(p.species, w)) part += w.minutes
         }
-        // A favourite counts half again; a greedy one eats a tenth more of everything.
+        // A favourite counts half again, a genre it loves that isn't the main one a quarter; a greedy one eats a tenth more of everything.
         val greedy = if (p.nature == Nature.GREEDY) 1.1 else 1.0
-        val fed = ((min + fav / 2) * greedy).toInt()
+        val fed = ((min + fav / 2 + part / 4) * greedy).toInt()
         return PetState(p, fed, Stage.entries.last { fed >= it.from }, g, fav, favN, found, min)
     }
 

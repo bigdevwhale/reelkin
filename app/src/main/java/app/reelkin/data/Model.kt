@@ -115,7 +115,12 @@ data class Title(
     @ColumnInfo(defaultValue = "") val cast: String = "",
     /** Subgenres under [genre], joined by commas: see [Subgenres]. */
     @ColumnInfo(defaultValue = "") val sub: String = "",
-)
+    /** More genres besides [genre], by name, joined by commas: see [Genres]. */
+    @ColumnInfo(defaultValue = "") val also: String = "",
+) {
+    /** The genre and the ones besides it. */
+    val genres: Set<Genre> get() = Genres.of(genre, also)
+}
 
 /** A torn stub: a film watched, or a whole season. It holds a copy of everything so the bill can forget the title. */
 @Entity(tableName = "tickets")
@@ -149,7 +154,27 @@ data class Ticket(
      * diary but counts for nothing: no food for the pets, no popcorn, no seat, no statistics.
      */
     @ColumnInfo(defaultValue = "0") val past: Boolean = false,
-)
+    /** More genres besides [genre], by name, joined by commas: see [Genres]. */
+    @ColumnInfo(defaultValue = "") val also: String = "",
+) {
+    /** The genre and the ones besides it. */
+    val genres: Set<Genre> get() = Genres.of(genre, also)
+}
+
+/**
+ * A title's genres: one main [Genre] that sets the poster, the spectator and the pet's form, and others besides it
+ * that the pets, the achievements and the goals count too.
+ */
+object Genres {
+    fun parse(s: String): List<Genre> = s.split(',').mapNotNull { n -> Genre.entries.firstOrNull { it.name == n.trim() } }.distinct()
+
+    fun join(l: Collection<Genre>): String = l.distinct().joinToString(",") { it.name }
+
+    fun of(main: Genre, also: String): Set<Genre> = linkedSetOf(main) + parse(also)
+
+    /** The ones besides [main], with [g] put in or taken out. */
+    fun toggle(also: String, main: Genre, g: Genre): String = parse(also).let { l -> join((if (g in l) l - g else l + g) - main) }
+}
 
 @Entity(tableName = "episodes", indices = [Index("series")])
 data class Episode(
