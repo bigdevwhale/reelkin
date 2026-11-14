@@ -1,6 +1,6 @@
 """
 Writes the prompts for the achievements' pictures (art/icons/prompts/featsN.txt): nine to a 3x3 sheet, in the order of
-FEATS, which is the order of the app's Feat enum. Draw them with tools/art_gen.py, cut them with tools/icons_cut.py.
+FEATS; each is named after one of the app's Feat enum. Draw them with tools/art_gen.py, cut them with tools/icons_cut.py.
 
     python tools/feat_prompts.py
 """
@@ -72,7 +72,44 @@ FEATS = [
     ("awards", "A small golden statuette on a black stand."),
     ("hall", "A row of red velvet cinema seats, all full of tiny spectators' heads."),
     ("buffet", "A popcorn machine cart with a red striped roof."),
+    # anime (sheets of their own, after BASE)
+    ("anime", "A red torii gate with a small film reel hanging in it."),
+    ("a_episodes", "A bowl of ramen with chopsticks, its noodles a curling film strip."),
+    ("a_films", "A folding paper fan painted with a film strip and a red sun."),
+    ("a_shows", "A neat stack of three comic book volumes with a bookmark ribbon."),
+    ("a_seasons", "A cherry blossom branch with a film can hanging from it."),
+    ("a_night", "A glowing paper lantern under a crescent moon."),
+    ("a_binge", "A low table with a blanket over it, a tea cup and tangerines on top."),
+    ("a_retro", "An old boxy CRT television with a video cassette on top."),
+    ("a_fresh", "A green sprout growing out of an open film can, with a sparkle."),
+    ("a_five", "A golden five-petal cherry blossom medal on a red ribbon."),
+    ("a_pets", "A round red daruma doll, a white lucky cat figurine and an origami crane side by side."),
+    ("a_grown", "A rolled paper scroll tied with a black belt, a red seal on it."),
+    # more of every shelf
+    ("long_day", "A sun and a crescent moon on the two halves of one film reel."),
+    ("month", "A wall calendar whose every square holds a tiny ticket stub."),
+    ("cast", "A cluster of three theatre spotlights shining on a small empty stage."),
+    ("letters", "A row of three wooden toy blocks with a film frame, a star and a heart on them."),
+    ("eighties", "A portable cassette player with headphones and a neon pink-and-cyan triangle."),
+    ("nineties", "A VHS video cassette with a colourful zigzag sticker."),
+    ("one_star", "A single burnt popcorn kernel on a plate, with a tiny puff of smoke."),
+    ("full", "A small wooden card-index drawer with neat ticket stubs standing in it."),
+    ("weekday", "A briefcase with a striped popcorn box standing on it."),
+    ("summer", "An open-air cinema screen under a palm tree with a string of lights."),
+    ("winter", "A steaming mug of cocoa wrapped in a knitted scarf, with a snowflake."),
+    ("new_year", "A decorated fir tree with a film reel as its star."),
+    ("halloween", "A carved pumpkin lantern wearing 3D cinema glasses."),
+    ("comeback", "A swinging cinema door with a welcome mat and a warm light behind it."),
+    ("loyal", "A dog-eared TV remote with a small golden heart medal on a ribbon."),
+    ("s_night", "A bedside alarm clock in a nightcap next to a glowing little screen."),
+    ("s_hours", "A wall clock whose face is a television screen with an antenna."),
+    ("natures", "Three round theatre masks side by side: sleepy, cheerful and shy."),
+    ("forms", "A five-pointed star, a heart and a crescent shadow orbiting a film can."),
+    ("named", "A pet collar with a golden name tag shaped like a ticket."),
 ]
+
+# The pictures before the anime shelf are drawn already, nine to a sheet, so the shelf starts a sheet of its own.
+BASE = 56
 
 HEAD = """Use your image generation tool to create ONE image, then save it as PNG with transparency to the path given at the end (create folders if needed). The attached pictures are style references from this game: a pet and the booth it lives in. Match their style: detailed pixel art with fine pixels (like a 64x64 game icon, not chunky), crisp dark outline, soft cel shading with 3-4 tones per colour, rich saturated cosy colours, warm lamp-lit evening mood. Everything is about cinema and watching films.
 
@@ -83,7 +120,8 @@ Transparent background. No text, no letters, no numbers, no labels, no frames or
 
 
 def sheets():
-    return {f"feats{i // 9 + 1}": FEATS[i:i + 9] for i in range(0, len(FEATS), 9)}
+    parts = [part[i:i + 9] for part in (FEATS[:BASE], FEATS[BASE:]) for i in range(0, len(part), 9)]
+    return {f"feats{n + 1}": part for n, part in enumerate(parts)}
 
 
 if __name__ == "__main__":

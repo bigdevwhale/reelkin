@@ -220,6 +220,7 @@ object PetArt {
                 val r = Buf.ch(c, 16); val g = Buf.ch(c, 8); val bl = Buf.ch(c, 0)
                 if (r * 0.3f + g * 0.59f + bl * 0.11f < 40) continue
                 if (r - g > 45 && bl >= g - 10) continue  // pink blush, not orange fur
+                if (r > 200 && r - g > 80 && bl > 90) continue  // salmon blush (the tanuki's), still not orange fur
                 val key = (r / 40) * 100 + (g / 40) * 10 + bl / 40
                 val m = groups.getOrPut(key) { HashMap() }
                 m[c] = (m[c] ?: 0) + 1

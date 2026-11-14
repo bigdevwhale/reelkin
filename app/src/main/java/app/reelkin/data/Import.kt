@@ -198,7 +198,10 @@ object MyShows {
             val year = m.optInt("year").takeIf { it > 1880 }
             val aliases = m.optJSONArray("genres")?.let { g -> (0 until g.length()).joinToString(" ") { g.optJSONObject(it)?.optString("alias").orEmpty() } }.orEmpty()
             val at = listOf("watchedAt", "watchDate", "date").firstNotNullOfOrNull { k -> Seasons.parseDay(item.optString(k)) }
-            Haul(null, listOf(Ticket(title = name, year = year, genre = if ("anim" in aliases) Genre.ANIMATION else Catalog.guessGenre(aliases),
+            // The country as for a series, when the film has one: anime is animation from Japan.
+            val country = (if (ru) m.optString("countryTitle").trim().ifBlank { null } else null)
+                ?: m.optString("country").takeIf { it.length == 2 }?.let { Locale("", it).getDisplayCountry(if (ru) Locale("ru") else Locale.ENGLISH) }.orEmpty()
+            Haul(null, listOf(Ticket(title = name, year = year, country = country, genre = if ("anim" in aliases) Genre.ANIMATION else Catalog.guessGenre(aliases),
                 minutes = m.optInt("runtime").coerceAtLeast(0), stars = item.optInt("rating").coerceIn(0, 5), at = noonOf(at ?: now, now), ref = "myshows-movie:${m.optInt("id")}")),
                 cover = CoverHint(name = m.optString("titleOriginal").ifBlank { name }, year = year))
         }

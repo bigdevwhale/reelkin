@@ -39,7 +39,17 @@ class Watch(
     val gap: Int = 0,
     /** Something was watched the day before too. */
     val running: Boolean = false,
-)
+    /** Animation from Japan. */
+    val anime: Boolean = false,
+    /** It came out the year it was watched. */
+    val fresh: Boolean = false,
+    /** For anime: whole days since the anime before it. */
+    val animeGap: Int = 0,
+) {
+    val late get() = hour >= 23 || hour < 4
+    /** A full-length film, not an episode or a season. */
+    val film get() = !episode && !season
+}
 
 /** A pet as it stands now. [favMin]: minutes of what it loves; [found]: new countries and decades seen while it was out. */
 class PetState(val pet: Pet, val fed: Int, val stage: Stage, val byGenre: Map<Genre, Int>, val favMin: Int, val favCount: Int, val found: Int, val minutes: Int) {
@@ -105,11 +115,31 @@ object Pets {
         Species.GARGOYLE -> w.weekend
         Species.SPHINX -> (w.year ?: 9999) < 1950
         Species.WISP -> w.minutes in 1..95
+        Species.TANUKI -> w.anime
+        Species.KOI -> w.anime && w.film
+        Species.KAPPA -> w.anime && !w.film
+        Species.NEKOMATA -> w.anime && w.late
+        Species.TENGU -> w.anime && (w.year ?: 9999) < 2000
+        Species.SLIME -> w.anime && w.fresh
+        Species.MECHA -> w.anime && w.longDay
+        Species.MANEKI -> w.anime && w.stars >= 4
+        Species.DARUMA -> w.anime && w.rewatch
+        Species.CRANE -> w.anime && w.words
+        Species.SHIBA -> w.anime && w.running
+        Species.ONI -> w.anime && w.weekend
+        Species.ONIGIRI -> w.anime && w.company != Company.ALONE
+        Species.KIRIN -> w.anime && w.stars == 5
+        Species.RYU -> w.anime && w.film && w.minutes >= 120
+        Species.SUZUME -> w.anime && w.hour in 5..11
+        Species.BAKU -> w.anime && w.animeGap >= 7
         else -> w.genre in genres(sp)
     }
 
     private val EAST = listOf("япон", "japan", "коре", "korea", "китай", "china", "гонконг", "hong kong", "тайван", "taiwan")
     fun eastAsia(country: String): Boolean = country.lowercase().let { c -> c.isNotEmpty() && EAST.any { it in c } }
+
+    /** Anime: animation from Japan. */
+    fun anime(genre: Genre, country: String): Boolean = genre == Genre.ANIMATION && country.lowercase().let { "япон" in it || "japan" in it }
 
     /** Every film, whole season brought from elsewhere and episode, oldest first, with what the pets care about. */
     fun watches(c: Cinema): List<Watch> {
@@ -123,7 +153,7 @@ object Pets {
         val perDay = HashMap<Int, Int>()
         for (r in raw) perDay.merge(dayOf(r.at), r.minutes, Int::plus)
         val countries = HashSet<String>(); val decades = HashSet<Int>()
-        var lastDay = Int.MIN_VALUE
+        var lastDay = Int.MIN_VALUE; var lastAnime = Int.MIN_VALUE
         return raw.map { r ->
             val t = r.ticket
             val country = (t?.country ?: r.title?.country).orEmpty().trim()
@@ -134,13 +164,18 @@ object Pets {
             val gap = if (lastDay == Int.MIN_VALUE) 0 else (day - lastDay - 1).coerceAtLeast(0)
             val running = lastDay == day - 1 || (lastDay == day && perDay.containsKey(day - 1))
             lastDay = day
+            val genre = t?.genre ?: r.title?.genre ?: Genre.DRAMA
+            val anime = anime(genre, country)
+            val animeGap = if (!anime || lastAnime == Int.MIN_VALUE) 0 else (day - lastAnime - 1).coerceAtLeast(0)
+            if (anime) lastAnime = day
             cal.timeInMillis = r.at
             val dow = cal.get(Calendar.DAY_OF_WEEK)
-            Watch(r.at, r.minutes, t?.genre ?: r.title?.genre ?: Genre.DRAMA, year, country, episode = t == null, season = t?.season == true,
+            Watch(r.at, r.minutes, genre, year, country, episode = t == null, season = t?.season == true,
                 company = t?.company ?: Company.ALONE, credits = t?.credits ?: Credits.NOTHING, rewatch = t?.rewatch == true,
                 words = t?.words?.isNotBlank() == true, newCountry = nc, newDecade = nd, longDay = (perDay[day] ?: 0) >= 180,
                 hour = cal.get(Calendar.HOUR_OF_DAY), stars = t?.stars ?: 0, month = cal.get(Calendar.MONTH),
-                weekend = dow == Calendar.SATURDAY || dow == Calendar.SUNDAY, gap = gap, running = running)
+                weekend = dow == Calendar.SATURDAY || dow == Calendar.SUNDAY, gap = gap, running = running,
+                anime = anime, fresh = year != null && year >= cal.get(Calendar.YEAR), animeGap = animeGap)
         }
     }
 
@@ -179,6 +214,10 @@ object Pets {
         // The longest run of days in a row with something watched.
         var streak = 0; var run = 0; var prev = Int.MIN_VALUE
         for (d in ws.map { day(it.at) }.distinct().sorted()) { run = if (d == prev + 1) run + 1 else 1; streak = maxOf(streak, run); prev = d }
+        val aw = ws.filter { it.anime }
+        var animeStreak = 0; run = 0; prev = Int.MIN_VALUE
+        for (d in aw.map { day(it.at) }.distinct().sorted()) { run = if (d == prev + 1) run + 1 else 1; animeStreak = maxOf(animeStreak, run); prev = d }
+        fun days(l: List<Watch>) = l.map { day(it.at) }.distinct().size
         return Species.entries.map { sp ->
             when (sp) {
                 Species.CAT, Species.FOX, Species.OWL -> Hint(sp, 1, 1)
@@ -211,6 +250,24 @@ object Pets {
                 Species.GARGOYLE -> Hint(sp, films.count { it.weekend }, 10)
                 Species.SPHINX -> Hint(sp, films.count { (it.year ?: 9999) < 1950 }, 3)
                 Species.WISP -> Hint(sp, ws.map { day(it.at) }.distinct().size, 30)
+                Species.TANUKI -> Hint(sp, aw.size, 5)
+                Species.KOI -> Hint(sp, aw.count { it.film }, 3)
+                // A season brought from elsewhere stands for a dozen episodes.
+                Species.KAPPA -> Hint(sp, aw.sumOf { if (it.season) 12 else if (it.episode) 1 else 0 }, 12)
+                Species.NEKOMATA -> Hint(sp, days(aw.filter { it.late }), 3)
+                Species.TENGU -> Hint(sp, aw.count { (it.year ?: 9999) < 2000 }, 3)
+                Species.SLIME -> Hint(sp, aw.count { it.fresh }, 5)
+                Species.MECHA -> Hint(sp, days(aw.filter { it.longDay }), 2)
+                Species.MANEKI -> Hint(sp, aw.count { it.stars >= 4 }, 5)
+                Species.DARUMA -> Hint(sp, aw.count { it.rewatch }, 2)
+                Species.CRANE -> Hint(sp, aw.count { it.words }, 3)
+                Species.SHIBA -> Hint(sp, animeStreak, 5)
+                Species.ONI -> Hint(sp, days(aw.filter { it.weekend }), 5)
+                Species.ONIGIRI -> Hint(sp, aw.count { it.company != Company.ALONE }, 3)
+                Species.KIRIN -> Hint(sp, aw.count { it.stars == 5 }, 3)
+                Species.RYU -> Hint(sp, aw.count { it.film && it.minutes >= 120 }, 2)
+                Species.SUZUME -> Hint(sp, days(aw.filter { it.hour in 5..11 }), 3)
+                Species.BAKU -> Hint(sp, aw.count { it.animeGap >= 14 }, 1)
             }
         }
     }

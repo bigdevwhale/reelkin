@@ -42,6 +42,9 @@ def run(name, prompt, target, refs):
     cmd += ["-"]
     log = os.path.join(ART, "logs", name + ".log")
     os.makedirs(os.path.dirname(log), exist_ok=True)
+    # Drawing again: the old picture goes, or it would stand in for the new one below.
+    if os.path.exists(target):
+        os.remove(target)
     with open(log, "w", encoding="utf-8") as lf:
         r = subprocess.run(cmd, input=text, text=True, encoding="utf-8", stdout=lf, stderr=subprocess.STDOUT, timeout=1800)
     if not os.path.exists(target):

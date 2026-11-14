@@ -109,6 +109,58 @@ PETS = [
     ("wisp", "A cute will-o-the-wisp, a little flame spirit that lights the way to short films.",
      "Baby: a tiny round blue flame with a face. Young: a little glass lantern around it. Adult: a lantern held up by its small flame arms and swirling sparks. Ancient: a large glowing spirit with a halo of tiny lanterns.",
      "Soft blue and teal flame, white core, brass lantern."),
+    # The anime shelf: creatures of Japanese folklore and things from a Japanese home, each fond of anime in its own way.
+    ("tanuki", "A cute chubby tanuki (Japanese raccoon dog), a cheerful anime fan with a round cream belly and a green leaf on its head.",
+     "Baby: a tiny tanuki cub with a small green leaf on its head. Young: a straw hat hanging on its back and a paper fan. Adult: a short blue festival happi coat, the leaf on its head and a tiny film reel hugged like a drum. Ancient: a big straw hat, a gourd flask on a rope, grey whiskers and a paper lantern.",
+     "Warm brown fur, dark eye patches (eyes still big and visible), cream belly, green leaf, indigo blue coat."),
+    ("koi", "A cute round koi carp floating in the air like a festival carp streamer, who loves full-length anime films.",
+     "Baby: a tiny orange-and-white koi fry. Young: flowing fins and a red spot on its forehead. Adult: long whiskers, streamer-like fins with a film-strip edge and a little splash of water drops. Ancient: a golden koi with long flowing fins, a pearl and small swirling clouds, almost a dragon.",
+     "White body with orange-red and black patches, gold scales, pale aqua water drops."),
+    ("kappa", "A cute little kappa (Japanese river imp, turtle-like) who watches anime series episode after episode.",
+     "Baby: a tiny green kappa with a small water dish on its head and a little shell. Young: a lily-pad collar and a cucumber snack in its hand. Adult: a bigger shell, a TV remote and a bowl of cucumber slices like popcorn. Ancient: a mossy shell with tiny lotus flowers, a long white beard and a little lantern.",
+     "Fresh green skin, yellow beak-like mouth, brown shell, blue water dish, pale yellow belly."),
+    ("nekomata", "A cute nekomata (Japanese two-tailed spirit cat) who watches anime late at night.",
+     "Baby: a tiny black kitten with a forked tail tip. Young: two tails and a small bell on a red collar. Adult: two long tails with blue flame tips and a crescent-moon charm. Ancient: a night-blue haori cloak with stars, two flaming tails and a floating paper lantern.",
+     "Black and deep indigo fur, white muzzle and socks, red collar, gold bell, blue spirit flames; its eyes are big round glossy dark eyes like the others, set in a lighter face patch."),
+    ("tengu", "A cute little crow tengu (Japanese mountain spirit, a round black crow chick in a monk's outfit) who loves old classic anime.",
+     "Baby: a fluffy black crow chick with a tiny black cap. Young: a small feather fan in its wing. Adult: white pompoms on its chest, wooden sandals and an old film reel under its wing. Ancient: big black wings, a red-and-gold monk's robe, a long feather fan and a white beard tuft.",
+     "Glossy blue-black feathers, a lighter grey face so the eyes show, orange beak, white pompoms, red and gold robe."),
+    ("slime", "A cute jelly slime creature, a wobbly round drop with a face, who loves brand-new anime of the current season.",
+     "Baby: a tiny mint-green jelly drop with a shine spot. Young: a little sprout on top and headphones. Adult: a bigger glossy slime with a tiny golden crown and sparkles inside it like stars. Ancient: a large shimmering slime with a jewelled crown, a cape and little bubbles floating around.",
+     "Mint green and aqua jelly, white shine, gold crown, pink headphones."),
+    ("mecha", "A cute chibi toy giant robot, a round little super-robot hero who loves long anime marathons.",
+     "Baby: a tiny round wind-up toy robot with a key on its back. Young: stubby rocket fists and a horned samurai-style helmet crest. Adult: shoulder armour, a red scarf and a glowing chest plate shaped like a film reel. Ancient: a golden-trimmed hero robot with small wings, a long scarf and a glowing star on its chest.",
+     "White, royal blue and red armour, yellow trim, cyan glow; its eyes are big round glossy dark eyes like the others."),
+    ("maneki", "A cute maneki-neko, a lucky beckoning cat figurine come alive, one paw raised, who loves anime rated four popcorn and more.",
+     "Baby: a tiny white round kitten with one paw raised and a red collar. Young: a golden bell and red ears. Adult: a red bib, a big golden coin held against its belly and calico spots. Ancient: a golden lucky cat with a jewelled collar, a large coin and a tiny red cushion under it.",
+     "White porcelain-like fur, calico orange and black spots, red collar and ears, gold bell and coin."),
+    ("daruma", "A cute round daruma doll creature with a face and tiny feet, who loves rewatching favourite anime again and again.",
+     "Baby: a tiny round red daruma with a simple face. Young: golden swirls painted on its sides and bushy painted brows. Adult: a headband, tiny arms holding a round rewind-arrow charm and gold patterns. Ancient: a large gold-and-red daruma with a white beard, a little shrine rope around it and a tiny film reel on top.",
+     "Bright red body, cream face, gold patterns, black brows; its eyes are big round glossy dark eyes like the others."),
+    ("crane", "A cute origami paper crane come alive, floating, who loves anime it has written a few words about.",
+     "Baby: a tiny folded white paper crane with a face. Young: patterned paper wings with a red sun dot. Adult: wings of washi paper with wave patterns and a small ink brush tucked under its wing. Ancient: a magnificent crane of golden patterned paper with a long ribbon tail and floating tiny paper stars.",
+     "White and cream paper, red crown spot, indigo wave pattern, gold edges."),
+    ("shiba", "A cute fluffy shiba inu dog with a curly tail, a loyal fan who watches anime day after day without a gap.",
+     "Baby: a tiny shiba puppy with a curly tail. Young: a green scarf with white swirls round its neck. Adult: the scarf, a rope collar with a small calendar charm and a cinema ticket in its mouth. Ancient: a calm old shiba with a grey muzzle, a festival coat and a little bronze bell.",
+     "Orange-tan fur, cream cheeks, chest and tail underside, green scarf, red rope."),
+    ("oni", "A cute little oni (Japanese ogre child), round and friendly, who loves anime at weekends.",
+     "Baby: a tiny red oni toddler with one little horn and a fang. Young: two horns and tiger-striped shorts. Adult: curly dark hair, a small soft toy club and a popcorn box. Ancient: big golden horns, a tiger-striped cape, festival beads and a paper lantern.",
+     "Coral red skin, cream horns, yellow and black tiger stripes, dark navy hair."),
+    ("onigiri", "A cute living onigiri rice ball with a face, tiny arms and feet and a strip of seaweed, who loves anime watched with friends.",
+     "Baby: a tiny triangle rice ball with a small seaweed strip. Young: a pickled plum dot on top like a hat. Adult: a seaweed wrap like a jacket, chopsticks on its back and a small lunch box of snacks to share. Ancient: a big rice ball with a headband, a seaweed cape and a tea cup.",
+     "White rice with soft grey shading, dark green-black seaweed, red plum, warm wood browns."),
+    ("kirin", "A cute small kirin (East Asian unicorn-deer with scales and a flowing mane) who only eats five-star anime.",
+     "Baby: a tiny fawn with scales on its back and a nub of a horn. Young: a wavy golden mane and small antlers. Adult: a single branching horn, cloud-shaped fur on its hooves and five tiny stars in its mane. Ancient: a golden mane like flames, jade scales, a glowing horn and small clouds under its hooves.",
+     "Jade green scales, cream belly, golden mane and horn, soft white clouds."),
+    ("ryu", "A cute little eastern dragon (long snake-like body, whiskers, antlers, no wings) curled up, who loves long anime films of two hours and more.",
+     "Baby: a tiny blue dragon curled in a ring with stubby whiskers. Young: small antlers and a pearl held in its claws. Adult: a longer coiled body, cloud wisps and a film strip wound round its tail. Ancient: a majestic coiled dragon with long whiskers, golden antlers, a glowing pearl and clouds.",
+     "Azure blue scales, cream belly, gold antlers and whiskers, white clouds, glowing pearl."),
+    ("suzume", "A cute round sparrow, a fluffy little bird who watches anime in the morning over breakfast.",
+     "Baby: a tiny round brown sparrow chick. Young: a little rice-straw hat. Adult: a small yellow round school cap and a little red school backpack on its back, a ticket stub tucked under one wing; nothing in its beak, the face fully clear. Ancient: a plump old sparrow with a kimono collar, a tea cup and a tiny sunrise fan.",
+     "Chestnut brown cap and wings, cream belly, black cheek spots, warm yellow and red accents."),
+    ("baku", "A cute baku (Japanese dream-eating spirit, like a small tapir with a short trunk), floating on a little cloud, who waits for you to come back to anime after a break.",
+     "Baby: a tiny round tapir calf with a short trunk and white stripes. Young: a small dream cloud under it. Adult: a night-blue saddle cloth with stars, tiny tusks and a sleeping cap. Ancient: a starry-coated baku with golden tusks, swirling dream clouds and a crescent moon charm.",
+     "Indigo and lavender body, white belly band, pink trunk tip, gold stars, soft cloud white."),
 ]
 
 PET_HEAD = """Use your image generation tool to create ONE image, then save it as PNG with transparency to the path given at the end (create folders if needed). The first attached picture is a sprite sheet from this game: match its style exactly. The second shows the cosy little cinema projection booth the pet lives in.
@@ -165,6 +217,23 @@ EGGS = {
     "gargoyle": "grey stone tin with ivy and a little stone wing",
     "sphinx": "gold and lapis blue tin with an eye on the label",
     "wisp": "dark teal tin with a soft blue glow leaking from the lid seam",
+    "tanuki": "warm brown tin with a green leaf on top and a straw rope band",
+    "koi": "white tin with orange-red and black koi patches and little waves",
+    "kappa": "green tin with a turtle-shell pattern and a blue water dish on top",
+    "nekomata": "black tin with two little blue flames and a golden bell",
+    "tengu": "black-feathered tin with white pompoms and a feather fan on the label",
+    "slime": "glossy mint-green jelly-like tin with a small golden crown",
+    "mecha": "white, blue and red armoured tin with yellow trim and a horned crest",
+    "maneki": "white porcelain tin with a red collar, a gold bell and a gold coin on the label",
+    "daruma": "bright red tin with gold swirls and bushy painted brows",
+    "crane": "tin wrapped in folded cream paper with indigo waves and a red dot",
+    "shiba": "orange-tan tin with a green scarf with white swirls tied round it",
+    "oni": "coral red tin with two little cream horns and a tiger-striped band",
+    "onigiri": "white rice-textured tin with a dark seaweed strip and a red plum on top",
+    "kirin": "jade-green scaled tin with a golden mane fringe and five stars",
+    "ryu": "azure blue scaled tin with gold whiskers, clouds and a pearl on the label",
+    "suzume": "chestnut and cream tin with a sunrise on the label and a straw hat on top",
+    "baku": "indigo tin with gold stars, a crescent moon and a soft cloud band",
 }
 
 BOOTH = {
@@ -203,6 +272,16 @@ Save the image to: art/hall/sheets/stage.png
 }
 
 
+# The pets before the anime shelf: their cans are drawn already, nine to a sheet, so the shelf starts a sheet of its own.
+BASE = 32
+
+
+def egg_sheets():
+    """The species on each sheet of cans, in order: eggs1.png, eggs2.png…"""
+    ids = [p[0] for p in PETS]
+    return [part[i:i + 9] for part in (ids[:BASE], ids[BASE:]) for i in range(0, len(part), 9)]
+
+
 def write(path, text):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -213,9 +292,7 @@ def main():
     for pid, what, stages, colours in PETS:
         write(os.path.join(ART, "pets", "prompts", pid + ".txt"),
               PET_HEAD + what + "\n" + stages + "\n" + colours + f"\n\nSave the image to: art/pets/sheets/{pid}.png\n")
-    ids = [p[0] for p in PETS]
-    for n in range((len(ids) + 8) // 9):
-        part = ids[n * 9:n * 9 + 9]
+    for n, part in enumerate(egg_sheets()):
         body = "\n".join(f"{i + 1}. {EGGS[k]}." for i, k in enumerate(part))
         count = "Nine" if len(part) == 9 else str(len(part))
         write(os.path.join(ART, "eggs", "prompts", f"eggs{n + 1}.txt"), EGG_HEAD.replace("{n}", count) + body + f"\n\nSave the image to: art/eggs/sheets/eggs{n + 1}.png\n")
@@ -223,7 +300,7 @@ def main():
         write(os.path.join(ART, "booth", "prompts", k + ".txt"), v)
     for k, v in HALL.items():
         write(os.path.join(ART, "hall", "prompts", k + ".txt"), v)
-    print(len(PETS), "pets, 2 egg sheets,", len(BOOTH), "booth,", len(HALL), "hall")
+    print(len(PETS), "pets,", len(egg_sheets()), "egg sheets,", len(BOOTH), "booth,", len(HALL), "hall")
 
 
 if __name__ == "__main__":

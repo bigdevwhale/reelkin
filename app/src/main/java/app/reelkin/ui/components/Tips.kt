@@ -48,7 +48,7 @@ private fun text(tip: Tip, ru: Boolean): Pair<String, List<String>> = if (ru) wh
     Tip.SAGA -> "Это сага" to listOf("Твоё кино в цифрах и картинках. Сверху выбираешь период и что считать: всё, фильмы или сериалы.",
         "Каждая карточка открывается — там полный список или график.", "Ниже — цели, календарь года, зал со зрителями и премии.")
     Tip.PETS -> "Это питомцы" to listOf("«Мои» — кого ты уже вырастил. Есть только тот, кто сейчас в будке; остальные отдыхают, их можно позвать.",
-        "«Коробки» — все 32 питомца. Каждая коробка открывается тем, как ты смотришь кино: хорроры, старые фильмы, кино после полуночи…",
+        "«Коробки» — все 49 питомцев. Каждая коробка открывается тем, как ты смотришь кино: хорроры, старые фильмы, кино после полуночи…",
         "Нажми на коробку — увидишь, кто в ней, что он любит и сколько осталось до открытия.")
     Tip.CAN -> "Коробка с плёнкой" to listOf("Вверху — четыре стадии, в которые вырастет питомец. Пока коробка закрыта, они в тени.",
         "«Как открыть» — условие и сколько осталось. Открытую коробку можно забрать в будку.")
@@ -81,7 +81,7 @@ private fun text(tip: Tip, ru: Boolean): Pair<String, List<String>> = if (ru) wh
     Tip.SAGA -> "This is the saga" to listOf("Your films in numbers and pictures. Pick the span and what to count on top.",
         "Each card opens into the whole list or chart.", "Below: goals, the calendar, the hall and the awards.")
     Tip.PETS -> "These are the pets" to listOf("«Mine» are the ones you've raised. Only the one in the booth eats; call the others back any time.",
-        "«Cans» are all 32 pets. Each can opens by the way you watch: horror, old films, films after midnight…",
+        "«Cans» are all 49 pets. Each can opens by the way you watch: horror, old films, films after midnight…",
         "Tap a can to see who's in it, what it loves and how near it is to opening.")
     Tip.CAN -> "A film can" to listOf("On top, the four stages the pet grows through, in shadow while the can is shut.",
         "«How it opens» says what it takes and how much is left. An open can goes to the booth.")

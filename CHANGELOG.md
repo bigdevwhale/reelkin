@@ -6,6 +6,22 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.1.0] - 2026-11-14
+
+### Added
+- 17 anime pets, 49 in all: a tanuki, a kappa, a nekomata, a mecha, a maneki-neko, a kirin and more. Each loves anime (animation from Japan) in its own way, and its can opens the same way.
+- An «Anime» shelf of 12 achievements and 20 more on the other shelves: 88 in all.
+
+### Fixed
+- A pet's closing eyelid no longer takes the colour of a blush.
+- Films imported from MyShows keep their country.
+
+<!-- tg
+17 аниме-питомцев: тануки, каппа, нэкомата, меха-робот, манэки-нэко, кирин и другие – у каждого своя любовь к аниме.
+Новая полка достижений «Аниме» и ещё 20 достижений на других полках – всего 88.
+Исправлено: закрытые глаза питомцев больше не красятся в цвет румянца.
+-->
+
 ## [2.0.2] - 2026-11-13
 
 ### Fixed

@@ -559,6 +559,8 @@ private fun genres(sp: app.reelkin.data.Species) = app.reelkin.domain.Pets.genre
 internal fun lovesWhy(sp: app.reelkin.data.Species, ru: Boolean): String {
     val g = genres(sp)
     return if (g.isNotEmpty()) (if (ru) "Каждый такой фильм или серия идёт в зачёт в полтора раза." else "Every such film or episode counts one and a half times.")
+    else if (sp.anime) (if (ru) "Аниме — это мультфильм из Японии; остальное он ест как обычно, а такое аниме идёт в зачёт в полтора раза."
+        else "Anime is animation from Japan; it eats anything else as usual, and such anime counts one and a half times.")
     else if (ru) "Тут дело не в жанре, а в том, как ты смотришь: это засчитывается любому фильму." else "It's not about the genre but the way you watch: any film can count."
 }
 

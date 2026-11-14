@@ -58,7 +58,34 @@ class ReelkinTest {
         assertTrue(!before.open(Species.BAT))
         assertTrue(after.open(Species.BAT))
         assertEquals(listOf(Species.BAT), gains(before, after, horror.last()).cans)
-        assertEquals(32, after.hints.size)
+        assertEquals(49, after.hints.size)
+    }
+
+    @Test fun animeIsAnimationFromJapanAndHasPetsAndFeatsOfItsOwn() {
+        val day = 86_400_000L
+        val anime = (0 until 5).map { tk("A$it", Genre.ANIMATION, 1988 + it * 10, "Япония", m = 120, at = it * 20 * day) }
+        val cartoon = tk("C", Genre.ANIMATION, cn = "США", at = 200 * day)
+        val drama = tk("D", Genre.DRAMA, cn = "Japan", at = 201 * day)
+        val before = cin(anime.dropLast(1) + cartoon + drama)
+        val after = cin(anime + cartoon + drama)
+        assertEquals(listOf(true, true, true, true, true, false, false), after.watches.map { it.anime })
+        assertTrue(!before.open(Species.TANUKI))
+        assertTrue(after.open(Species.TANUKI))
+        assertTrue(after.open(Species.KOI))
+        assertTrue(after.open(Species.RYU))
+        // Twenty days between them: the baku's can opens on coming back; only two are from before 2000.
+        assertTrue(after.open(Species.BAKU))
+        assertTrue(!after.open(Species.TENGU))
+        assertTrue(!after.open(Species.KAPPA))
+        fun feat(f: app.reelkin.domain.Feat) = after.feats.first { it.f == f }.have
+        assertEquals(5, feat(app.reelkin.domain.Feat.ANIME))
+        assertEquals(5, feat(app.reelkin.domain.Feat.A_FILMS))
+        assertEquals(2, feat(app.reelkin.domain.Feat.A_RETRO))
+        assertEquals(0, feat(app.reelkin.domain.Feat.A_EPISODES))
+        // A tanuki out for all of it loves the anime only: half again for those five.
+        val tanuki = Pets.state(Pet(id = 3, species = Species.TANUKI, laid = 0), after.watches)
+        assertEquals(800 + 300, tanuki.fed)
+        assertEquals(17, Species.entries.count { it.anime })
     }
 
     @Test fun lettersDecadesCountries() {

@@ -2,7 +2,7 @@
 
 **Films and series raise a small pet in a projectionist's booth.** · [Русская версия](README.ru.md)
 
-Something sleeps in every film can. Three are open from the start (a detective cat, an animator fox, a critic owl); the other 29 open by the way you watch: horror, westerns, films after midnight, old films, rewatches, series binged. Not only animals: a little dragon, a unicorn, a phoenix, a kitsune, a back-row ghost, a golem of film cans. Every minute you watch helps the pet grow,
+Something sleeps in every film can. Three are open from the start (a detective cat, an animator fox, a critic owl); the other 46 open by the way you watch: horror, westerns, films after midnight, old films, rewatches, series binged. Not only animals: a little dragon, a unicorn, a phoenix, a kitsune, a back-row ghost, a golem of film cans, and a whole anime shelf: a tanuki, a kappa, a nekomata, a mecha, a lucky cat. Every minute you watch helps the pet grow,
 and every film is a ticket stub and a spectator in a hundred-seat hall.
 
 - **The booth.** Put a film on the projector: the lights go down, the reels turn and the pet watches
@@ -13,7 +13,7 @@ and every film is a ticket stub and a spectator in a hundred-seat hall.
   takes a form for good from what it was fed. Only the one in the booth eats; call the others back any time.
 - **The saga.** A week, a month, a year or all time: hours, days with films, best films and series,
   genres, countries, decades, hours and weekdays, records, a calendar of the year, and what the pet makes of it.
-- **Goals, tasks and achievements.** Goals picked from a couple of dozen, weekly tasks and 56 achievements
+- **Goals, tasks and achievements.** Goals picked from a couple of dozen, weekly tasks and 88 achievements
   in steps, each step paying popcorn.
 - **Postcards** for a feed or a story: a stub's review, an achievement, the booth, the pet, the numbers,
   genres, rhythm, the year in squares, the menagerie, with a QR code to Google Play if you like.

@@ -158,7 +158,8 @@ def stage(table):
 
 def eggs():
     from icons_cut import boxes
-    for n in range((len(SPECIES) + 8) // 9):
+    from art_prompts import egg_sheets
+    for n, names in enumerate(egg_sheets()):
         p = os.path.join(ART, "eggs", "sheets", f"eggs{n + 1}.png")
         if not os.path.exists(p):
             continue
@@ -171,7 +172,7 @@ def eggs():
             if s < 400:
                 solid[lab == i] = False
         im[..., 3] = np.where(solid, 255, 0)
-        for sp, (a, b, c, d) in zip(SPECIES[n * 9:n * 9 + 9], boxes(solid, len(SPECIES[n * 9:n * 9 + 9]))):
+        for sp, (a, b, c, d) in zip(names, boxes(solid, len(names))):
             part = im[b:d, a:c].copy()
             # A can in a pet's frame: about two thirds as wide, standing on the same floor.
             mw, mh = 42 * FINE, 40 * FINE

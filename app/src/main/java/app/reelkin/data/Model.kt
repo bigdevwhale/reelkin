@@ -31,14 +31,18 @@ enum class Genre(val color: Int, val who: Who, val form: Form) {
 
 /**
  * The pets, each asleep in a film can of its own. Three cans are there from the start; the rest open by the
- * way you watch. [floats]: it hovers instead of standing.
+ * way you watch. [floats]: it hovers instead of standing. [anime]: it lives on anime, animation from Japan.
  */
-enum class Species(val starter: Boolean = false, val floats: Boolean = false) {
+enum class Species(val starter: Boolean = false, val floats: Boolean = false, val anime: Boolean = false) {
     CAT(true), FOX(true), OWL(true),
     BAT, COON, HAMSTER, ARMADILLO, LOVEBIRD, MONKEY, FROG,
     MOTH(floats = true), SLOTH, PENGUIN, REDPANDA, PUG, MOUSE, GOLDFISH(floats = true), SQUIRREL,
     GHOST(floats = true), DRAGON, UNICORN, PHOENIX, KITSUNE, YETI, GRIFFIN, GOLEM, ROBOT, FAIRY(floats = true),
-    POPKIN, GARGOYLE, SPHINX, WISP(floats = true);
+    POPKIN, GARGOYLE, SPHINX, WISP(floats = true),
+    TANUKI(anime = true), KOI(floats = true, anime = true), KAPPA(anime = true), NEKOMATA(anime = true), TENGU(anime = true),
+    SLIME(anime = true), MECHA(anime = true), MANEKI(anime = true), DARUMA(anime = true), CRANE(floats = true, anime = true),
+    SHIBA(anime = true), ONI(anime = true), ONIGIRI(anime = true), KIRIN(anime = true), RYU(anime = true), SUZUME(anime = true),
+    BAKU(floats = true, anime = true);
 
     val file get() = name.lowercase()
 }

@@ -24,7 +24,9 @@ DEBUG = os.path.join(ROOT, "app", "build", "art", "sheets.png")
 SPECIES = ["cat", "fox", "owl", "bat", "coon", "hamster", "armadillo", "lovebird", "monkey", "frog",
            "moth", "sloth", "penguin", "redpanda", "pug", "mouse", "goldfish", "squirrel",
            "ghost", "dragon", "unicorn", "phoenix", "kitsune", "yeti", "griffin", "golem", "robot", "fairy",
-           "popkin", "gargoyle", "sphinx", "wisp"]
+           "popkin", "gargoyle", "sphinx", "wisp",
+           "tanuki", "koi", "kappa", "nekomata", "tengu", "slime", "mecha", "maneki", "daruma", "crane",
+           "shiba", "oni", "onigiri", "kirin", "ryu", "suzume", "baku"]
 STAGES = ["baby", "young", "adult", "ancient"]
 # The app's pets are 64x64 art pixels; their pictures are FINE times finer (the app's Buf.FINE), and so are
 # the eye boxes in faces.txt.
@@ -34,7 +36,11 @@ GROUND = 63 * FINE + 1   # the bottom row a pet stands on
 MAX_W, MAX_H = 62 * FINE, 61 * FINE
 
 # Eyes the finder gets wrong, by hand: (x0, y0, x1, y1) of each eye in sprite pixels.
-EYES = {}
+EYES = {
+    # The crane looks aside, one eye half hidden; the daruma's shine is too small for the finder.
+    "crane_adult": [(92, 104, 105, 119), (121, 101, 131, 113)],
+    "daruma_young": [(70, 115, 86, 129), (102, 115, 120, 129)],
+}
 
 
 def lum(a):

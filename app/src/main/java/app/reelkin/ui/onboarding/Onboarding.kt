@@ -61,8 +61,8 @@ fun Onboarding() {
             when (page) {
                 0 -> {
                     Says(t("Это будка киномеханика. А в коробке с плёнкой кто-то спит.", "This is a projectionist's booth. And something is asleep in the film can."), t("будка", "the booth"))
-                    Text(t("Отмечай фильмы и сериалы, которые смотришь. Три коробки открыты сразу: кот-сыщик, лис-аниматор и сова-критик. Остальные 29 откроются тем, как ты смотришь: хорроры, вестерны, кино после полуночи, старые фильмы, пересмотры…",
-                        "Log the films and series you watch. Three cans are open from the start: a detective cat, an animator fox and a critic owl. The other 29 open by the way you watch: horror, westerns, films after midnight, old films, rewatches…"), style = T.Body)
+                    Text(t("Отмечай фильмы и сериалы, которые смотришь. Три коробки открыты сразу: кот-сыщик, лис-аниматор и сова-критик. Остальные 46 откроются тем, как ты смотришь: хорроры, вестерны, кино после полуночи, старые фильмы, пересмотры…",
+                        "Log the films and series you watch. Three cans are open from the start: a detective cat, an animator fox and a critic owl. The other 46 open by the way you watch: horror, westerns, films after midnight, old films, rewatches…"), style = T.Body)
                 }
                 1 -> {
                     Says(t("Ставь фильм на проектор — я буду смотреть с тобой из окошка.", "Put a film on the projector and I'll watch it with you from the port."), t("питомец", "the pet"))
