@@ -29,6 +29,40 @@ class ReelkinTest {
         Ticket(id = at + 1, title = t, genre = g, year = y, country = cn, minutes = m, at = at, credits = cr)
     private fun cin(t: List<Ticket>, titles: List<Title> = emptyList()) = Cinema(titles, t, emptyList(), Settings(), 0)
 
+    @Test fun seasonsBeforeWithoutAStubAreMissing() {
+        val c = cin(listOf(Ticket(id = 1, title = "Lost · сезон 2", season = true), Ticket(id = 2, title = "Lost · season 3", season = true)))
+        assertEquals(listOf(1, 4), c.missingSeasons("Lost", 5))
+        assertEquals(emptyList<Int>(), c.missingSeasons("Lost", 1))
+        assertEquals("сезоны 1–2, 4", app.reelkin.domain.Words.seasons(listOf(4, 1, 2), true))
+        assertEquals("season 3", app.reelkin.domain.Words.seasons(listOf(3), false))
+        // Seasons noted down as seen long ago stay in the diary but count for nothing.
+        val past = Ticket(id = 3, title = "Lost · сезон 1", season = true, past = true, minutes = 900, whole = true, genre = Genre.DRAMA)
+        val c2 = cin(listOf(tk("A", Genre.NOIR, m = 100), past))
+        assertEquals(100L, c2.minutes)
+        assertEquals(1, c2.seats.size)
+        assertEquals(2, c2.diary.size)
+        assertEquals(-1, c2.seatOf(past))
+        assertEquals(cin(listOf(tk("A", Genre.NOIR, m = 100))).earned, c2.earned)
+        assertEquals(emptyList<Int>(), c2.missingSeasons("Lost", 2))
+    }
+
+    @Test fun subgenresComeFromTheCatalogueAndAreSearchedInBothLanguages() {
+        val S = app.reelkin.data.Subgenres
+        assertEquals("slasher,supernatural", app.reelkin.data.Catalog.guessSub(listOf("slasher film", "supernatural horror film", "horror film"), Genre.HORROR, ""))
+        assertEquals("anime", app.reelkin.data.Catalog.guessSub(listOf("animated film"), Genre.ANIMATION, "Япония"))
+        assertEquals("psycho", S.match(listOf("psychological thriller"), Genre.NOIR).single())
+        // A known one typed by hand is kept by its key; one's own is kept as typed; a second tap takes it away.
+        assertEquals("cyberpunk", S.toggle("", "Киберпанк"))
+        assertEquals("cyberpunk,солнечный", S.toggle("cyberpunk", "солнечный"))
+        assertEquals("солнечный", S.toggle("cyberpunk,солнечный", "cyberpunk"))
+        val stubs = listOf(Ticket(id = 1, title = "Alien", genre = Genre.HORROR, sub = "monster"), Ticket(id = 2, title = "Heat", genre = Genre.NOIR))
+        assertEquals(listOf("Alien"), Browse(query = "монстр").stubs(stubs).map { it.title })
+        assertEquals(listOf("Alien"), Browse(query = "monsters").stubs(stubs).map { it.title })
+        // Every subgenre is offered under one genre and has a name in both languages.
+        assertEquals(S.all.size, S.all.map { it.key }.toSet().size)
+        assertTrue(Genre.entries.all { S.of(it).isNotEmpty() })
+    }
+
     @Test fun minutesAndPopcorn() {
         val c = cin(listOf(tk("A", Genre.NOIR, m = 100), tk("B", Genre.NOIR, m = 50, at = 1, cr = Credits.SCENE)))
         assertEquals(150L, c.minutes)

@@ -113,6 +113,8 @@ data class Title(
     @ColumnInfo(defaultValue = "") val director: String = "",
     /** The leading actors, by billing, joined by commas. */
     @ColumnInfo(defaultValue = "") val cast: String = "",
+    /** Subgenres under [genre], joined by commas: see [Subgenres]. */
+    @ColumnInfo(defaultValue = "") val sub: String = "",
 )
 
 /** A torn stub: a film watched, or a whole season. It holds a copy of everything so the bill can forget the title. */
@@ -140,6 +142,13 @@ data class Ticket(
     @ColumnInfo(defaultValue = "") val director: String = "",
     /** The leading actors, by billing, joined by commas. */
     @ColumnInfo(defaultValue = "") val cast: String = "",
+    /** Subgenres under [genre], joined by commas: see [Subgenres]. */
+    @ColumnInfo(defaultValue = "") val sub: String = "",
+    /**
+     * Watched long before, only noted down: the seasons before the one a series is marked from. It stays in the
+     * diary but counts for nothing: no food for the pets, no popcorn, no seat, no statistics.
+     */
+    @ColumnInfo(defaultValue = "0") val past: Boolean = false,
 )
 
 @Entity(tableName = "episodes", indices = [Index("series")])

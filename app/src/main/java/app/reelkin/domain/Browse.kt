@@ -3,6 +3,7 @@ package app.reelkin.domain
 import app.reelkin.data.Company
 import app.reelkin.data.Genre
 import app.reelkin.data.Kind
+import app.reelkin.data.Subgenres
 import app.reelkin.data.Ticket
 import app.reelkin.data.Title
 import java.util.Calendar
@@ -35,18 +36,18 @@ data class Browse(
     private fun with(director: String, cast: String) = person == null || person in app.reelkin.data.People.of(director) || person in app.reelkin.data.People.of(cast)
 
     fun titles(all: List<Title>): List<Title> = all.filter { t ->
-        matches(t.title + " " + t.country + " " + t.director + " " + t.cast) && with(t.director, t.cast) && (kind == null || t.kind == kind) && (genres.isEmpty() || t.genre in genres) &&
+        matches(t.title + " " + t.country + " " + t.director + " " + t.cast + " " + Subgenres.text(t.sub)) && with(t.director, t.cast) && (kind == null || t.kind == kind) && (genres.isEmpty() || t.genre in genres) &&
             // A title waiting has no popcorn, no day and no company yet: those filters are about stubs.
             stars == 0 && year == null && company == null
     }
 
     /** Series running or put away: only the words, the kind and the genre apply to them. */
     fun series(all: List<Title>): List<Title> = all.filter { t ->
-        matches(t.title + " " + t.country + " " + t.director + " " + t.cast) && with(t.director, t.cast) && kind != Kind.FILM && (genres.isEmpty() || t.genre in genres)
+        matches(t.title + " " + t.country + " " + t.director + " " + t.cast + " " + Subgenres.text(t.sub)) && with(t.director, t.cast) && kind != Kind.FILM && (genres.isEmpty() || t.genre in genres)
     }
 
     fun stubs(all: List<Ticket>): List<Ticket> = all.filter { t ->
-        matches(t.title + " " + t.country + " " + t.words + " " + t.director + " " + t.cast) && with(t.director, t.cast) && (kind == null || t.season == (kind == Kind.SERIES)) &&
+        matches(t.title + " " + t.country + " " + t.words + " " + t.director + " " + t.cast + " " + Subgenres.text(t.sub)) && with(t.director, t.cast) && (kind == null || t.season == (kind == Kind.SERIES)) &&
             (genres.isEmpty() || t.genre in genres) && (stars == 0 || t.stars >= stars) && (year == null || yearOf(t.at) == year) &&
             (company == null || t.company == company)
     }.let { l ->

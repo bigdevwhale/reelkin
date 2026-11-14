@@ -93,8 +93,8 @@ fun SettingsPage(c: Cinema, nav: Nav) {
             }
 
             Section(t("Режиссёры и актёры", "Directors and actors"))
-            val known = c.seats.count { it.director.isNotEmpty() } + c.titles.count { it.director.isNotEmpty() }
-            val all = c.seats.size + c.titles.size
+            val known = c.diary.count { it.director.isNotEmpty() } + c.titles.count { it.director.isNotEmpty() }
+            val all = c.diary.size + c.titles.size
             var progress by remember { mutableStateOf<Pair<Int, Int>?>(null) }
             Card(Modifier.fillMaxWidth(), onClick = if (progress == null) ({
                 progress = 0 to 1

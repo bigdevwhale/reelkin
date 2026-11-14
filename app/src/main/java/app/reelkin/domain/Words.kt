@@ -28,6 +28,21 @@ object Words {
         Genre.REALITY -> if (ru) "реалити-шоу" else "reality"
     }
 
+    /** Season numbers as «сезон 3» or «сезоны 1–3, 5». */
+    fun seasons(l: List<Int>, ru: Boolean): String {
+        val runs = ArrayList<String>()
+        var i = 0
+        val s = l.distinct().sorted()
+        while (i < s.size) {
+            var j = i
+            while (j + 1 < s.size && s[j + 1] == s[j] + 1) j++
+            runs += if (j == i) "${s[i]}" else "${s[i]}–${s[j]}"
+            i = j + 1
+        }
+        val many = s.size > 1
+        return (if (ru) (if (many) "сезоны " else "сезон ") else (if (many) "seasons " else "season ")) + runs.joinToString(", ")
+    }
+
     /** "One more X" for the pet's hint. */
     fun oneMore(g: Genre, ru: Boolean) = if (!ru) (if (g == Genre.NOIR) "One more mystery or thriller" else "One more ${genre(g, false)}") else when (g) {
         Genre.NOIR -> "Ещё один детектив или триллер"
@@ -289,7 +304,8 @@ object Words {
         Species.BAKU -> if (ru) "Сон" else "Dream"
     }
 
-    fun seat(i: Int, ru: Boolean) = if (ru) "ряд ${i / 10 + 1}, место ${i % 10 + 1}" else "row ${i / 10 + 1}, seat ${i % 10 + 1}"
+    /** A seat in the hall; -1, a stub without one (seen long ago, only noted down). */
+    fun seat(i: Int, ru: Boolean) = if (i < 0) (if (ru) "смотрел раньше" else "seen before") else if (ru) "ряд ${i / 10 + 1}, место ${i % 10 + 1}" else "row ${i / 10 + 1}, seat ${i % 10 + 1}"
 
     val AWARDS = listOf("Фильм года" to "Film of the year", "Злодей года" to "Villain of the year", "Музыка года" to "Music of the year",
         "Сцена года" to "Scene of the year", "Разочарование года" to "Letdown of the year")

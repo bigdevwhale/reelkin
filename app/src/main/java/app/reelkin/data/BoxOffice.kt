@@ -45,13 +45,29 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
         val n = s.episode + 1
         if (n < s.perSeason) { dao.update(s.copy(episode = n, cliff = false, status = Status.RUNNING)); return null }
         val stub = Ticket(title = s.title + if (ru) " · сезон ${s.season}" else " · season ${s.season}", season = true, year = s.year, country = s.country,
-            genre = s.genre, minutes = s.minutes * s.perSeason, stars = 0, cover = s.cover)
+            genre = s.genre, sub = s.sub, minutes = s.minutes * s.perSeason, stars = 0, cover = s.cover)
         val id = dao.insert(stub)
         // The next season takes its length from the catalogue, and waits in the cupboard if it isn't out yet.
         val next = s.season + 1
         val out = Seasons.air(s, next).let { it == Air.Out || it == Air.Unknown }
         dao.update(s.copy(season = next, episode = 0, cliff = false, status = if (out) Status.RUNNING else Status.SHELVED, perSeason = Seasons.episodes(s, next) ?: s.perSeason))
         return stub.copy(id = id)
+    }
+
+    /**
+     * Notes down the seasons of [s] before [before] that have no stub, as watched long ago: stubs that only stay in
+     * the diary ([Ticket.past]), each with its own length from the catalogue, a minute apart just before [at].
+     * Returns how many.
+     */
+    suspend fun earlierSeasons(s: Title, before: Int, ru: Boolean, at: Long): Int {
+        val torn = dao.ticketList().filter { it.season }.map { it.title }.toHashSet()
+        val missing = (1 until before).filter { n -> "${s.title} · сезон $n" !in torn && "${s.title} · season $n" !in torn }
+        dao.insertTickets(missing.map { n ->
+            Ticket(title = s.title + if (ru) " · сезон $n" else " · season $n", season = true, past = true, year = s.year, country = s.country,
+                genre = s.genre, sub = s.sub, minutes = s.minutes * (Seasons.episodes(s, n) ?: s.perSeason), cover = s.cover,
+                director = s.director.takeIf { it != "?" } ?: "", cast = s.cast, at = at - (before - n) * 60_000L)
+        })
+        return missing.size
     }
 
     suspend fun setPlan(id: Long, show: String?, plan: String, at: Long = System.currentTimeMillis()) = dao.setPlan(id, plan, at, show)

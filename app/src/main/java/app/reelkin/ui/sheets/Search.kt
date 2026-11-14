@@ -124,7 +124,10 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     var director by remember { mutableStateOf(old?.director?.takeIf { it != "?" } ?: d.director) }
     var cast by remember { mutableStateOf(old?.cast ?: d.cast) }
     var genre by remember { mutableStateOf(d.genre) }
+    var sub by remember { mutableStateOf(old?.sub ?: d.sub) }
     var kind by remember { mutableStateOf(d.kind) }
+    // Seasons before the one you're on are taken as watched: stubs for those not torn yet.
+    var earlier by remember { mutableStateOf(old == null) }
     var perSeason by remember { mutableStateOf((d.perSeason ?: 10).toString()) }
     var season by remember { mutableStateOf((old?.season ?: 1).toString()) }
     var cover by remember { mutableStateOf(old?.cover) }
@@ -154,9 +157,12 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             minutes = minutes.toIntOrNull() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
             season = sn, episode = if (same) old!!.episode else 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 99) ?: 10, cliff = same && old!!.cliff,
             plan = plan, planAt = planAt, show = show,
-            director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(),
+            director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(), sub = sub,
         )
     }
+    val sn = season.toIntOrNull()?.coerceIn(1, 99) ?: 1
+    val missing = if (kind == TKind.SERIES) c.missingSeasons(old?.title ?: title.trim(), sn) else emptyList()
+    val marks = earlier && missing.isNotEmpty()
     Sheet(nav::close) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -191,31 +197,42 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             val probe = Title(title = title, plan = plan, season = season.toIntOrNull() ?: 1)
             val now = System.currentTimeMillis()
             listOfNotNull(Words.seasonsOut(probe, ru, now), Words.air(probe, ru, now)).takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(" · "), style = T.Small.copy(color = C.gold)) }
-            val sn = season.toIntOrNull() ?: 1
-            val from = old?.season ?: 1
-            // The season field is where you are, not how many there are: say so when it skips seasons.
-            if (sn > from) Text(if (ru) "Это сезон, который ты смотришь сейчас. ${if (sn - from == 1) "Сезон $from не отметится" else "Сезоны $from–${sn - 1} не отметятся"} просмотренным${if (sn - from == 1) "" else "и"}" +
-                (if (old == null) " — для этого есть «Уже посмотрел сезон»." else ".")
-                else "This is the season you're on. ${if (sn - from == 1) "Season $from" else "Seasons $from–${sn - 1}"} won't count as watched" + (if (old == null) ": use «Watched season» for that." else "."), style = T.Muted)
+            // The season field is where you are, not how many there are: the seasons before it can be taken as watched.
+            if (missing.isNotEmpty()) {
+                val one = missing.size == 1
+                Flow { Chip((if (ru) "уже посмотрел ${Words.seasons(missing, true)}" else "already watched ${Words.seasons(missing, false)}") + if (earlier) " ✓" else "",
+                    earlier, { earlier = !earlier }) }
+                Text(if (earlier) (if (ru) "${if (one) "Он отметится" else "Они отметятся"} в дневнике как просмотренн${if (one) "ый" else "ые"} раньше: питомцев не кормят и в статистику не идут."
+                    else "They go in the diary as seen before: they don't feed the pets or count in the statistics.")
+                    else (if (ru) "Это сезон, который ты смотришь сейчас. ${Words.seasons(missing, true).replaceFirstChar { it.uppercase() }} не отмет${if (one) "ится просмотренным" else "ятся просмотренными"}."
+                        else "This is the season you're on. ${Words.seasons(missing, false).replaceFirstChar { it.uppercase() }} won't count as watched."), style = T.Muted)
+            }
         }
         Text(t("Жанр — от него афиша, зритель в зале и черта питомца", "Genre: it sets the poster, the spectator and the pet's trait").uppercase(), style = T.Eyebrow)
         Flow { for (g in Genre.entries) Chip(Words.genre(g, ru), genre == g, { genre = g }, color = C.genre(g)) }
+        SubPicker(genre, sub) { sub = it }
         if (old != null) Btn(t("Сохранить", "Save"), {
-            co.write { val cv = saveCover(); office.update(build(old.status).copy(cover = cv)) }; nav.close()
+            co.write { val cv = saveCover(); val tt = build(old.status).copy(cover = cv); office.update(tt); if (marks) office.earlierSeasons(tt, sn, ru, old.added) }; nav.close()
         }, Modifier.fillMaxWidth())
         else if (kind == TKind.SERIES) { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Btn(t("В афишу", "To the bill"), { co.write { val cv = saveCover(); office.add(build(Status.WATCH).copy(cover = cv)) }; nav.close(); nav.tab(Tab.BILL) }, Modifier.weight(1f), kind = Kind.GHOST)
+            Btn(t("В афишу", "To the bill"), {
+                co.write { val cv = saveCover(); val tt = build(Status.WATCH).copy(cover = cv); office.add(tt); if (marks) office.earlierSeasons(tt, sn, ru, System.currentTimeMillis()) }
+                nav.close(); nav.tab(Tab.BILL)
+            }, Modifier.weight(1f), kind = Kind.GHOST)
             Btn(t("Смотрю", "Watching"), {
-                co.write { val cv = saveCover(); office.add(build(Status.RUNNING).copy(cover = cv)) }; nav.close(); nav.tab(Tab.BILL)
+                co.write { val cv = saveCover(); val tt = build(Status.RUNNING).copy(cover = cv); office.add(tt); if (marks) office.earlierSeasons(tt, sn, ru, System.currentTimeMillis()) }
+                nav.close(); nav.tab(Tab.BILL)
                 nav.toast(if (ru) "Абонемент на «${title.trim()}» выдан." else "Season ticket for ${title.trim()} issued.")
             }, Modifier.weight(1f))
         }
-            // A season already watched: its stub now, and the series waits in the cupboard at the next season.
-            Btn(t("Уже посмотрел сезон ${season.ifBlank { "1" }}", "Watched season ${season.ifBlank { "1" }}"), {
+            // A season already watched: its stub now (and the ones before, if so), and the series waits in the cupboard at the next season.
+            val label = if (marks) Words.seasons(missing + sn, ru) else Words.seasons(listOf(sn), ru)
+            Btn(if (ru) "Уже посмотрел $label" else "Watched $label", {
                 co.write {
                     val cv = saveCover(); val tt = build(Status.SHELVED).copy(cover = cv)
-                    val stub = Seance(tt.title + if (ru) " · сезон ${tt.season}" else " · season ${tt.season}", tt.minutes * tt.perSeason, tt.genre, tt.year, tt.country, cv, -1, false, System.currentTimeMillis())
-                    nav.go(Overlay.Log(stub, tt.copy(season = tt.season + 1, episode = 0, perSeason = Seasons.episodes(tt, tt.season + 1) ?: tt.perSeason)))
+                    val stub = Seance(tt.title + if (ru) " · сезон ${tt.season}" else " · season ${tt.season}", tt.minutes * tt.perSeason, tt.genre, tt.year, tt.country, cv, -1, false,
+                        System.currentTimeMillis(), tt.sub)
+                    nav.go(Overlay.Log(stub, tt.copy(season = tt.season + 1, episode = 0, perSeason = Seasons.episodes(tt, tt.season + 1) ?: tt.perSeason), if (marks) tt.season else 0))
                 }
             }, Modifier.fillMaxWidth(), kind = Kind.GOLD)
         }
@@ -225,7 +242,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
                 nav.toast(if (ru) "«${title.trim()}» в афише." else "${title.trim()} is on the bill.")
             }, Modifier.weight(1f), kind = Kind.GHOST)
             Btn(t("Уже посмотрел", "Watched it"), {
-                co.write { val cv = saveCover(); val tt = build(Status.WATCH); nav.go(Overlay.Log(Seance(tt.title, tt.minutes, tt.genre, tt.year, tt.country, cv, -1, false, System.currentTimeMillis()))) }
+                co.write { val cv = saveCover(); val tt = build(Status.WATCH); nav.go(Overlay.Log(Seance(tt.title, tt.minutes, tt.genre, tt.year, tt.country, cv, -1, false, System.currentTimeMillis(), tt.sub))) }
             }, Modifier.weight(1f))
         }
         Box(Modifier.size(1.dp))

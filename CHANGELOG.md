@@ -6,6 +6,17 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.2.0] - 2026-11-14
+
+### Added
+- Subgenres under each of the 12 genres: cyberpunk, slasher, black comedy, space opera, 81 in all, or one of your own. They come with a search, an import from Kinopoisk or MyShows, show on the cards and stubs and are found by the search; the pets still go by the genre.
+- A series started from a later season can have the seasons before it marked as watched, when it's added or later from its card. They stay in the diary as «seen before» and don't feed the pets or count in the statistics.
+
+<!-- tg
+Поджанры: киберпанк, слэшер, чёрная комедия, космоопера… всего 81, можно добавить и свой. Подтягиваются из поиска и импорта, видны на карточках и ищутся; питомцы по-прежнему смотрят на жанр.
+Сериал с середины: прошлые сезоны можно отметить просмотренными. Они остаются в дневнике как «смотрел раньше» и не идут питомцам и в статистику.
+-->
+
 ## [2.1.0] - 2026-11-14
 
 ### Added

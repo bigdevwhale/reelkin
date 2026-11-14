@@ -38,9 +38,12 @@ import androidx.compose.ui.unit.dp
 import app.reelkin.data.Covers
 import app.reelkin.data.Genre
 import app.reelkin.data.People
+import app.reelkin.data.Subgenres
 import app.reelkin.domain.Words
 import app.reelkin.ui.LocalRu
 import app.reelkin.ui.Nav
+import app.reelkin.ui.components.Chip
+import app.reelkin.ui.components.Field
 import app.reelkin.ui.components.Flow
 import app.reelkin.ui.components.PosterImage
 import app.reelkin.ui.components.t
@@ -55,7 +58,8 @@ import kotlinx.coroutines.withContext
  * pills. [eyebrow] goes above the name, [under] below the pills.
  */
 @Composable
-fun Hero(title: String, genre: Genre, cover: String?, year: Int?, country: String, minutes: Int, eyebrow: String? = null, under: @Composable ColumnScope.() -> Unit = {}) {
+fun Hero(title: String, genre: Genre, cover: String?, year: Int?, country: String, minutes: Int, eyebrow: String? = null, sub: String = "",
+         under: @Composable ColumnScope.() -> Unit = {}) {
     val ctx = LocalContext.current
     val ru = LocalRu.current
     val full by produceState(Covers.peek(cover)?.takeIf { it.ready }?.full, cover) {
@@ -75,6 +79,7 @@ fun Hero(title: String, genre: Genre, cover: String?, year: Int?, country: Strin
                 Text(title, style = T.Title, maxLines = 4, overflow = TextOverflow.Ellipsis)
                 Flow(gap = 5.dp) {
                     Pill(Words.genre(genre, ru), tint)
+                    for (n in Subgenres.names(sub, ru)) Pill(n, tint.copy(alpha = .55f))
                     year?.let { Pill("$it") }
                     if (country.isNotBlank()) Pill(country)
                     if (minutes > 0) Pill(app.reelkin.ui.bill.dur(minutes.toLong(), ru))
@@ -82,6 +87,29 @@ fun Hero(title: String, genre: Genre, cover: String?, year: Int?, country: Strin
                 under()
             }
         }
+    }
+}
+
+/**
+ * Subgenres to tick under [genre], and one's own to type in. Those ticked that belong elsewhere (another genre's, or typed)
+ * stay in front, so nothing ticked is hidden.
+ */
+@Composable
+fun SubPicker(genre: Genre, sub: String, onChange: (String) -> Unit) {
+    val ru = LocalRu.current
+    var own by remember { mutableStateOf("") }
+    val tint = Color(0xFF000000 or genre.color.toLong())
+    val offered = Subgenres.of(genre).map { it.key }
+    val picked = Subgenres.split(sub)
+    Text(t("Поджанры", "Subgenres").uppercase(), style = T.Eyebrow)
+    Flow {
+        for (k in picked.filter { it !in offered }) Chip(Subgenres.name(k, ru) + " ×", true, { onChange(Subgenres.toggle(sub, k)) }, color = tint)
+        for (k in offered) Chip(Subgenres.name(k, ru), k in picked, { onChange(Subgenres.toggle(sub, k)) }, color = tint)
+    }
+    fun add() { if (own.isNotBlank()) { onChange(Subgenres.toggle(sub, own.trim().lowercase())); own = "" } }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Field(own, { own = it.replace(",", "").take(30) }, t("свой поджанр", "your own subgenre"), Modifier.weight(1f), onDone = ::add)
+        app.reelkin.ui.components.Btn(t("Добавить", "Add"), ::add, small = true, kind = app.reelkin.ui.components.Kind.GHOST, enabled = own.isNotBlank())
     }
 }
 

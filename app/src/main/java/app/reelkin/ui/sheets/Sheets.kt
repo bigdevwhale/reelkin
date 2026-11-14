@@ -87,8 +87,8 @@ import app.reelkin.data.DAY
 import androidx.compose.runtime.mutableLongStateOf
 import java.util.Calendar
 
-fun Title.seance(rewatch: Boolean = false) = Seance(title, minutes, genre, year, country, cover, id, rewatch, System.currentTimeMillis())
-fun Ticket.seance() = Seance(title, minutes, genre, year, country, cover, -1, true, System.currentTimeMillis())
+fun Title.seance(rewatch: Boolean = false) = Seance(title, minutes, genre, year, country, cover, id, rewatch, System.currentTimeMillis(), sub)
+fun Ticket.seance() = Seance(title, minutes, genre, year, country, cover, -1, true, System.currentTimeMillis(), sub)
 
 @Composable
 fun BigPoster(title: String, genre: app.reelkin.data.Genre, cover: String?, scale: Float = 3.4f) {
@@ -148,7 +148,7 @@ fun FilmSheet(c: Cinema, f: Title, nav: Nav) {
     val co = LocalContext.current.container
     var sure by remember { mutableStateOf(false) }
     Sheet(nav::close) {
-        Hero(f.title, f.genre, f.cover, f.year, f.country, f.minutes, eyebrow = t("в афише", "on the bill"))
+        Hero(f.title, f.genre, f.cover, f.year, f.country, f.minutes, eyebrow = t("в афише", "on the bill"), sub = f.sub)
         app.reelkin.ui.components.FirstVisit(app.reelkin.ui.components.Tip.FILM, c.s)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("На проектор", "Put it on"), {
@@ -168,7 +168,7 @@ fun FilmSheet(c: Cinema, f: Title, nav: Nav) {
     }
 }
 
-fun Title.draft() = app.reelkin.data.Draft(kind, title, year, country, genre, minutes.takeIf { it > 0 }, perSeason, director = director.takeIf { it != "?" } ?: "", cast = cast)
+fun Title.draft() = app.reelkin.data.Draft(kind, title, year, country, genre, minutes.takeIf { it > 0 }, perSeason, director = director.takeIf { it != "?" } ?: "", cast = cast, sub = sub)
 
 /* ---------------- a series ---------------- */
 
@@ -184,7 +184,7 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
             app.reelkin.data.Seasons.refresh(s)?.let { (tv, plan) -> co.office.setPlan(s.id, tv, plan) }
     }
     Sheet(nav::close) {
-        Hero(s.title, s.genre, s.cover, s.year, s.country, s.minutes, eyebrow = t("сериал", "a series")) {
+        Hero(s.title, s.genre, s.cover, s.year, s.country, s.minutes, eyebrow = t("сериал", "a series"), sub = s.sub) {
                 Text(when (s.status) {
                     Status.WATCH -> t("ещё не начат", "not started yet")
                     Status.SHELVED -> t("снят с проката", "taken off")
@@ -205,6 +205,13 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
             if (s.status == Status.RUNNING) Chip(t("снять с проката", "take off"), false, { co.write { office.update(s.copy(status = Status.SHELVED, cliff = false)) }; nav.close(); nav.toast(if (ru) "«${s.title}» в шкафу. Достать можно в любой момент." else "${s.title} is in the cupboard. Bring it back any time.") })
             else Chip(t("смотрю", "watching"), false, { co.write { office.update(s.copy(status = Status.RUNNING)) } })
         }
+        // Seasons before this one, watched before the series came here: their stubs, dated the day it was added.
+        val missing = c.missingSeasons(s.title, s.season)
+        if (missing.isNotEmpty()) Btn((if (ru) "Отметить " else "Mark ") + Words.seasons(missing, ru) + (if (ru) " просмотренным" + (if (missing.size > 1) "и" else "") else " as watched"), {
+            co.write { office.earlierSeasons(s, s.season, ru, s.added) }
+            nav.toast(if (ru) "${Words.seasons(missing, true).replaceFirstChar { it.uppercase() }} в дневнике. Питомцев не кормят — это было раньше."
+                else "${Words.seasons(missing, false).replaceFirstChar { it.uppercase() }} in the diary. They don't feed the pets: that was before.")
+        }, Modifier.fillMaxWidth(), kind = Kind.SOFT, small = true)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("Изменить", "Edit"), { nav.go(Overlay.NewTitle(s.draft(), s.id)) }, Modifier.weight(1f), kind = Kind.GHOST, small = true)
             Btn(if (sure) t("Точно удалить?", "Sure?") else t("Удалить", "Delete"), { if (!sure) sure = true else { co.write { office.remove(s) }; nav.close() } }, Modifier.weight(1f), kind = Kind.GHOST, small = true)
@@ -222,7 +229,7 @@ fun StubSheet(c: Cinema, tk: Ticket, nav: Nav) {
     var sure by remember { mutableStateOf(false) }
     val seat = c.seatOf(tk)
     Sheet({ if (words != tk.words) co.write { office.update(tk.copy(words = words.trim())) }; nav.close() }) {
-        Hero(tk.title, tk.genre, tk.cover, tk.year, tk.country, tk.minutes, eyebrow = Words.seat(seat, ru) + " · " + app.reelkin.ui.bill.date(tk.at, ru))
+        Hero(tk.title, tk.genre, tk.cover, tk.year, tk.country, tk.minutes, eyebrow = Words.seat(seat, ru) + " · " + app.reelkin.ui.bill.date(tk.at, ru), sub = tk.sub)
         ShareLine(t("Поделиться отзывом", "Share a review"), t("открытка с постером, попкорном и словами", "a card with the poster, popcorn and words")) { nav.go(Overlay.ShareIt(app.reelkin.ui.cards.Share.Review(tk.id))) }
         Column(Modifier.fillMaxWidth().clip(R8.Lg).background(C.surface2).padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(t("Твой попкорн", "Your popcorn").uppercase(), style = T.Eyebrow)
@@ -234,10 +241,13 @@ fun StubSheet(c: Cinema, tk: Ticket, nav: Nav) {
         Field(words, { words = it.take(60) }, t("дождь, единорог, слёзы", "rain, unicorn, tears"))
         Text(buildString {
             append(if (ru) "В зале сидит ${Words.who(tk.genre.who, true)}." else "In the hall sits ${Words.who(tk.genre.who, false)}.")
+            if (tk.past) clear().append(if (ru) "Смотрел раньше, до Reelkin: только запись в дневнике. Питомцев не кормит, места в зале и статистики нет."
+                else "Seen before Reelkin: only a note in the diary. It doesn't feed the pets, take a seat or count in the statistics.")
             if (tk.rewatch) append(if (ru) " Пересмотрено." else " A rewatch.")
             if (tk.credits == Credits.SCENE) append(if (ru) " Была сцена после титров." else " There was a post-credits scene.")
         }, style = T.Muted)
         WatchedOn(tk.at) { at -> co.write { office.update(tk.copy(at = at, words = words.trim())) } }
+        SubPicker(tk.genre, tk.sub) { sub -> co.write { office.update(tk.copy(sub = sub, words = words.trim())) } }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (!tk.season) Btn(t("Пересмотреть", "Watch again"), {
                 if (c.s.seance == null) { co.write { office.startSeance(tk.seance()) }; nav.tab(Tab.BOOTH) } else nav.toast(if (ru) "Сеанс уже идёт." else "A film is already on.")
@@ -250,7 +260,7 @@ fun StubSheet(c: Cinema, tk: Ticket, nav: Nav) {
 /* ---------------- tearing a stub ---------------- */
 
 @Composable
-fun LogSheet(c: Cinema, s: Seance, nav: Nav, series: Title? = null) {
+fun LogSheet(c: Cinema, s: Seance, nav: Nav, series: Title? = null, earlier: Int = 0) {
     val ru = LocalRu.current
     val co = LocalContext.current.container
     var stars by remember { mutableIntStateOf(0) }
@@ -268,6 +278,10 @@ fun LogSheet(c: Cinema, s: Seance, nav: Nav, series: Title? = null) {
                 Facts(s.year, s.country, s.minutes)
             }
         }
+        val prior = remember(earlier) { if (series != null && earlier > 1) c.missingSeasons(series.title, earlier) else emptyList() }
+        if (prior.isNotEmpty()) Text((if (ru) "${Words.seasons(prior, true).replaceFirstChar { it.uppercase() }} отметятся в дневнике как просмотренные раньше: " +
+            "питомцев не кормят и в статистику не идут." else "${Words.seasons(prior, false).replaceFirstChar { it.uppercase() }} go in the diary as seen before: " +
+            "they don't feed the pets or count in the statistics."), style = T.Small.copy(color = C.gold))
         app.reelkin.ui.components.FirstVisit(app.reelkin.ui.components.Tip.LOG, c.s)
         Text(t("Как тебе?", "How was it?").uppercase(), style = T.Eyebrow)
         Popcorn(stars, size = 36.dp) { stars = it }
@@ -281,10 +295,11 @@ fun LogSheet(c: Cinema, s: Seance, nav: Nav, series: Title? = null) {
         WatchedOn(at) { at = it }
         Btn(t("Оторвать корешок", "Tear the stub"), {
             val tk = Ticket(title = s.title, year = s.year, country = s.country, genre = s.genre, minutes = s.minutes, stars = stars, words = words.trim(),
-                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at, season = series != null, whole = series != null)
+                company = company, credits = credits, rewatch = rewatch, cover = s.cover, at = at, season = series != null, whole = series != null, sub = s.sub)
             co.write {
                 val before = cinema()
                 series?.let { office.add(it) }
+                if (series != null && earlier > 1) office.earlierSeasons(series, earlier, ru, at)
                 val saved = office.tear(tk, s.titleId.takeIf { it > 0 })
                 val g = gains(before, cinema(), saved)
                 nav.scene.hop(30.0); nav.scene.burst(); nav.scene.mood(PetMood.HAPPY, 3.0)

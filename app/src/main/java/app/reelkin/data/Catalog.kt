@@ -27,6 +27,8 @@ data class Draft(
     val imdb: String? = null,
     val director: String = "",
     val cast: String = "",
+    /** Subgenres, as on a title. */
+    val sub: String = "",
 )
 
 /**
@@ -87,6 +89,13 @@ object Catalog {
         }
     }
 
+    /** Subgenres from English genre names; animation from Japan is anime. */
+    fun guessSub(labels: List<String>, genre: Genre, country: String): String {
+        val l = Subgenres.match(labels, genre)
+        val anime = genre == Genre.ANIMATION && country.lowercase().let { "япон" in it || "japan" in it }
+        return Subgenres.join(if (anime) listOf("anime") + l else l)
+    }
+
     /** Null when the network failed; an empty list when nothing matched. */
     suspend fun search(q: String, ru: Boolean): List<Draft>? = withContext(Dispatchers.IO) {
         val query = q.trim()
@@ -141,8 +150,10 @@ object Catalog {
                         "Q93204" in r.types -> Genre.DOC
                         else -> guessGenre(r.genres.mapNotNull { en[it] }.joinToString(" "))
                     }
+                    val country = r.countries.mapNotNull { names[it] }.firstOrNull() ?: ""
                     Draft(
-                        kind = r.kind, title = r.label, year = r.year, country = r.countries.mapNotNull { names[it] }.firstOrNull() ?: "", genre = g,
+                        kind = r.kind, title = r.label, year = r.year, country = country, genre = g,
+                        sub = guessSub(r.genres.mapNotNull { en[it] }, g, r.countries.mapNotNull { en[it] }.firstOrNull() ?: country),
                         minutes = r.minutes, perSeason = if (r.eps != null && r.seasons != null && r.seasons > 0) (r.eps / r.seasons).coerceAtLeast(1) else null,
                         about = r.genres.mapNotNull { names[it] }.take(2).joinToString(", "),
                         coverUrl = poster(r.ruw, "ru") ?: poster(r.en, "en"), tvmaze = r.tvmaze, imdb = r.imdb,
@@ -245,7 +256,8 @@ object Catalog {
                 fun page(u: String?) = u?.substringAfter("/wiki/", "")?.ifBlank { null }?.let { java.net.URLDecoder.decode(it, "UTF-8").replace('_', ' ') }
                 out[id] = Found(
                     Draft(kind, label, v("d")?.take(4)?.toIntOrNull(), v("c").orEmpty(), g, v("min")?.toDoubleOrNull()?.toInt()?.takeIf { it in 1..1000 },
-                        if (eps != null && ss != null && ss > 0) (eps / ss).coerceAtLeast(1) else null, tvmaze = v("tv")?.toIntOrNull()),
+                        if (eps != null && ss != null && ss > 0) (eps / ss).coerceAtLeast(1) else null, tvmaze = v("tv")?.toIntOrNull(),
+                        sub = guessSub(v("g").orEmpty().split('|'), g, v("c").orEmpty())),
                     page(v("enwiki")), page(v("ruwiki")),
                 )
             }

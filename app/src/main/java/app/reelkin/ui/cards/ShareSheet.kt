@@ -83,7 +83,7 @@ fun ShareSheet(c: Cinema, what: Share, nav: Nav) {
     var shape by remember { mutableStateOf(Shape.POST) }
     var o by remember { mutableStateOf(Postcards.Opts()) }
     var busy by remember { mutableStateOf(false) }
-    val tk = (what as? Share.Review)?.let { r -> c.seats.firstOrNull { it.id == r.stub } }
+    val tk = (what as? Share.Review)?.let { r -> c.diary.firstOrNull { it.id == r.stub } }
     val fs = (what as? Share.Achievement)?.let { a -> c.feats.firstOrNull { it.f == a.feat } }
     fun draw(): Bitmap? = runCatching {
         when (what) {

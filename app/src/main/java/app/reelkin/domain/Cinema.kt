@@ -22,8 +22,11 @@ enum class Wall(val price: Int, val file: String) { PLUM(0, "room"), GREEN(150, 
 
 /** Everything the screens read about the cinema, made once per change. */
 class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: List<Episode>, val s: Settings, val now: Long, val petList: List<Pet> = emptyList(), val goals: List<app.reelkin.data.Goal> = emptyList()) {
-    /** Seat i belongs to the i-th stub, in the order they were torn. */
-    val seats = tickets.sortedBy { it.at }
+    /** Every stub, in the order they were torn: what the diary shows. */
+    val diary = tickets.sortedBy { it.at }
+
+    /** The stubs that count, the seasons only noted down as watched long ago left out. Seat i belongs to the i-th. */
+    val seats = diary.filter { !it.past }
 
     /** Minutes watched: films, every episode, and seasons watched before they came here (other season stubs aren't counted twice). */
     val minutes: Long = seats.filter { !it.season || it.whole }.sumOf { it.minutes.toLong() } + episodes.sumOf { it.minutes.toLong() }
@@ -36,6 +39,12 @@ class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: L
     val decades: Set<Int> = seats.mapNotNull { it.year }.map { decade(it) }.toSet()
     val countries: List<String> = seats.map { it.country.trim() }.filter { it.isNotEmpty() }.distinct()
     val scenes = seats.filter { it.credits == Credits.SCENE }
+
+    /** Seasons of the series [title] before [before] with no stub: not marked as watched. */
+    fun missingSeasons(title: String, before: Int): List<Int> {
+        val torn = diary.filter { it.season }.map { it.title }.toHashSet()
+        return (1 until before).filter { n -> "$title · сезон $n" !in torn && "$title · season $n" !in torn }
+    }
 
     val watch = titles.filter { it.status == Status.WATCH }.sortedByDescending { it.added }
     val running = titles.filter { it.kind == Kind.SERIES && it.status == Status.RUNNING }

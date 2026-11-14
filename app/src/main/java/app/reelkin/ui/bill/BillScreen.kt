@@ -100,7 +100,7 @@ fun BillScreen(c: Cinema, nav: Nav) {
     val watch = remember(c.watch, kept, q) { b.titles(c.watch) }
     val running = remember(c.running, kept, q) { b.series(c.running) }
     val shelved = remember(c.shelved, kept, q) { b.series(c.shelved) }
-    val stubs = remember(c.seats, kept, q, c.s.stubSort) { b.stubs(c.seats) }
+    val stubs = remember(c.diary, kept, q, c.s.stubSort) { b.stubs(c.diary) }
     fun search() { nav.go(Overlay.Add(q)); q = "" }
 
     // Waiting, running, stubs: a page each; one the bill opens on is the one with something in it.
@@ -145,7 +145,7 @@ fun BillScreen(c: Cinema, nav: Nav) {
                     }
                 }
             }
-            if (c.titles.isNotEmpty() || c.seats.isNotEmpty()) Tools(b, page == 2, ::set, onFilter = { filtering = true }, onReset = { q = ""; set(Browse(sort = b.sort)) })
+            if (c.titles.isNotEmpty() || c.diary.isNotEmpty()) Tools(b, page == 2, ::set, onFilter = { filtering = true }, onReset = { q = ""; set(Browse(sort = b.sort)) })
         }
         // Lazy, so a collection of a thousand stubs only lays out the ones on screen; each page starts at its top.
         val list = remember(page) { LazyListState() }
@@ -176,7 +176,7 @@ fun BillScreen(c: Cinema, nav: Nav) {
                 }
                 else -> {
                     if (!b.narrowed) item { YearCard(c) { nav.go(Overlay.Stats) } }
-                    if (c.seats.isEmpty()) item { Text(t("Здесь будут корешки от всего, что ты посмотришь.", "Stubs from everything you watch will be kept here."), style = T.Muted) }
+                    if (c.diary.isEmpty()) item { Text(t("Здесь будут корешки от всего, что ты посмотришь.", "Stubs from everything you watch will be kept here."), style = T.Muted) }
                     else if (stubs.isEmpty()) item { Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted) }
                     // A wall of posters, three to a row, with the month above when they go by date.
                     val byDate = b.sort == Browse.Sort.NEWEST || b.sort == Browse.Sort.OLDEST
@@ -297,9 +297,9 @@ private fun Tool(text: String, on: Boolean, onClick: () -> Unit) {
 @Composable
 private fun FilterSheet(c: Cinema, b: Browse, set: (Browse) -> Unit, onDismiss: () -> Unit) {
     val ru = LocalRu.current
-    val genres = remember(c) { (c.titles.map { it.genre } + c.seats.map { it.genre }).toSet() }
-    val years = remember(c) { c.seats.map { Browse.yearOf(it.at) }.distinct().sortedDescending() }
-    val shown = b.stubs(c.seats).size + b.titles(c.watch).size + b.series(c.running + c.shelved).size
+    val genres = remember(c) { (c.titles.map { it.genre } + c.diary.map { it.genre }).toSet() }
+    val years = remember(c) { c.diary.map { Browse.yearOf(it.at) }.distinct().sortedDescending() }
+    val shown = b.stubs(c.diary).size + b.titles(c.watch).size + b.series(c.running + c.shelved).size
     Sheet(onDismiss) {
         Text(t("Фильтр", "Filter"), style = T.Title)
         Section(t("Что", "What"))
@@ -329,7 +329,7 @@ private fun FilterSheet(c: Cinema, b: Browse, set: (Browse) -> Unit, onDismiss: 
         // The people met most often, directors first.
         val people = remember(c) {
             val n = HashMap<String, Int>()
-            for ((d, cs) in c.titles.map { it.director to it.cast } + c.seats.map { it.director to it.cast }) {
+            for ((d, cs) in c.titles.map { it.director to it.cast } + c.diary.map { it.director to it.cast }) {
                 for (p in app.reelkin.data.People.of(d)) n[p] = (n[p] ?: 0) + 3
                 for (p in app.reelkin.data.People.of(cs)) n[p] = (n[p] ?: 0) + 1
             }
