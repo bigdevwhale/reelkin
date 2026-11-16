@@ -180,6 +180,9 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
         var tab by rememberSaveable { mutableStateOf(tab0) }
         var overlay by remember { mutableStateOf(overlay0) }
         val nav = remember { Nav({ overlay = it }, { tab = it; overlay = null }) }
+        // A link shared to the app opens the search on it.
+        val shared by app.reelkin.Shared.text.collectAsStateWithLifecycle()
+        LaunchedEffect(shared) { shared?.let { overlay = Overlay.Add(it); app.reelkin.Shared.text.value = null } }
         LaunchedEffect(Unit) {
             if (nav.said.first.isEmpty()) nav.say(when {
                 cin.pet == null -> if (ru) "В будке пусто. Выбери коробку — в каждой кто-то спит." else "The booth is empty. Pick a can: someone sleeps in each."
@@ -212,7 +215,7 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
                     is Overlay.Reward -> RewardSheet(cin, o.ticket, o.g, nav)
                     is Overlay.Choose -> ChooseSheet(cin, o.log, nav)
                     Overlay.Pick -> PickSheet(cin, nav)
-                    is Overlay.Add -> AddSheet(o.q, nav)
+                    is Overlay.Add -> androidx.compose.runtime.key(o.q) { AddSheet(o.q, nav) }
                     is Overlay.NewTitle -> DraftSheet(cin, o.d, o.edit, nav)
                     Overlay.Pet -> PetSheet(cin, nav)
                     Overlay.Pets -> LaunchedEffect(Unit) { tab = Tab.PETS; overlay = null }

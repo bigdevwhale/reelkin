@@ -1,3 +1,2 @@
-• More genres besides the main one. A pet that loves the main genre still eats half again; if its genre is among the others, a quarter more.
-• The bill's genre filter finds a title by any of its genres.
-• Extra genres come in by themselves from the search and the imports.
+• Add a film by a link: paste one from IMDb, Kinopoisk, Letterboxd or TMDB into the search, or share it to Reelkin from a browser.
+• A film's length can be typed in hours and minutes, like 1 h 42 min.

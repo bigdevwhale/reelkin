@@ -6,6 +6,19 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.5.0] - 2026-11-16
+
+### Added
+- **Add by a link:** paste a link from IMDb, Kinopoisk, Letterboxd, TMDB, TVmaze, MyAnimeList or Wikipedia into the search, or share it to Reelkin from a browser or another app, and the film is found by it (#13).
+
+### Fixed
+- A film's length can be typed in hours and minutes, like 1 h 42 min, not only in minutes (#12).
+
+<!-- tg
+Фильм теперь можно добавить по ссылке: вставь в поиск ссылку с Кинопоиска, IMDb, Letterboxd или TMDB или нажми «Поделиться → Reelkin» прямо в браузере.
+Длину фильма можно указать в часах и минутах, например 1 ч 42 мин.
+-->
+
 ## [2.4.0] - 2026-11-16
 
 ### Added

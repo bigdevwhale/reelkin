@@ -29,7 +29,7 @@ Something sleeps in every film can. Three cans are open from the start: a detect
 
 🗂️ THE BILL
 • What's waiting, what's running and a wall of stubs by month, with search and filters by genre, popcorn, year, company, directors and cast
-• Search by title brings the poster, year, country, length, director and cast from Wikipedia and Wikidata
+• Search by title or by a link from IMDb, Kinopoisk, Letterboxd or TMDB, or share a link to the app: the poster, year, country, length, director and cast come from Wikipedia and Wikidata
 
 🧳 BRING YOUR HISTORY
 • Series from a public MyShows profile: finished seasons become stubs, the one you're watching goes on at the episode you reached

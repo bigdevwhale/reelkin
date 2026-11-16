@@ -88,7 +88,7 @@ fun AddSheet(q0: String, nav: Nav) {
     Sheet(nav::close) {
         Text(t("Найти", "Find"), style = T.Title)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Field(q, { q = it }, t("название фильма или сериала", "a film or series title"), Modifier.weight(1f), onDone = ::go)
+            Field(q, { q = it }, t("название или ссылка на фильм", "a title or a link to it"), Modifier.weight(1f), onDone = ::go)
             Btn(t("Искать", "Search"), ::go, small = true)
         }
         Text(when {
@@ -120,7 +120,10 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     val old = edit?.let { c.title(it) }
     var title by remember { mutableStateOf(d.title) }
     var year by remember { mutableStateOf(d.year?.toString() ?: "") }
-    var minutes by remember { mutableStateOf(d.minutes?.toString() ?: "") }
+    // The length in hours and minutes; minutes alone, past sixty too, are fine.
+    var hours by remember { mutableStateOf(d.minutes?.takeIf { it >= 60 }?.let { (it / 60).toString() } ?: "") }
+    var mins by remember { mutableStateOf(d.minutes?.let { if (it >= 60) (it % 60).toString() else it.toString() } ?: "") }
+    fun length(): Int? = if (hours.isBlank() && mins.isBlank()) null else ((hours.toIntOrNull() ?: 0) * 60 + (mins.toIntOrNull() ?: 0)).takeIf { it > 0 }
     var country by remember { mutableStateOf(d.country) }
     var director by remember { mutableStateOf(old?.director?.takeIf { it != "?" } ?: d.director) }
     var cast by remember { mutableStateOf(old?.cast ?: d.cast) }
@@ -156,7 +159,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
         val same = old != null && old.season == sn
         return Title(
             id = old?.id ?: 0, kind = kind, title = title.trim().ifBlank { if (ru) "Без названия" else "Untitled" }, year = year.toIntOrNull(), country = country.trim(), genre = genre,
-            minutes = minutes.toIntOrNull() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
+            minutes = length() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
             season = sn, episode = if (same) old!!.episode else 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 99) ?: 10, cliff = same && old!!.cliff,
             plan = plan, planAt = planAt, show = show,
             director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(), sub = sub, also = Genres.join(Genres.parse(also) - genre),
@@ -174,7 +177,10 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Field(title, { title = it }, t("название", "title"))
                 Field(year, { year = it.filter(Char::isDigit).take(4) }, t("год", "year"), number = true)
-                Field(minutes, { minutes = it.filter(Char::isDigit).take(3) }, if (kind == TKind.SERIES) t("серия, мин", "episode, min") else t("длина, мин", "length, min"), number = true)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Field(hours, { hours = it.filter(Char::isDigit).take(2) }, if (kind == TKind.SERIES) t("серия, ч", "episode, h") else t("длина, ч", "length, h"), Modifier.weight(1f), number = true)
+                    Field(mins, { mins = it.filter(Char::isDigit).take(3) }, t("мин", "min"), Modifier.weight(1f), number = true)
+                }
             }
         }
         Field(country, { country = it }, t("страна", "country"))

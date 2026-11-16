@@ -117,13 +117,71 @@ object Catalog {
         return Subgenres.join(if (anime) listOf("anime") + l else l)
     }
 
-    /** Null when the network failed; an empty list when nothing matched. */
+    private val URL_RE = Regex("""https?://\S+""", RegexOption.IGNORE_CASE)
+
+    /** What a link points at: a Wikidata item, a Wikipedia article, or an id under a Wikidata property. */
+    sealed class Link {
+        data class Item(val q: String) : Link()
+        data class Wiki(val lang: String, val title: String) : Link()
+        data class Prop(val p: String, val v: String) : Link()
+    }
+
+    /** The first link in [text] the search knows: IMDb, Kinopoisk, Letterboxd, TMDB, TVmaze, MyAnimeList, Wikipedia, Wikidata. */
+    fun link(text: String): Link? {
+        for (m in URL_RE.findAll(text)) {
+            // Punctuation after a link in a sentence; a bracket only when unpaired, as in «Матрица (фильм)».
+            var u = m.value.trimEnd('.', ',', '»', '"', '\'')
+            while (u.endsWith(')') && u.count { it == ')' } > u.count { it == '(' }) u = u.dropLast(1).trimEnd('.', ',', '»', '"', '\'')
+            fun f(re: String) = Regex(re, RegexOption.IGNORE_CASE).find(u)?.groupValues?.get(1)
+            f("""imdb\.com/(?:[a-z]{2}/)?title/(tt\d+)""")?.let { return Link.Prop("P345", it.lowercase()) }
+            f("""kinopoisk\.ru/(?:film|series)/(\d+)""")?.let { return Link.Prop("P2603", it) }
+            f("""letterboxd\.com/(?:[^/]+/)?film/([a-z0-9-]+)""")?.let { return Link.Prop("P6127", it.lowercase()) }
+            f("""themoviedb\.org/movie/(\d+)""")?.let { return Link.Prop("P4947", it) }
+            f("""themoviedb\.org/tv/(\d+)""")?.let { return Link.Prop("P4983", it) }
+            f("""tvmaze\.com/shows/(\d+)""")?.let { return Link.Prop("P8600", it) }
+            f("""myanimelist\.net/anime/(\d+)""")?.let { return Link.Prop("P4086", it) }
+            f("""wikidata\.org/(?:wiki|entity)/(Q\d+)""")?.let { return Link.Item(it.uppercase()) }
+            Regex("""([a-z]{2,3})(?:\.m)?\.wikipedia\.org/wiki/([^?#\s]+)""", RegexOption.IGNORE_CASE).find(u)?.let { w ->
+                return Link.Wiki(w.groupValues[1].lowercase(), java.net.URLDecoder.decode(w.groupValues[2], "UTF-8").replace('_', ' '))
+            }
+            // Letterboxd shares a short address; where it leads is in the redirect.
+            if (Regex("""//boxd\.it/""", RegexOption.IGNORE_CASE).containsMatchIn(u)) redirect(u)?.let { to -> link(to)?.let { return it } }
+        }
+        return null
+    }
+
+    /** Where a short address sends, without following it. */
+    private fun redirect(url: String): String? = try {
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.instanceFollowRedirects = false
+        c.requestMethod = "HEAD"
+        c.setRequestProperty("User-Agent", AGENT)
+        c.connectTimeout = 8_000
+        c.readTimeout = 8_000
+        try { c.responseCode; c.getHeaderField("Location") } finally { c.disconnect() }
+    } catch (_: Exception) { null }
+
+    /** The Wikidata items a link names; null when the network failed. */
+    private fun items(l: Link): List<String>? = when (l) {
+        is Link.Item -> listOf(l.q)
+        is Link.Wiki -> get(WD + "action=wbgetentities&sites=${l.lang}wiki&titles=${enc(l.title)}&props=info&normalize=1")
+            ?.let { JSONObject(it).optJSONObject("entities") }?.keys()?.asSequence()?.filter { it.startsWith("Q") }?.toList()
+        is Link.Prop -> get(WD + "action=query&list=search&srsearch=${enc("haswbstatement:${l.p}=${l.v}")}&srlimit=5")
+            ?.let { JSONObject(it).optJSONObject("query")?.optJSONArray("search") }
+            ?.let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("title") }.filter { it.startsWith("Q") } }
+    }
+
+    /** Null when the network failed; an empty list when nothing matched. A link in [q] finds what it points at. */
     suspend fun search(q: String, ru: Boolean): List<Draft>? = withContext(Dispatchers.IO) {
-        val query = q.trim()
-        if (query.length < 2) return@withContext emptyList()
+        val link = link(q)
+        // A shared text with a link nobody knows is searched by its words.
+        val query = (if (link == null) q.replace(URL_RE, " ") else q).trim()
+        if (link == null && query.length < 2) return@withContext emptyList()
         val lang = if (Regex("[а-яё]", RegexOption.IGNORE_CASE).containsMatchIn(query) || ru) "ru" else "en"
-        val s = get(WD + "action=wbsearchentities&search=${enc(query)}&language=$lang&uselang=$lang&type=item&limit=20") ?: return@withContext null
-        val ids = JSONObject(s).optJSONArray("search")?.let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("id") } }.orEmpty()
+        val ids = if (link != null) items(link) ?: return@withContext null else {
+            val s = get(WD + "action=wbsearchentities&search=${enc(query)}&language=$lang&uselang=$lang&type=item&limit=20") ?: return@withContext null
+            JSONObject(s).optJSONArray("search")?.let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("id") } }.orEmpty()
+        }
         if (ids.isEmpty()) return@withContext emptyList()
         val ents = get(WD + "action=wbgetentities&ids=${ids.joinToString("|")}&props=claims|labels|sitelinks&languages=ru|en|mul&sitefilter=enwiki|ruwiki")
             ?.let { JSONObject(it).optJSONObject("entities") } ?: return@withContext null
