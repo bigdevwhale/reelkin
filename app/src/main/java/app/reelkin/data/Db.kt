@@ -93,6 +93,25 @@ interface CinemaDao {
 
     @Query("SELECT COUNT(*) FROM titles")
     suspend fun titleCount(): Int
+
+    @Insert suspend fun insertPets(p: List<Pet>)
+    @Insert suspend fun insertGoals(g: List<Goal>)
+    @Query("DELETE FROM titles") suspend fun clearTitles()
+    @Query("DELETE FROM tickets") suspend fun clearTickets()
+    @Query("DELETE FROM episodes") suspend fun clearEpisodes()
+    @Query("DELETE FROM pets") suspend fun clearPets()
+    @Query("DELETE FROM goals") suspend fun clearGoals()
+
+    /** A backup loaded: everything here gives way to it, all at once or not at all. */
+    @androidx.room.Transaction
+    suspend fun replaceAll(e: Backup.Everything) {
+        clearTitles(); clearTickets(); clearEpisodes(); clearPets(); clearGoals()
+        e.titles.chunked(500).forEach { insertTitles(it) }
+        e.tickets.chunked(500).forEach { insertTickets(it) }
+        e.episodes.chunked(500).forEach { insertEpisodes(it) }
+        insertPets(e.pets)
+        insertGoals(e.goals)
+    }
 }
 
 @Database(entities = [Title::class, Ticket::class, Episode::class, Pet::class, Goal::class], version = 8, exportSchema = true,

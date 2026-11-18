@@ -178,8 +178,8 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
                 Field(title, { title = it }, t("название", "title"))
                 Field(year, { year = it.filter(Char::isDigit).take(4) }, t("год", "year"), number = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Field(hours, { hours = it.filter(Char::isDigit).take(2) }, if (kind == TKind.SERIES) t("серия, ч", "episode, h") else t("длина, ч", "length, h"), Modifier.weight(1f), number = true)
-                    Field(mins, { mins = it.filter(Char::isDigit).take(3) }, t("мин", "min"), Modifier.weight(1f), number = true)
+                    Field(hours, { hours = it.filter(Char::isDigit).take(2) }, if (kind == TKind.SERIES) t("серия, ч", "episode, h") else t("длина, ч", "length, h"), Modifier.weight(1f), number = true, unit = t("ч", "h"))
+                    Field(mins, { mins = it.filter(Char::isDigit).take(3) }, t("мин", "min"), Modifier.weight(1f), number = true, unit = t("мин", "min"))
                 }
             }
         }

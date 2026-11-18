@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
 import app.reelkin.BuildConfig
 import app.reelkin.container
+import app.reelkin.data.Backup
+import app.reelkin.ui.components.Sheet
 import app.reelkin.domain.Cinema
 import app.reelkin.domain.Words
 import app.reelkin.ui.LocalRu
@@ -66,6 +68,22 @@ fun SettingsPage(c: Cinema, nav: Nav) {
     val pickOwn = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) co.write {
             if (Backdrops.importPicked(ctx, uri)) settings.update { it.copy(backdrop = Backdrops.OWN, backdropStamp = System.currentTimeMillis()) }
+        }
+    }
+    // moving to another phone: the whole cinema into one file, and back
+    val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        if (uri != null) co.write {
+            val ok = runCatching { Backup.write(this, ctx.contentResolver.openOutputStream(uri, "wt")!!) }.isSuccess
+            nav.toast(if (ok) (if (ru) "Кинотеатр сохранён в файл." else "The cinema is saved to the file.") else (if (ru) "Не удалось сохранить файл." else "Couldn't save the file."))
+        }
+    }
+    var found by remember { mutableStateOf<Backup.Found?>(null) }
+    val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) co.write {
+            val r = runCatching { ctx.contentResolver.openInputStream(uri)!!.use { Backup.open(this, it) } }
+            if (r.isSuccess) found = r.getOrNull()
+            else nav.toast(if ((r.exceptionOrNull() as? Backup.Unreadable)?.newer == true) (if (ru) "Этот файл сохранён более новой версией Reelkin. Обнови приложение." else "This file was saved by a newer Reelkin. Update the app.")
+                else (if (ru) "Это не файл Reelkin." else "That isn't a Reelkin file."))
         }
     }
     Page(t("Настройки", "Settings"), nav::close) {
@@ -125,6 +143,17 @@ fun SettingsPage(c: Cinema, nav: Nav) {
                     Text("›", style = T.Title.copy(color = C.velvet))
                 }
             }
+
+            Section(t("Копия", "Backup"))
+            Text(t("Весь кинотеатр одним файлом: афиша, корешки, питомцы, цели, постеры и настройки. Для переезда на другой телефон.",
+                "The whole cinema in one file: the bill, the stubs, the pets, the goals, the posters and the settings. For moving to another phone."), style = T.Muted)
+            val noFiles = if (ru) "На телефоне нет приложения для файлов." else "No files app on this phone."
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Btn(t("Сохранить в файл", "Save to a file"), { runCatching { saveBackup.launch(Backup.fileName()) }.onFailure { nav.toast(noFiles) } },
+                    Modifier.weight(1f), kind = Kind.SOFT, small = true)
+                Btn(t("Загрузить из файла", "Load from a file"), { runCatching { openBackup.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed")) }.onFailure { nav.toast(noFiles) } },
+                    Modifier.weight(1f), kind = Kind.GHOST, small = true)
+            }
         }
         if (page == 1) {
             Section(t("Фон", "Background"))
@@ -164,6 +193,25 @@ fun SettingsPage(c: Cinema, nav: Nav) {
             Text(if (ru) "Reelkin ${BuildConfig.VERSION_NAME}. Всё хранится на телефоне. В интернет — только когда ты сам ищешь фильм (Википедия), открываешь сериал (сезоны с TVmaze) или переносишь историю."
                 else "Reelkin ${BuildConfig.VERSION_NAME}. Everything stays on the phone. The internet is only for when you look a film up (Wikipedia), open a series (seasons from TVmaze) or bring your history over.", style = T.Muted)
             Btn(t("Исходный код", "Source code"), { open("https://github.com/bigdevwhale/reelkin") }, kind = Kind.GHOST, small = true)
+        }
+    }
+    found?.let { f ->
+        fun drop() { Backup.discard(f); found = null }
+        Sheet(::drop) {
+            Text(t("Загрузить кинотеатр из файла?", "Load the cinema from the file?"), style = T.Title)
+            Text(if (ru) "В файле: фильмов ${f.films}, сезонов ${f.seasons}, на афише ${f.all.titles.size}, питомцев ${f.pets}."
+                else "In the file: films ${f.films}, seasons ${f.seasons}, on the bill ${f.all.titles.size}, pets ${f.pets}.", style = T.Body)
+            Text(t("Всё, что сейчас есть на этом телефоне, заменится тем, что в файле.", "Everything on this phone now will be replaced by what is in the file."), style = T.Body.copy(color = C.velvet))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Btn(t("Отмена", "Cancel"), ::drop, Modifier.weight(1f), kind = Kind.GHOST)
+                Btn(t("Загрузить", "Load"), {
+                    found = null
+                    co.write {
+                        val ok = runCatching { Backup.load(this, f) }.isSuccess
+                        nav.toast(if (ok) (if (ru) "Кинотеатр загружен из файла." else "The cinema is loaded from the file.") else (if (ru) "Не удалось загрузить файл." else "Couldn't load the file."))
+                    }
+                }, Modifier.weight(1f))
+            }
         }
     }
 }

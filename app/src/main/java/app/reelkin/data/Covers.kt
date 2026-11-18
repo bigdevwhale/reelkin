@@ -23,6 +23,9 @@ object Covers {
 
     fun file(context: Context, name: String?): File? = name?.let { File(dir(context), it) }?.takeIf { it.exists() }
 
+    /** The files changed under us (a backup was loaded): forget what was in memory. */
+    fun forget() { synchronized(cache) { cache.evictAll(); gone.clear() } }
+
     /** Removes a poster unless something else still shows it. */
     fun delete(context: Context, name: String?) { file(context, name)?.delete(); name?.let { synchronized(cache) { cache.remove(it) } } }
 

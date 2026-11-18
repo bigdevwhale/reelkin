@@ -48,7 +48,7 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/files" />
         </provider>
-        <!-- Lingvale, the village of all the -ling pets, reads the pets and the days from here; it checks who asks. -->
+        <!-- Lingvale, the village of all the -ling pets, reads the pets and the days from here and can save or load a backup when the player asks it to; it checks who asks. -->
         <provider
             android:name=".bridge.VillageProvider"
             android:authorities="${applicationId}.village"

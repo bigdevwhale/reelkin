@@ -6,6 +6,21 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.6.0] - 2026-11-18
+
+### Added
+- **A backup of the whole cinema:** Settings → General → Backup saves everything into one file: the bill, the stubs, the episodes, the pets, the goals, the posters, your own backdrop and the settings. On another phone, load the file and the cinema is as you left it. Loading replaces what is on that phone, and asks first.
+- **Moving through Lingvale:** the bridge to Lingvale can now hand it that same backup file and take one back, so Lingvale can move all the apps to a new phone at once. It still answers only Lingvale signed with our key, and Lingvale asks before anything is replaced.
+
+### Fixed
+- **The unit stays in sight:** in a film's card the length fields keep «h» and «min» beside the number once you start typing.
+
+<!-- tg
+Весь кинотеатр теперь можно сохранить в один файл и загрузить на другом телефоне: Настройки → Основное → Копия.
+В файле афиша, корешки, питомцы, цели, постеры и настройки.
+Lingvale теперь может перевезти на новый телефон все приложения сразу.
+-->
+
 ## [2.5.0] - 2026-11-16
 
 ### Added

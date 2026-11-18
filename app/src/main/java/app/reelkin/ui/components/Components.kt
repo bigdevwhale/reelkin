@@ -193,12 +193,18 @@ fun PosterImage(title: String, genre: app.reelkin.data.Genre, cover: String?, w:
 }
 
 @Composable
-fun Field(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, style: TextStyle = T.Body, single: Boolean = true, number: Boolean = false, onDone: (() -> Unit)? = null) {
+fun Field(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, style: TextStyle = T.Body, single: Boolean = true, number: Boolean = false, onDone: (() -> Unit)? = null, unit: String? = null) {
     BasicTextField(value, onChange, modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).border(1.dp, C.line, R8.Md), textStyle = style, singleLine = single, cursorBrush = SolidColor(C.gold),
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, keyboardType = if (number) KeyboardType.Number else KeyboardType.Text,
             imeAction = if (onDone != null) ImeAction.Search else ImeAction.Default),
         keyboardActions = KeyboardActions(onSearch = { onDone?.invoke() }),
-        decorationBox = { inner -> Box(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) { if (value.isEmpty()) Text(hint, style = style.copy(color = C.faint)); inner() } })
+        decorationBox = { inner ->
+            Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { if (value.isEmpty()) Text(hint, style = style.copy(color = C.faint)); inner() }
+                // A unit stays in sight once the hint is gone.
+                if (unit != null && value.isNotEmpty()) Text(unit, style = style.copy(color = C.faint))
+            }
+        })
 }
 
 /** A sheet from the bottom over a dim layer; tap outside, swipe down or back closes it. */
