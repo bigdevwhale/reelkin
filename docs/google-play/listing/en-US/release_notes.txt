@@ -1,2 +1,2 @@
-• Add a film by a link: paste one from IMDb, Kinopoisk, Letterboxd or TMDB into the search, or share it to Reelkin from a browser.
-• A film's length can be typed in hours and minutes, like 1 h 42 min.
+• Long links from the Wikipedia app or a mobile browser now find the film in the search.
+• Anime and web series the search used to miss, like Cyberpunk: Edgerunners, are found by name and by link.

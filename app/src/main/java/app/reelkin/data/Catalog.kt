@@ -142,7 +142,9 @@ object Catalog {
             f("""myanimelist\.net/anime/(\d+)""")?.let { return Link.Prop("P4086", it) }
             f("""wikidata\.org/(?:wiki|entity)/(Q\d+)""")?.let { return Link.Item(it.uppercase()) }
             Regex("""([a-z]{2,3})(?:\.m)?\.wikipedia\.org/wiki/([^?#\s]+)""", RegexOption.IGNORE_CASE).find(u)?.let { w ->
-                return Link.Wiki(w.groupValues[1].lowercase(), java.net.URLDecoder.decode(w.groupValues[2], "UTF-8").replace('_', ' '))
+                // A link cut short ends on half an escape, which the decoder throws on.
+                val title = runCatching { java.net.URLDecoder.decode(w.groupValues[2].replace("+", "%2B"), "UTF-8") }.getOrDefault(w.groupValues[2])
+                return Link.Wiki(w.groupValues[1].lowercase(), title.replace('_', ' '))
             }
             // Letterboxd shares a short address; where it leads is in the redirect.
             if (Regex("""//boxd\.it/""", RegexOption.IGNORE_CASE).containsMatchIn(u)) redirect(u)?.let { to -> link(to)?.let { return it } }
@@ -171,6 +173,34 @@ object Catalog {
             ?.let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("title") }.filter { it.startsWith("Q") } }
     }
 
+    /**
+     * Types not on the lists, as an "original net animation series", by the classes they belong to two steps up:
+     * each one's kind and the classes passed on the way, so an animated one is known as such.
+     */
+    private fun above(types: Collection<String>): Map<String, Pair<Kind, Set<String>>> {
+        val out = HashMap<String, Pair<Kind, Set<String>>>()
+        val seen = types.associateWith { HashSet<String>() }
+        var front = types.associateWith { setOf(it) }
+        repeat(2) {
+            val ask = front.values.flatten().distinct().take(50)
+            if (ask.isEmpty()) return out
+            val es = get(WD + "action=wbgetentities&ids=${ask.joinToString("|")}&props=claims")?.let { JSONObject(it).optJSONObject("entities") } ?: return out
+            val up = ask.associateWith { q -> es.optJSONObject(q)?.optJSONObject("claims")?.let { ids(it, "P279") }.orEmpty() }
+            val next = HashMap<String, Set<String>>()
+            for ((t, f) in front) {
+                val parents = f.flatMap { up[it].orEmpty() }.toSet()
+                seen.getValue(t) += parents
+                when {
+                    parents.any { it in series } -> out[t] = Kind.SERIES to seen.getValue(t)
+                    parents.any { it in films } -> out[t] = Kind.FILM to seen.getValue(t)
+                    parents.isNotEmpty() -> next[t] = parents
+                }
+            }
+            front = next
+        }
+        return out
+    }
+
     /** Null when the network failed; an empty list when nothing matched. A link in [q] finds what it points at. */
     suspend fun search(q: String, ru: Boolean): List<Draft>? = withContext(Dispatchers.IO) {
         val link = link(q)
@@ -190,11 +220,19 @@ object Catalog {
                   val minutes: Int?, val eps: Int?, val seasons: Int?, val en: String?, val ruw: String?, val tvmaze: Int?, val imdb: String?,
                   val directors: List<String> = emptyList(), val cast: List<String> = emptyList())
         val raws = ArrayList<Raw>()
+        val known = series + films
+        val odd = above(ids.mapNotNull { ents.optJSONObject(it)?.optJSONObject("claims")?.let { c -> ids(c, "P31") } }
+            .filter { t -> t.none { it in known } }.flatten().distinct())
         for (id in ids) {
             val e = ents.optJSONObject(id) ?: continue
             val c = e.optJSONObject("claims") ?: continue
-            val p31 = ids(c, "P31")
-            val kind = when { p31.any { it in series } -> Kind.SERIES; p31.any { it in films } -> Kind.FILM; else -> continue }
+            val own = ids(c, "P31")
+            val p31 = own + own.flatMap { odd[it]?.second.orEmpty() }
+            val kind = when {
+                p31.any { it in series } -> Kind.SERIES
+                p31.any { it in films } -> Kind.FILM
+                else -> continue
+            }
             val labels = e.optJSONObject("labels")
             val label = listOf(lang, "mul", "en", "ru").firstNotNullOfOrNull { labels?.optJSONObject(it)?.optString("value")?.ifBlank { null } } ?: continue
             val time = (c.optJSONArray("P580") ?: c.optJSONArray("P577"))?.let { first(it)?.optString("time") }

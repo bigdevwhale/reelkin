@@ -130,7 +130,7 @@ fun BillScreen(c: Cinema, nav: Nav) {
                     .clickable { searching = !searching; if (!searching) q = "" }, contentAlignment = Alignment.Center) { Glass(if (searching) C.gold else C.muted) }
             }
             app.reelkin.ui.components.FirstVisit(app.reelkin.ui.components.Tip.BILL, c.s)
-            if (searching || q.isNotEmpty()) SearchField(q, { q = it.take(60) }, t("в афише или в каталоге", "on the bill or in the catalogue"), ::search)
+            if (searching || q.isNotEmpty()) SearchField(q, { q = it.take(if ("://" in it) 500 else 60) }, t("в афише или в каталоге", "on the bill or in the catalogue"), ::search)
             // Three words, big, the open one in ink with a short gold line under it.
             Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
                 listOf(t("Ждут", "Waiting") to watch.size, t("Идут", "Running") to running.size, t("Корешки", "Stubs") to stubs.size).forEachIndexed { i, (name, n) ->

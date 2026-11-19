@@ -19,6 +19,15 @@ class LinkTest {
         assertEquals(Link.Wiki("ru", "Матрица (фильм)"), Catalog.link("https://ru.m.wikipedia.org/wiki/%D0%9C%D0%B0%D1%82%D1%80%D0%B8%D1%86%D0%B0_(%D1%84%D0%B8%D0%BB%D1%8C%D0%BC)"))
     }
 
+    @Test fun wikipediaAsBrowsersCopyIt() {
+        val leo = Link.Wiki("en", "Leo (2023 American film)")
+        assertEquals(leo, Catalog.link("https://en.wikipedia.org/wiki/Leo_(2023_American_film)"))
+        assertEquals(leo, Catalog.link("https://en.m.wikipedia.org/wiki/Leo_%282023_American_film%29"))
+        assertEquals(Link.Wiki("en", "Cyberpunk: Edgerunners"), Catalog.link("https://en.wikipedia.org/wiki/Cyberpunk:_Edgerunners"))
+        // Cut short on half an escape: no crash.
+        assertEquals("en", (Catalog.link("https://en.wikipedia.org/wiki/Leo_%282023_American_film%2") as Link.Wiki).lang)
+    }
+
     @Test fun plainWordsAndUnknownSites() {
         assertNull(Catalog.link("Матрица"))
         assertNull(Catalog.link("https://example.com/film/1"))

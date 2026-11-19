@@ -6,6 +6,17 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.6.1] - 2026-11-19
+
+### Fixed
+- **Links that found nothing:** a link from the Wikipedia app or a mobile browser is no longer cut short in the bill's search, so the film is found by it.
+- **Anime and web series in the search:** a series whose type the search didn't know, like an original net animation (Cyberpunk: Edgerunners), is now found by its name and by a link.
+
+<!-- tg
+Поиск по ссылке теперь понимает длинные ссылки из приложения Википедии и мобильного браузера.
+Аниме и веб-сериалы, которые раньше не находились (например, «Киберпанк: Бегущие по краю»), теперь находятся и по названию, и по ссылке.
+-->
+
 ## [2.6.0] - 2026-11-18
 
 ### Added
