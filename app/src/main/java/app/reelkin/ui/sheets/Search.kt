@@ -94,6 +94,8 @@ fun AddSheet(q0: String, nav: Nav) {
         Text(when {
             busy -> t("ищу в Википедии…", "searching Wikipedia…")
             results == null -> t("Поиск не отвечает. Проверь связь или добавь вручную.", "The search isn't answering. Check the connection or add it by hand.")
+            // a link the open catalogue doesn't have: say so plainly (#18)
+            results!!.isEmpty() && Catalog.link(q) != null -> t("По этой ссылке в Википедии ничего нет. Добавь вручную – название и число серий.", "Wikipedia has nothing for this link. Add it by hand – the name and the episodes.")
             results!!.isEmpty() && q.isNotBlank() && !busy -> t("Ищет по Википедии. Можно добавить и вручную.", "Searches Wikipedia. You can also add it by hand.")
             else -> t("Выбери", "Pick one")
         }, style = T.Muted)
@@ -105,7 +107,11 @@ fun AddSheet(q0: String, nav: Nav) {
                 Text(listOfNotNull(if (d.kind == TKind.SERIES) t("сериал", "series") else t("фильм", "film"), d.year?.toString(), d.country.ifBlank { null }, d.about.ifBlank { null }).joinToString(" · "), style = T.Muted)
             }
         }
-        Btn(t("Добавить вручную", "Add by hand"), { nav.go(Overlay.NewTitle(Draft(TKind.FILM, q.trim()))) }, Modifier.fillMaxWidth(), kind = Kind.GHOST)
+        Btn(t("Добавить вручную", "Add by hand"), {
+            // from a link: a series if it says so, and the name without the address
+            val series = Regex("""/series/|/tv/|tvmaze|myshows""", RegexOption.IGNORE_CASE).containsMatchIn(q)
+            nav.go(Overlay.NewTitle(Draft(if (series) TKind.SERIES else TKind.FILM, q.replace(Regex("""https?://\S+"""), " ").trim())))
+        }, Modifier.fillMaxWidth(), kind = Kind.GHOST)
         Text(t("Перенести всю историю из MyShows или Кинопоиска", "Bring your whole history from MyShows or Kinopoisk"), style = T.Small.copy(color = C.gold),
             modifier = Modifier.clickable { nav.go(Overlay.Import) }.padding(vertical = 6.dp))
     }
@@ -160,7 +166,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
         return Title(
             id = old?.id ?: 0, kind = kind, title = title.trim().ifBlank { if (ru) "Без названия" else "Untitled" }, year = year.toIntOrNull(), country = country.trim(), genre = genre,
             minutes = length() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
-            season = sn, episode = if (same) old!!.episode else 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 99) ?: 10, cliff = same && old!!.cliff,
+            season = sn, episode = if (same) old!!.episode else 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 999) ?: 10, cliff = same && old!!.cliff,
             plan = plan, planAt = planAt, show = show,
             director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(), sub = sub, also = Genres.join(Genres.parse(also) - genre),
         )
@@ -198,7 +204,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(t("серий в сезоне", "episodes per season"), style = T.Small)
-                Field(perSeason, { perSeason = it.filter(Char::isDigit).take(2) }, "10", number = true)
+                Field(perSeason, { perSeason = it.filter(Char::isDigit).take(3) }, "10", number = true)
             }
         }
         if (kind == TKind.SERIES) {

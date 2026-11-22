@@ -208,10 +208,14 @@ object Catalog {
         val query = (if (link == null) q.replace(URL_RE, " ") else q).trim()
         if (link == null && query.length < 2) return@withContext emptyList()
         val lang = if (Regex("[а-яё]", RegexOption.IGNORE_CASE).containsMatchIn(query) || ru) "ru" else "en"
-        val ids = if (link != null) items(link) ?: return@withContext null else {
-            val s = get(WD + "action=wbsearchentities&search=${enc(query)}&language=$lang&uselang=$lang&type=item&limit=20") ?: return@withContext null
-            JSONObject(s).optJSONArray("search")?.let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("id") } }.orEmpty()
+        fun byWords(w: String): List<String>? {
+            val s = get(WD + "action=wbsearchentities&search=${enc(w)}&language=$lang&uselang=$lang&type=item&limit=20") ?: return null
+            return JSONObject(s).optJSONArray("search")?.let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("id") } }.orEmpty()
         }
+        // A link Wikidata doesn't know (many Kinopoisk series, #18) is searched by the words shared with it, if any.
+        val words = q.replace(URL_RE, " ").replace(Regex("""(?i)смотрите на кинопоиске|на кинопоиске|кинопоиск"""), " ").trim(' ', '—', '–', '-', ':', '.', ',')
+        val ids = if (link != null) (items(link) ?: return@withContext null).ifEmpty { if (words.length >= 2) byWords(words) ?: return@withContext null else emptyList() }
+            else byWords(query) ?: return@withContext null
         if (ids.isEmpty()) return@withContext emptyList()
         val ents = get(WD + "action=wbgetentities&ids=${ids.joinToString("|")}&props=claims|labels|sitelinks&languages=ru|en|mul&sitefilter=enwiki|ruwiki")
             ?.let { JSONObject(it).optJSONObject("entities") } ?: return@withContext null

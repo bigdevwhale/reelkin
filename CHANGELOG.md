@@ -6,6 +6,24 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.7.0] - 2026-11-22
+
+### Added
+- **What next after a season (#16):** the season's stub asks – watch the next season, it's already seen (noted, and on to the one after), or no more for now (into the cupboard, to bring back later). Before, both buttons only led away and the next season had to be fetched from «taken off» by hand.
+
+### Changed
+- **Episodes read plainly (#11):** «season 3 · 4 of 12 watched», and «· 8 left» on the series card.
+- **Links the catalogue doesn't know (#18):** a Kinopoisk link missing from Wikidata is searched by the words shared with it; if there are none, the search says so and «Add by hand» opens a series for a /series/ link.
+
+### Fixed
+- A season can have up to 999 episodes when added by hand (#18); it stopped at 99.
+
+<!-- tg
+После последней серии сезона можно сразу выбрать: смотрю следующий, уже посмотрен или продолжения нет
+Серии теперь подписаны понятно: «просмотрено 4 из 12 · осталось 8»
+В сезоне можно указать до 999 серий, а для ссылок, которых нет в базе, приложение прямо предлагает добавить вручную
+-->
+
 ## [2.6.1] - 2026-11-19
 
 ### Fixed

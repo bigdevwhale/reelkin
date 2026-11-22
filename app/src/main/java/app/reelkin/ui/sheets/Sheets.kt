@@ -40,6 +40,8 @@ import app.reelkin.data.Credits
 import app.reelkin.data.Kind as TKind
 import app.reelkin.data.Seance
 import app.reelkin.data.Status
+import app.reelkin.data.Seasons
+import app.reelkin.data.Air
 import app.reelkin.data.Ticket
 import app.reelkin.data.Title
 import app.reelkin.domain.Cinema
@@ -190,7 +192,7 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
                 Text(when (s.status) {
                     Status.WATCH -> t("ещё не начат", "not started yet")
                     Status.SHELVED -> t("снят с проката", "taken off")
-                    Status.RUNNING -> t("сезон ${s.season} · серия ${s.episode} из ${s.perSeason}", "season ${s.season} · episode ${s.episode} of ${s.perSeason}")
+                    Status.RUNNING -> t("сезон ${s.season} · просмотрено ${s.episode} из ${s.perSeason} · осталось ${s.perSeason - s.episode}", "season ${s.season} · ${s.episode} of ${s.perSeason} watched · ${s.perSeason - s.episode} left")
                 }, style = T.Strong)
                 Words.air(s, ru, c.now)?.let { Text(it, style = T.Small.copy(color = C.gold)) }
                 Words.seasonsOut(s, ru, c.now)?.let { Text(it, style = T.Small) }
@@ -344,10 +346,50 @@ fun RewardSheet(c: Cinema, tk: Ticket, g: Gains, nav: Nav) {
         var shown by remember { mutableIntStateOf(if (Art.still) rows.size else 0) }
         LaunchedEffect(Unit) { while (shown < rows.size) { delay(320); shown++ } }
         rows.forEachIndexed { i, r -> AnimatedVisibility(i < shown, enter = fadeIn()) { r() } }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // a season's stub: what next with the series (#16) – the next one, it's already seen, or none for now
+        val series = if (tk.season) c.titles.firstOrNull { it.kind == TKind.SERIES && tk.title.startsWith(it.title + " · ") } else null
+        if (series != null) SeasonNext(series, nav, ::done)
+        else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("В зал", "To the hall"), { nav.close(); nav.saga(2) }, Modifier.weight(1f), kind = Kind.GHOST)
             Btn(t("Хорошо", "Lovely"), ::done, Modifier.weight(1f))
         }
+    }
+}
+
+/**
+ * After a season's last episode (#16): watch the next season, note it as already seen (skipping on to the one after),
+ * or put the series in the cupboard until it goes on. Before, «Lovely» and «To the hall» only led away, and the
+ * next season had to be fetched from «taken off» by hand.
+ */
+@Composable
+private fun SeasonNext(s: app.reelkin.data.Title, nav: Nav, done: () -> Unit) {
+    val ru = LocalRu.current
+    val co = LocalContext.current.container
+    val air = Seasons.air(s, s.season)
+    val out = air == Air.Out || air == Air.Unknown
+    Text(t("Что дальше с «${s.title}»?", "What next with ${s.title}?"), style = T.Strong)
+    Text(if (air == Air.Unknown) t("Вышел ли сезон ${s.season}, неизвестно. Если вышел – смотри дальше.", "Whether season ${s.season} is out isn't known. If it is, go on.")
+        else if (out) t("Сезон ${s.season} уже вышел.", "Season ${s.season} is out.") else t("Сезон ${s.season} ещё не вышел – сериал подождёт в шкафу.", "Season ${s.season} isn't out yet – the series waits in the cupboard."), style = T.Muted)
+    Btn(if (out) t("Смотрю сезон ${s.season}", "Watching season ${s.season}") else t("Хорошо, подожду", "Fine, I'll wait"), {
+        co.write { office.update(s.copy(status = if (out) Status.RUNNING else Status.SHELVED)) }; done()
+    }, Modifier.fillMaxWidth())
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // a season not out yet can't have been seen
+        if (out) Btn(t("Уже посмотрен", "Seen it"), {
+            co.write {
+                // the seen season goes in the diary as watched long ago, and the series moves on to the next one
+                office.earlierSeasons(s, s.season + 1, ru, System.currentTimeMillis())
+                val next = s.season + 1
+                val nOut = Seasons.air(s, next).let { it == Air.Out || it == Air.Unknown }
+                office.update(s.copy(season = next, episode = 0, cliff = false, status = if (nOut) Status.RUNNING else Status.SHELVED, perSeason = Seasons.episodes(s, next) ?: s.perSeason))
+            }
+            nav.toast(if (ru) "Сезон ${s.season} отмечен. Дальше – сезон ${s.season + 1}." else "Season ${s.season} noted. Next: season ${s.season + 1}.")
+        }, Modifier.weight(1f), kind = Kind.SOFT, small = true)
+        Btn(t("Продолжения нет", "No more yet"), {
+            co.write { office.update(s.copy(status = Status.SHELVED, cliff = false)) }
+            nav.toast(if (ru) "«${s.title}» в шкафу. Выйдет новый сезон – верни в прокат." else "${s.title} is in the cupboard. Bring it back when a season comes out.")
+            done()
+        }, Modifier.weight(1f), kind = Kind.GHOST, small = true)
     }
 }
 
