@@ -40,6 +40,9 @@ EYES = {
     # The crane looks aside, one eye half hidden; the daruma's shine is too small for the finder.
     "crane_adult": [(92, 104, 105, 119), (121, 101, 131, 113)],
     "daruma_young": [(70, 115, 86, 129), (102, 115, 120, 129)],
+    # The young cat's brim shades its left eye; the baby dragon's eyes are amber, too light for the finder.
+    "cat_young": [(77, 119, 97, 133), (114, 112, 129, 127)],
+    "dragon_baby": [(69, 127, 84, 142), (94, 127, 109, 142)],
 }
 
 

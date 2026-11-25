@@ -13,11 +13,11 @@ ART = os.path.join(ROOT, "art")
 # id, what it is, stage by stage, colours. The order is the app's Species order.
 PETS = [
     ("cat", "A cute round grey-blue cat, a noir detective cinema usher with a soft white muzzle and belly.",
-     "Baby: a tiny kitten with a little torch-light in its paws. Young: a small grey fedora. Adult: a trench-coat collar and the fedora tipped low, a cinema ticket tucked in the hat band. Ancient: a long trench coat, silver whiskers, a pocket watch chain and a tiny magnifying glass hanging from that chain – it holds nothing, both front paws rest on the ground side by side.",
+     "Baby: a tiny kitten with a little torch-light in its paws. Young: a small grey fedora – it sits with its two white front paws side by side on the ground and its hind legs folded out of sight, so exactly two paws show at the bottom. Adult: a trench-coat collar and the fedora tipped low, a cinema ticket tucked in the hat band. Ancient: a long trench coat, silver whiskers, a pocket watch chain and a tiny magnifying glass hanging from that chain – it holds nothing, both front paws rest on the ground side by side.",
      "Slate blue-grey fur, white muzzle, pink inner ears, charcoal fedora with a red band."),
     ("fox", "A cute fluffy orange fox, a cartoon animator with a big white-tipped tail.",
-     "Baby: a tiny fox kit holding a pencil stub. Young: white cartoon gloves. Adult: a striped scarf and a little film strip coiled round its tail. Ancient: a flowing tail with film-frame pattern, a beret and a golden pencil behind its ear.",
-     "Bright orange fur, cream belly and tail tip, dark brown paws, red scarf."),
+     "Baby: a tiny fox kit holding a pencil stub. Young: white cartoon gloves. Adult: a striped scarf and a little film strip coiled round its tail. Ancient: a flowing tail with film-frame pattern, a beret and a golden pencil behind its ear. From Young on it wears the white gloves on its two front paws, which rest side by side on the ground; it sits on its hind legs folded under its body and hidden by its fur, so only the two gloved paws show at the bottom – no brown feet below or beside them.",
+     "Bright orange fur, cream belly and tail tip, dark brown legs, white gloves, red scarf."),
     ("owl", "A round fluffy owl, a film critic with large ivory face discs.",
      "Baby: a grey-brown owlet with huge eyes. Young: tiny round reading glasses. Adult: a striped critic's scarf and a little notebook under its wing. Ancient: bushy white eyebrows, gold-rimmed glasses and a tiny golden statuette pin on its chest.",
      "Warm brown feathers, ivory face and belly with speckles, orange beak and feet."),
@@ -71,7 +71,7 @@ PETS = [
      "Baby: a tiny wisp of a ghost with a wavy tail. Young: a ticket stub stuck to it like a badge. Adult: a tattered usher's cap and a little lantern with a blue flame. Ancient: a long flowing translucent cloak with film-strip edging, a ring of floating blue candle flames.",
      "Pearl white with a lavender and pale cyan glow, translucent look made with pixel dithering."),
     ("dragon", "A cute chubby little dragon who loves epic three-hour films.",
-     "Baby: a tiny dragon hatchling with stubby wings and a little puff of smoke. Young: small horns and popcorn-shaped spikes along its back. Adult: bigger wings, a glowing ember belly and a tiny film reel hugged under one arm. Ancient: a golden crown of horns, a long tail curled round a pile of golden film cans, smoke rings.",
+     "Baby: a tiny dragon hatchling with stubby wings and a little puff of smoke. Young: small horns and popcorn-shaped spikes along its back. Adult: bigger wings, a glowing ember belly and a tiny film reel hugged under one arm. Ancient: a golden crown of horns, a long tail curled round a pile of golden film cans, smoke rings. At every stage it has FOUR limbs and all of them show: two short front arms with small cream claws, held in front of its belly or resting on the ground, and two hind feet it sits on – never a body with only feet and no arms.",
      "Emerald green scales, cream belly, gold horns, orange ember glow."),
     ("unicorn", "A cute small unicorn who only eats five-star films.",
      "Baby: a tiny foal with a nub of a horn. Young: a pastel rainbow mane. Adult: a spiral golden horn shining like a projector beam and five tiny stars in its mane. Ancient: a flowing rainbow mane and tail, a golden horn and a glowing star on its forehead.",

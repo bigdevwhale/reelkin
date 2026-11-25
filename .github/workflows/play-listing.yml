@@ -1,0 +1,75 @@
+name: Google Play listing
+
+# Replaces the store listing's phone screenshots and feature graphic with the ones in
+# docs/google-play/graphics (built by tools/play.py), for en-US and ru-RU. Run by hand
+# after the graphics change. Same keyless auth and approval as the Google Play workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature:
+        description: 'Also replace the feature graphic'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency: google-play
+
+jobs:
+  graphics:
+    environment: google-play   # waits for the owner's approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed  # v2
+        with:
+          workload_identity_provider: projects/250995438720/locations/global/workloadIdentityPools/github/providers/github
+          service_account: play-publisher@intense-context-514611-h3.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+
+      - name: Upload the graphics
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
+          PKG: app.reelkin
+          FEATURE: ${{ github.event.inputs.feature }}
+        shell: python3 {0}
+        run: |
+          import json, os, sys, urllib.request, urllib.error
+
+          TOKEN, PKG = os.environ["TOKEN"], os.environ["PKG"]
+          API = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/" + PKG
+          UPLOAD = "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/" + PKG
+          G = "docs/google-play/graphics"
+
+          def call(method, url, data=None, ctype="application/json"):
+              req = urllib.request.Request(url, data=data, method=method,
+                                           headers={"Authorization": "Bearer " + TOKEN, "Content-Type": ctype})
+              try:
+                  with urllib.request.urlopen(req, timeout=300) as r:
+                      text = r.read()
+                      return json.loads(text) if text else {}
+              except urllib.error.HTTPError as e:
+                  sys.exit(f"{method} {url.split('?')[0]} -> {e.code}: {e.read().decode()}")
+
+          edit = call("POST", API + "/edits", b"{}")["id"]
+          for lang, short in (("en-US", "en"), ("ru-RU", "ru")):
+              kinds = [("phoneScreenshots", [f"{G}/screenshots-{short}/{i}.png" for i in range(1, 9)])]
+              if os.environ.get("FEATURE", "true") == "true":
+                  kinds.append(("featureGraphic", [f"{G}/feature-graphic-{short}.png"]))
+              for kind, files in kinds:
+                  base = f"{API}/edits/{edit}/listings/{lang}/{kind}"
+                  call("DELETE", base)
+                  for f in files:
+                      with open(f, "rb") as fh:
+                          call("POST", f"{UPLOAD}/edits/{edit}/listings/{lang}/{kind}?uploadType=media", fh.read(), "image/png")
+                  print(f"{lang} {kind}: {len(files)}")
+          call("POST", f"{API}/edits/{edit}:commit")
+          print("Committed edit", edit)
