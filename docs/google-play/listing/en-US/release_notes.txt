@@ -1,2 +1,4 @@
-• Long links from the Wikipedia app or a mobile browser now find the film in the search.
-• Anime and web series the search used to miss, like Cyberpunk: Edgerunners, are found by name and by link.
+• Pause the projector: an interval – the lights go up and the film waits on its frame.
+• A series can start from the episode you're on, not only from a new season.
+• Kinopoisk links Wikipedia doesn't know now add a series with its seasons, a film with its poster and name.
+• No more pets holding something in a fifth paw.

@@ -6,6 +6,23 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.8.0] - 2026-11-25
+
+### Added
+- **Pause the projector (#21):** an interval – the lights go up and the film waits on its frame. «Go on» plays it on.
+- **From any episode (#24):** a series can start from the episode you're on, not only from a new season. Episodes seen before don't feed the pets.
+
+### Fixed
+- **Kinopoisk links Wikipedia doesn't know (#22):** a series now comes with its seasons, a film with its poster and name.
+- **A paw too many (#23):** the cat, hamster, red panda, kitsune, maneki-neko and pug no longer hold something in a fifth paw.
+
+<!-- tg
+Проектор можно поставить на паузу: фильм подождёт на том же кадре
+Сериал можно отметить с любой серии, а не только с нового сезона
+Ссылки с Кинопоиска, которых нет в Википедии, теперь добавляются: сериал с сезонами, фильм с постером
+У питомцев больше нет лишних лап
+-->
+
 ## [2.7.0] - 2026-11-22
 
 ### Added

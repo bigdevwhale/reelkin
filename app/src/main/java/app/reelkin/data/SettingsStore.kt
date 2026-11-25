@@ -29,15 +29,26 @@ data class Seance(
     val sub: String = "",
     /** Genres besides [genre], as on the title. */
     val also: String = "",
+    /** When it was paused (#21), 0 while it runs. Going on moves [started] on by the pause, so the film keeps its place. */
+    val paused: Long = 0,
 ) {
+    val on: Boolean get() = paused == 0L
+
+    /** How long it has played by [now], pauses left out. */
+    fun played(now: Long): Long = ((if (on) now else paused) - started).coerceAtLeast(0)
+
+    fun pause(now: Long) = if (on) copy(paused = now) else this
+
+    fun resume(now: Long) = if (on) this else copy(started = started + (now - paused).coerceAtLeast(0), paused = 0)
+
     fun json(): String = JSONObject().put("t", title).put("m", minutes).put("g", genre.name).put("y", year ?: 0).put("c", country)
-        .put("cv", cover ?: "").put("id", titleId).put("re", rewatch).put("s", started).put("sub", sub).put("also", also).toString()
+        .put("cv", cover ?: "").put("id", titleId).put("re", rewatch).put("s", started).put("sub", sub).put("also", also).put("p", paused).toString()
 
     companion object {
         fun of(s: String?): Seance? = runCatching {
             val o = JSONObject(s ?: return null)
             Seance(o.getString("t"), o.getInt("m"), Genre.valueOf(o.getString("g")), o.optInt("y").takeIf { it > 0 }, o.optString("c"),
-                o.optString("cv").ifBlank { null }, o.optLong("id", -1), o.optBoolean("re"), o.getLong("s"), o.optString("sub"), o.optString("also"))
+                o.optString("cv").ifBlank { null }, o.optLong("id", -1), o.optBoolean("re"), o.getLong("s"), o.optString("sub"), o.optString("also"), o.optLong("p"))
         }.getOrNull()
     }
 }

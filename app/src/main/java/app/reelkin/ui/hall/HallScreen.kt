@@ -70,7 +70,7 @@ fun HallScreen(c: Cinema, nav: Nav, awards: Boolean = false) {
     val ru = LocalRu.current
     val seats = remember(c) { c.seats.map { Seat(it.genre.who, hash(it.title)) } }
     val shown = c.s.seance?.let { poster(ctx, it.title, it.genre, it.cover, 120, 36) } ?: c.seats.lastOrNull()?.let { poster(ctx, it.title, it.genre, it.cover, 120, 36) }
-    val running = c.s.seance != null
+    val running = c.s.seance?.on == true
     val dec = Cinema.DECADES.count { it in c.decades }
     Column(Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {

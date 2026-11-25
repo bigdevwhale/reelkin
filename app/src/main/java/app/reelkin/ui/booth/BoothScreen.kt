@@ -72,7 +72,8 @@ import kotlin.random.Random
 fun lookOf(c: Cinema, ctx: android.content.Context, ru: Boolean, bought: Set<Decor>? = null, wall: app.reelkin.domain.Wall? = null): BoothLook {
     val p = c.pet
     val fav = c.favourite
-    val seance = c.s.seance
+    // paused (#21): an interval, the lights up and the reels still
+    val seance = c.s.seance?.takeIf { it.on }
     fun has(d: Decor) = bought?.contains(d) ?: c.has(d)
     return BoothLook(
         species = p?.species,
@@ -111,8 +112,8 @@ fun BoothScreen(c: Cinema, nav: Nav) {
         }
     }
     // during a film the pet reacts now and then
-    LaunchedEffect(seance?.started) {
-        if (seance == null || Art.still) return@LaunchedEffect
+    LaunchedEffect(seance?.started, seance?.on) {
+        if (seance == null || !seance.on || Art.still) return@LaunchedEffect
         while (true) {
             delay(9_000)
             val m = when (seance.genre) {
@@ -127,7 +128,7 @@ fun BoothScreen(c: Cinema, nav: Nav) {
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.fillMaxWidth().clip(R8.Lg).background(C.surface).padding(6.dp).clip(R8.Md)) {
-            Booth(scene, look) { spot -> tap(spot, c, nav, scene, ru) }
+            Booth(scene, look) { spot -> tap(spot, c, nav, scene, ru, co) }
             Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { app.reelkin.ui.cards.ShareButton({ nav.go(Overlay.ShareIt(app.reelkin.ui.cards.Share.Card(app.reelkin.ui.cards.Postcard.BOOTH))) }, 34.dp) }
         }
         app.reelkin.ui.components.FirstVisit(app.reelkin.ui.components.Tip.BOOTH, c.s)
@@ -343,7 +344,7 @@ private fun androidx.compose.foundation.layout.RowScope.Action(icon: Int, label:
     }
 }
 
-private fun tap(spot: Spot, c: Cinema, nav: Nav, scene: BoothScene, ru: Boolean) {
+private fun tap(spot: Spot, c: Cinema, nav: Nav, scene: BoothScene, ru: Boolean, co: app.reelkin.AppContainer) {
     when (spot) {
         Spot.PET -> {
             val p = c.pet
@@ -352,7 +353,11 @@ private fun tap(spot: Spot, c: Cinema, nav: Nav, scene: BoothScene, ru: Boolean)
                 else -> { if (p.pet.hatched) { scene.hop(); scene.mood(Mood.HAPPY, 1.5) }; nav.go(Overlay.Pet) }
             }
         }
-        Spot.PROJECTOR -> if (c.s.seance != null) nav.say(if (ru) "Не трогай, лампа горячая!" else "Careful, the lamp's hot!") else nav.go(Overlay.Choose(false))
+        Spot.PROJECTOR -> when {
+            c.s.seance?.on == false -> { co.write { office.resumeSeance() }; nav.say(if (ru) "Гасим свет, крутим дальше!" else "Lights down, roll on!") }
+            c.s.seance != null -> nav.say(if (ru) "Не трогай, лампа горячая!" else "Careful, the lamp's hot!")
+            else -> nav.go(Overlay.Choose(false))
+        }
         Spot.POSTER -> c.favourite?.let { nav.go(Overlay.Stub(it.id)) }
         Spot.CANS -> nav.tab(Tab.BILL)
         Spot.POPCORN -> nav.go(Overlay.Shop)
@@ -379,18 +384,23 @@ private fun SeanceCard(c: Cinema, nav: Nav) {
     val ru = LocalRu.current
     val co = LocalContext.current.container
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(s.started) { if (!Art.still) while (true) { now = System.currentTimeMillis(); delay(1_000) } }
-    val min = ((now - s.started) / 60_000).toInt().coerceAtLeast(0)
+    LaunchedEffect(s.started, s.on) { if (!Art.still && s.on) while (true) { now = System.currentTimeMillis(); delay(1_000) } }
+    val min = (s.played(now) / 60_000).toInt()
     var asked by remember(s.started) { mutableStateOf(false) }
     LaunchedEffect(min >= s.minutes) {
         if (s.minutes > 0 && min >= s.minutes && !asked) { asked = true; nav.say(if (ru) "Титры! Сидим до конца — вдруг там что-то есть." else "Credits! Stay to the end, there might be something."); delay(1_200); nav.go(app.reelkin.ui.Overlay.Log(s)) }
     }
     Column(Modifier.fillMaxWidth().clip(R8.Lg).background(C.surface).border(1.dp, C.gold.copy(alpha = .5f), R8.Lg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(t("Идёт сеанс · телефон можно положить экраном вниз", "Now showing · you can put the phone face down").uppercase(), style = T.Eyebrow)
+        Text((if (s.on) t("Идёт сеанс · телефон можно положить экраном вниз", "Now showing · you can put the phone face down")
+            else t("Антракт · фильм ждёт на этом кадре", "Interval · the film waits on this frame")).uppercase(), style = T.Eyebrow)
         Text(s.title, style = T.Title)
         Bar(if (s.minutes > 0) min / s.minutes.toFloat() else 0f, Modifier.fillMaxWidth())
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("${Words.hm(min.coerceAtMost(maxOf(s.minutes, min)))} ${t("из", "of")} ${Words.hm(s.minutes)}", style = T.Muted, modifier = Modifier.weight(1f))
+            if (s.on) Btn(t("Пауза", "Pause"), { co.write { office.pauseSeance() }; nav.say(if (ru) "Антракт! Сбегаю за попкорном." else "Interval! I'll fetch some popcorn.") }, kind = Kind.SOFT, small = true)
+            else Btn(t("Дальше", "Go on"), { co.write { office.resumeSeance() }; nav.say(if (ru) "Гасим свет, крутим дальше!" else "Lights down, roll on!") }, kind = Kind.GOLD, small = true)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("Прервать", "Stop"), { co.write { office.stopSeance() }; nav.say(if (ru) "Ладно, досмотрим потом. Я запомнил кадр." else "All right, later then. I've marked the frame.") }, kind = Kind.GHOST, small = true)
             Btn(t("Титры", "Credits"), { nav.go(Overlay.Log(s)) }, kind = Kind.GOLD, small = true)
         }

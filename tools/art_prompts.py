@@ -13,7 +13,7 @@ ART = os.path.join(ROOT, "art")
 # id, what it is, stage by stage, colours. The order is the app's Species order.
 PETS = [
     ("cat", "A cute round grey-blue cat, a noir detective cinema usher with a soft white muzzle and belly.",
-     "Baby: a tiny kitten with a little torch-light in its paws. Young: a small grey fedora. Adult: a trench-coat collar and the fedora tipped low, a cinema ticket tucked in the hat band. Ancient: a long trench coat, silver whiskers, a pocket watch chain and a tiny magnifying glass.",
+     "Baby: a tiny kitten with a little torch-light in its paws. Young: a small grey fedora. Adult: a trench-coat collar and the fedora tipped low, a cinema ticket tucked in the hat band. Ancient: a long trench coat, silver whiskers, a pocket watch chain and a tiny magnifying glass hanging from that chain – it holds nothing, both front paws rest on the ground side by side.",
      "Slate blue-grey fur, white muzzle, pink inner ears, charcoal fedora with a red band."),
     ("fox", "A cute fluffy orange fox, a cartoon animator with a big white-tipped tail.",
      "Baby: a tiny fox kit holding a pencil stub. Young: white cartoon gloves. Adult: a striped scarf and a little film strip coiled round its tail. Ancient: a flowing tail with film-frame pattern, a beret and a golden pencil behind its ear.",
@@ -172,6 +172,7 @@ Detailed fine pixel art (like 128x128 game sprites, not chunky), a crisp thick d
 Big round glossy dark eyes, each with a bright white highlight; pink blush cheeks; a happy smile.
 Full body, facing the viewer in a slight three-quarter view, sitting or standing.
 Proportions: a big head and a small round body; the paws, hands and feet are SMALL and neat, tucked in close to the body – never oversized, chunky or big-footed.
+Count the limbs: a four-legged animal has exactly FOUR legs in all. A paw that holds, waves or rests on something is one of those four, so then only the other paws touch the ground – never four paws on the ground plus a raised one. A creature that holds something in both front paws sits on its two hind feet only.
 Transparent background. No ground shadow, no text, no letters, no frames, no grid, nothing else in the picture.
 The creature loves cinema: its film-related details are part of it, and they grow richer with each stage.
 

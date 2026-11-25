@@ -205,7 +205,7 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
                             Tab.PETS -> app.reelkin.ui.pets.PetsScreen(cin, nav)
                         }
                     }
-                    Dock(tab, cin.s.seance != null, cin.newCans.size, { tab = it }, { overlay = Overlay.Menu })
+                    Dock(tab, cin.s.seance?.on == true, cin.newCans.size, { tab = it }, { overlay = Overlay.Menu })
                 }
                 when (val o = overlay) {
                     is Overlay.Film -> cin.title(o.id)?.let { FilmSheet(cin, it, nav) }

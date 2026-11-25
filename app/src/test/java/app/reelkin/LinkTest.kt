@@ -2,6 +2,7 @@ package app.reelkin
 
 import app.reelkin.data.Catalog
 import app.reelkin.data.Catalog.Link
+import app.reelkin.data.Kind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -31,5 +32,21 @@ class LinkTest {
     @Test fun plainWordsAndUnknownSites() {
         assertNull(Catalog.link("Матрица"))
         assertNull(Catalog.link("https://example.com/film/1"))
+    }
+
+    // #22: a Kinopoisk link Wikidata doesn't know still makes a title, from the link and the words shared with it
+    @Test fun kinopoiskLinkAlone() {
+        val d = Catalog.kinopoiskDraft("«Слово пацана. Кровь на асфальте» (2023) — смотрите на Кинопоиске https://www.kinopoisk.ru/series/5304403/", 5304403, true)
+        assertEquals(Kind.SERIES, d.kind)
+        assertEquals("Слово пацана. Кровь на асфальте", d.title)
+        assertEquals(2023, d.year)
+        assertEquals("https://st.kp.yandex.net/images/film_iphone/iphone360_5304403.jpg", d.coverUrl)
+        val f = Catalog.kinopoiskDraft("Бригада, 2002 https://www.kinopoisk.ru/film/77044/", 77044, true)
+        assertEquals(Kind.FILM, f.kind)
+        assertEquals("Бригада", f.title)
+        assertEquals(2002, f.year)
+        // a year in the name stays in it
+        assertEquals("1917", Catalog.kinopoiskDraft("1917 https://www.kinopoisk.ru/film/1/", 1, true).title)
+        assertEquals("", Catalog.kinopoiskDraft("https://www.kinopoisk.ru/film/1/", 1, true).title)
     }
 }

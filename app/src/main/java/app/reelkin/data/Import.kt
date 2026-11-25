@@ -73,6 +73,26 @@ object MyShows {
         r.optJSONObject("result")?.optInt("id")?.takeIf { it > 0 } ?: 0
     }
 
+    /**
+     * A series by its Kinopoisk id, for a link Wikidata doesn't know (#22): its name, year, country, genres, episode
+     * length, poster and where its seasons are. Null when MyShows has no such series or didn't answer.
+     */
+    suspend fun byKinopoisk(kp: Int, ru: Boolean): Draft? = withContext(Dispatchers.IO) {
+        val id = byExternal("kinopoisk", kp)?.takeIf { it > 0 } ?: return@withContext null
+        val o = call("shows.GetById", JSONObject().put("showId", id).put("withEpisodes", true))?.optJSONObject("result") ?: return@withContext null
+        val name = (if (ru) o.optString("title").ifBlank { o.optString("titleOriginal") } else o.optString("titleOriginal").ifBlank { o.optString("title") }).trim()
+        if (name.isEmpty()) return@withContext null
+        val country = (if (ru) o.optString("countryTitle").trim().ifBlank { null } else null)
+            ?: o.optString("country").takeIf { it.length == 2 }?.let { Locale("", it).getDisplayCountry(if (ru) Locale("ru") else Locale.ENGLISH) }.orEmpty()
+        val aliases = o.optJSONArray("genres")?.let { a -> (0 until a.length()).joinToString(" ") { a.optJSONObject(it)?.optString("alias").orEmpty() } }.orEmpty()
+        val genre = if ("anim" in aliases) Genre.ANIMATION else Catalog.guessGenre(aliases)
+        Draft(Kind.SERIES, name, o.optInt("year").takeIf { it > 1880 }, country, genre, o.optInt("runtime").takeIf { it > 0 },
+            planOf(o.optJSONArray("episodes")).firstOrNull()?.episodes?.takeIf { it > 0 }, about = "MyShows",
+            coverUrl = o.optString("image").takeIf { it.startsWith("https://") },
+            sub = Catalog.guessSub(aliases.split(' ').map { it.replace('-', ' ') }, genre, country), also = Catalog.guessAlso(aliases.split(' '), genre),
+            show = "myshows:$id")
+    }
+
     /** A MyShows show by its name (Russian or original) and year: its id, 0 when there's none, null when it didn't answer. */
     suspend fun search(title: String, year: Int?): Int? = withContext(Dispatchers.IO) {
         val r = call("shows.Search", JSONObject().put("query", title)) ?: return@withContext null

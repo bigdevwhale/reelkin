@@ -161,11 +161,13 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
         for (c in gone.mapNotNull { it.cover }.toSet()) if (c !in kept) Covers.delete(ctx, c)
     }
 
-    /** Takes back the last episode, if it was this season's. */
+    /**
+     * Takes back the last episode of this season. One only marked as seen before (#24) has nothing torn to take back:
+     * just the count goes down, and an episode of another season stays.
+     */
     suspend fun undoEpisode(s: Title) {
         if (s.episode <= 0) return
-        val e = dao.lastEpisode(s.id) ?: return
-        dao.delete(e)
+        dao.lastEpisode(s.id)?.takeIf { it.season == s.season && it.number == s.episode }?.let { dao.delete(it) }
         dao.update(s.copy(episode = s.episode - 1, cliff = false))
     }
 
@@ -246,4 +248,8 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
 
     suspend fun startSeance(se: Seance) = settings.update { it.copy(seance = se) }
     suspend fun stopSeance() = settings.update { it.copy(seance = null) }
+
+    /** An interval (#21): the film stops where it is, and goes on from there. */
+    suspend fun pauseSeance() = settings.update { it.copy(seance = it.seance?.pause(System.currentTimeMillis())) }
+    suspend fun resumeSeance() = settings.update { it.copy(seance = it.seance?.resume(System.currentTimeMillis())) }
 }

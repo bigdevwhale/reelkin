@@ -64,7 +64,9 @@ import kotlinx.coroutines.withContext
 /** Downloaded posters for search results, by address, so the draft doesn't fetch them again. */
 private val fetched = HashMap<String, ByteArray>()
 
-private suspend fun fetch(url: String): ByteArray? = fetched[url] ?: Catalog.download(url)?.also { fetched[url] = it }
+private suspend fun fetch(url: String): ByteArray? = fetched[url] ?: Catalog.download(url)
+    // Kinopoisk answers a film with no poster with a small GIF: that's no poster.
+    ?.takeIf { !(it.size > 3 && it[0] == 'G'.code.toByte() && it[1] == 'I'.code.toByte() && it[2] == 'F'.code.toByte()) }?.also { fetched[url] = it }
 
 @Composable
 fun AddSheet(q0: String, nav: Nav) {
@@ -94,6 +96,8 @@ fun AddSheet(q0: String, nav: Nav) {
         Text(when {
             busy -> t("ищу в Википедии…", "searching Wikipedia…")
             results == null -> t("Поиск не отвечает. Проверь связь или добавь вручную.", "The search isn't answering. Check the connection or add it by hand.")
+            // only Kinopoisk's poster came with the link (#22): the name is to be typed
+            results!!.singleOrNull()?.title?.isBlank() == true -> t("Википедия эту ссылку не знает. Постер взят с Кинопоиска – впиши название.", "Wikipedia doesn't know this link. The poster is from Kinopoisk – type the name.")
             // a link the open catalogue doesn't have: say so plainly (#18)
             results!!.isEmpty() && Catalog.link(q) != null -> t("По этой ссылке в Википедии ничего нет. Добавь вручную – название и число серий.", "Wikipedia has nothing for this link. Add it by hand – the name and the episodes.")
             results!!.isEmpty() && q.isNotBlank() && !busy -> t("Ищет по Википедии. Можно добавить и вручную.", "Searches Wikipedia. You can also add it by hand.")
@@ -103,14 +107,14 @@ fun AddSheet(q0: String, nav: Nav) {
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PosterBuf(d.title, d.genre, d.coverUrl?.let { arts[it] }, 24, 34, Modifier.clip(R8.Sm), scale = 1.4.dp)
             Column(Modifier.weight(1f)) {
-                Text(d.title, style = T.Name)
+                Text(d.title.ifBlank { t("без названия", "untitled") }, style = T.Name)
                 Text(listOfNotNull(if (d.kind == TKind.SERIES) t("сериал", "series") else t("фильм", "film"), d.year?.toString(), d.country.ifBlank { null }, d.about.ifBlank { null }).joinToString(" · "), style = T.Muted)
             }
         }
         Btn(t("Добавить вручную", "Add by hand"), {
             // from a link: a series if it says so, and the name without the address
             val series = Regex("""/series/|/tv/|tvmaze|myshows""", RegexOption.IGNORE_CASE).containsMatchIn(q)
-            nav.go(Overlay.NewTitle(Draft(if (series) TKind.SERIES else TKind.FILM, q.replace(Regex("""https?://\S+"""), " ").trim())))
+            nav.go(Overlay.NewTitle(Draft(if (series) TKind.SERIES else TKind.FILM, Catalog.words(q))))
         }, Modifier.fillMaxWidth(), kind = Kind.GHOST)
         Text(t("Перенести всю историю из MyShows или Кинопоиска", "Bring your whole history from MyShows or Kinopoisk"), style = T.Small.copy(color = C.gold),
             modifier = Modifier.clickable { nav.go(Overlay.Import) }.padding(vertical = 6.dp))
@@ -141,15 +145,18 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     var earlier by remember { mutableStateOf(old == null) }
     var perSeason by remember { mutableStateOf((d.perSeason ?: 10).toString()) }
     var season by remember { mutableStateOf((old?.season ?: 1).toString()) }
+    // Episodes of that season already watched (#24): the series is marked from the next one. Blank is none.
+    var watched by remember { mutableStateOf(old?.episode?.takeIf { it > 0 }?.toString() ?: "") }
     var cover by remember { mutableStateOf(old?.cover) }
     var bytes by remember { mutableStateOf<ByteArray?>(null) }
     LaunchedEffect(d.coverUrl) { if (old == null) d.coverUrl?.let { bytes = fetch(it) } }
     // The seasons from TVmaze: how many are out, how long each is, when the next one starts.
     var plan by remember { mutableStateOf(old?.plan ?: "") }
-    var show by remember { mutableStateOf(old?.show) }
+    var show by remember { mutableStateOf(old?.show ?: d.show) }
     var planAt by remember { mutableStateOf(old?.planAt ?: 0L) }
     LaunchedEffect(kind) {
-        if (kind != TKind.SERIES || plan.isNotBlank()) return@LaunchedEffect
+        // A series with no name yet (a bare Kinopoisk link) is looked up later, from its card, once it has one.
+        if (kind != TKind.SERIES || plan.isNotBlank() || (show == null && title.isBlank())) return@LaunchedEffect
         val where = show ?: (if (d.imdb != null || d.tvmaze != null) Seasons.findByIds(d.imdb, d.tvmaze) else Seasons.findByName(title, year.toIntOrNull())) ?: return@LaunchedEffect
         val p = if (where.isEmpty()) emptyList() else Seasons.load(where) ?: return@LaunchedEffect
         show = where; planAt = System.currentTimeMillis(); plan = Seasons.encode(p)
@@ -159,14 +166,17 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     val art = remember(cover, bytes) { cover?.let { Covers.art(ctx, it) } ?: bytes?.let { Covers.fromBytes(it) } }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) { cover = Covers.saveUri(ctx, uri); bytes = null } }
     suspend fun saveCover(): String? = cover ?: bytes?.let { b -> withContext(Dispatchers.IO) { Covers.save(ctx, b) } }?.also { cover = it; bytes = null }
+    fun per() = perSeason.toIntOrNull()?.coerceIn(1, 999) ?: 10
+    // The last episode of a season is the season watched: that's «Watched season N», not a count.
+    fun seen() = watched.toIntOrNull()?.coerceIn(0, per() - 1) ?: 0
     fun build(status: Status): Title {
         val sn = season.toIntOrNull()?.coerceIn(1, 99) ?: 1
-        // Another season starts from its first episode.
         val same = old != null && old.season == sn
+        val ep = seen()
         return Title(
             id = old?.id ?: 0, kind = kind, title = title.trim().ifBlank { if (ru) "Без названия" else "Untitled" }, year = year.toIntOrNull(), country = country.trim(), genre = genre,
             minutes = length() ?: if (kind == TKind.SERIES) 45 else 100, status = status, added = old?.added ?: System.currentTimeMillis(),
-            season = sn, episode = if (same) old!!.episode else 0, perSeason = perSeason.toIntOrNull()?.coerceIn(1, 999) ?: 10, cliff = same && old!!.cliff,
+            season = sn, episode = ep, perSeason = per(), cliff = same && old!!.cliff && ep == old.episode,
             plan = plan, planAt = planAt, show = show,
             director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(), sub = sub, also = Genres.join(Genres.parse(also) - genre),
         )
@@ -198,9 +208,15 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
                 Text(t("смотрю сезон", "on season"), style = T.Small)
                 Field(season, { v ->
                     season = v.filter(Char::isDigit).take(2)
+                    // another season starts from its first episode
+                    watched = if (old != null && season.toIntOrNull() == old.season && old.episode > 0) old.episode.toString() else ""
                     // Another season brings its own length, when the catalogue knows it.
                     season.toIntOrNull()?.let { n -> Seasons.decode(plan).firstOrNull { it.n == n }?.episodes?.takeIf { it > 0 }?.let { perSeason = it.toString() } }
                 }, "1", number = true)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(t("просмотрено", "watched"), style = T.Small)
+                Field(watched, { watched = it.filter(Char::isDigit).take(3) }, "0", number = true)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(t("серий в сезоне", "episodes per season"), style = T.Small)
@@ -211,6 +227,11 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             val probe = Title(title = title, plan = plan, season = season.toIntOrNull() ?: 1)
             val now = System.currentTimeMillis()
             listOfNotNull(Words.seasonsOut(probe, ru, now), Words.air(probe, ru, now)).takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(" · "), style = T.Small.copy(color = C.gold)) }
+            // Episodes marked as seen here (#24) only move the count: no episode is torn, so they feed no pets.
+            val from = if (old != null && old.season == (season.toIntOrNull() ?: 1)) old.episode else 0
+            val ep = seen()
+            if (ep > from) Text(if (ru) "${if (ep == from + 1) "Серия $ep отметится просмотренной" else "Серии ${from + 1}–$ep отметятся просмотренными"} раньше: питомцев не кормят и в статистику не идут. Дальше – с серии ${ep + 1}."
+                else "${if (ep == from + 1) "Episode $ep counts" else "Episodes ${from + 1}–$ep count"} as seen before: they don't feed the pets or count in the statistics. Next: episode ${ep + 1}.", style = T.Muted)
             // The season field is where you are, not how many there are: the seasons before it can be taken as watched.
             if (missing.isNotEmpty()) {
                 val one = missing.size == 1

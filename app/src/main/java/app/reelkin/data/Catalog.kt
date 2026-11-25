@@ -31,6 +31,8 @@ data class Draft(
     val sub: String = "",
     /** Genres besides [genre], as on a title. */
     val also: String = "",
+    /** Where its seasons are, when the search already knows: «myshows:11945». */
+    val show: String? = null,
 )
 
 /**
@@ -212,13 +214,19 @@ object Catalog {
             val s = get(WD + "action=wbsearchentities&search=${enc(w)}&language=$lang&uselang=$lang&type=item&limit=20") ?: return null
             return JSONObject(s).optJSONArray("search")?.let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("id") } }.orEmpty()
         }
+        val linked = if (link != null) items(link) ?: return@withContext null else emptyList()
+        // A Kinopoisk link Wikidata doesn't know (#22): MyShows knows a series by its Kinopoisk id; anything else is
+        // drafted from the link itself, with Kinopoisk's poster and the name shared with it, so it can still be added.
+        val kp = (link as? Link.Prop)?.takeIf { it.p == "P2603" && linked.isEmpty() }?.v?.toIntOrNull()
+        if (kp != null) MyShows.byKinopoisk(kp, ru)?.let { return@withContext listOf(it) }
+        val extra = kp?.let { kinopoiskDraft(q, it, ru) }
         // A link Wikidata doesn't know (many Kinopoisk series, #18) is searched by the words shared with it, if any.
-        val words = q.replace(URL_RE, " ").replace(Regex("""(?i)смотрите на кинопоиске|на кинопоиске|кинопоиск"""), " ").trim(' ', '—', '–', '-', ':', '.', ',')
-        val ids = if (link != null) (items(link) ?: return@withContext null).ifEmpty { if (words.length >= 2) byWords(words) ?: return@withContext null else emptyList() }
+        val words = words(q)
+        val ids = if (link != null) linked.ifEmpty { if (words.length >= 2) byWords(words) ?: return@withContext listOfNotNull(extra).ifEmpty { null } else emptyList() }
             else byWords(query) ?: return@withContext null
-        if (ids.isEmpty()) return@withContext emptyList()
+        if (ids.isEmpty()) return@withContext listOfNotNull(extra)
         val ents = get(WD + "action=wbgetentities&ids=${ids.joinToString("|")}&props=claims|labels|sitelinks&languages=ru|en|mul&sitefilter=enwiki|ruwiki")
-            ?.let { JSONObject(it).optJSONObject("entities") } ?: return@withContext null
+            ?.let { JSONObject(it).optJSONObject("entities") } ?: return@withContext listOfNotNull(extra).ifEmpty { null }
 
         class Raw(val kind: Kind, val label: String, val year: Int?, val countries: List<String>, val genres: List<String>, val types: List<String>,
                   val minutes: Int?, val eps: Int?, val seasons: Int?, val en: String?, val ruw: String?, val tvmaze: Int?, val imdb: String?,
@@ -283,7 +291,24 @@ object Catalog {
                     )
                 }
             }.awaitAll()
-        }
+        } + listOfNotNull(extra)
+    }
+
+    /** The words shared along with a link, without the link and Kinopoisk's «смотрите на Кинопоиске». */
+    fun words(text: String): String = text.replace(URL_RE, " ").replace(Regex("""(?iu)смотрите на кинопоиске|на кинопоиске|кинопоиск"""), " ")
+        .replace(Regex("""\s+"""), " ").trim(' ', '—', '–', '-', ':', '.', ',')
+
+    /**
+     * A title from a Kinopoisk link alone (#22): a series if the link says so, Kinopoisk's own poster, and the name and
+     * year from the words shared with it («Название (2021)», «Название, 2021»). The name is blank when only the link came.
+     */
+    fun kinopoiskDraft(text: String, id: Int, ru: Boolean): Draft {
+        val w = words(text)
+        val year = Regex("""(?:\(|,\s*)((?:18|19|20)\d{2})\)?\s*$""").find(w)?.groupValues?.get(1)?.toIntOrNull()
+        val name = w.replace(Regex("""(?:\(|,\s*)(?:18|19|20)\d{2}\)?\s*$"""), " ").replace(Regex("""[«»"“”]"""), " ")
+            .replace(Regex("""\s+"""), " ").trim(' ', '—', '–', '-', ':', '.', ',')
+        val series = Regex("""kinopoisk\.ru/series/""", RegexOption.IGNORE_CASE).containsMatchIn(text)
+        return Draft(if (series) Kind.SERIES else Kind.FILM, name, year, about = if (ru) "с Кинопоиска" else "from Kinopoisk", coverUrl = Kinopoisk.poster(id))
     }
 
     /** A poster address for a known title, trying the usual Wikipedia article names. */
