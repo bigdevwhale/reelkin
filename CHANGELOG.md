@@ -9,11 +9,11 @@ then close it like any HTML comment. The release notes carry it, and the chat bo
 ## [2.9.0] - 2026-11-25
 
 ### Added
-- **Watched a while ago:** a stub takes the time as well as the day – just now, an hour or two ago, or any time from the clock – and the days now go back to the day before yesterday. The night and morning achievements count the time you set.
-- **An episode watched earlier:** on a series' card, «watched earlier…» dates the next episode – an hour ago, last night, any day. A season's stub takes the date of its last episode.
+- **Watched a while ago:** a stub takes the time as well as the day – just now, an hour or two ago, any time from the clock, or the day before yesterday. Night and morning achievements count it.
+- **An episode watched earlier:** «watched earlier…» on a series' card dates the next episode. A season's stub takes the date of its last one.
 
 ### Fixed
-- **−1 after an earlier episode:** taking back an episode finds it by its number, so one dated before the last no longer stays behind.
+- **−1 after an earlier episode:** an episode dated before the last one is taken back too.
 
 <!-- tg
 Просмотр можно записать задним числом: не только день, но и время – час назад, два, вчера вечером
