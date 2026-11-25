@@ -38,14 +38,14 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
 
     /**
      * One more episode of a series. The last one of a season tears a season stub; returns it, or
-     * null for an ordinary episode.
+     * null for an ordinary episode. [at]: when it was watched, now or earlier.
      */
-    suspend fun episode(s: Title, ru: Boolean): Ticket? {
-        dao.insert(Episode(series = s.id, season = s.season, number = s.episode + 1, minutes = s.minutes))
+    suspend fun episode(s: Title, ru: Boolean, at: Long = System.currentTimeMillis()): Ticket? {
+        dao.insert(Episode(series = s.id, season = s.season, number = s.episode + 1, minutes = s.minutes, at = at))
         val n = s.episode + 1
         if (n < s.perSeason) { dao.update(s.copy(episode = n, cliff = false, status = Status.RUNNING)); return null }
         val stub = Ticket(title = s.title + if (ru) " · сезон ${s.season}" else " · season ${s.season}", season = true, year = s.year, country = s.country,
-            genre = s.genre, sub = s.sub, also = s.also, minutes = s.minutes * s.perSeason, stars = 0, cover = s.cover)
+            genre = s.genre, sub = s.sub, also = s.also, minutes = s.minutes * s.perSeason, stars = 0, cover = s.cover, at = at)
         val id = dao.insert(stub)
         // The next season takes its length from the catalogue, and waits in the cupboard if it isn't out yet.
         val next = s.season + 1
@@ -167,7 +167,8 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
      */
     suspend fun undoEpisode(s: Title) {
         if (s.episode <= 0) return
-        dao.lastEpisode(s.id)?.takeIf { it.season == s.season && it.number == s.episode }?.let { dao.delete(it) }
+        // found by its number, not by the latest date: an episode can be dated earlier than the one before it
+        dao.episodeOf(s.id, s.season, s.episode)?.let { dao.delete(it) }
         dao.update(s.copy(episode = s.episode - 1, cliff = false))
     }
 

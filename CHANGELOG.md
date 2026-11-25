@@ -6,6 +6,20 @@ line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is 
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
 -->
 
+## [2.9.0] - 2026-11-25
+
+### Added
+- **Watched a while ago:** a stub takes the time as well as the day – just now, an hour or two ago, or any time from the clock – and the days now go back to the day before yesterday. The night and morning achievements count the time you set.
+- **An episode watched earlier:** on a series' card, «watched earlier…» dates the next episode – an hour ago, last night, any day. A season's stub takes the date of its last episode.
+
+### Fixed
+- **−1 after an earlier episode:** taking back an episode finds it by its number, so one dated before the last no longer stays behind.
+
+<!-- tg
+Просмотр можно записать задним числом: не только день, но и время – час назад, два, вчера вечером
+Серию тоже можно отметить позже: в карточке сериала «смотрел раньше…»
+-->
+
 ## [2.8.0] - 2026-11-25
 
 ### Added

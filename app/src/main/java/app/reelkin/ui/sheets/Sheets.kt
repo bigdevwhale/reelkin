@@ -1,6 +1,7 @@
 package app.reelkin.ui.sheets
 
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
@@ -119,27 +120,45 @@ fun Brings(c: Cinema, title: String, genre: app.reelkin.data.Genre, year: Int?, 
     }
 }
 
-/** The day it was watched: today, yesterday or any earlier day from the calendar. The time of day is kept. */
+/**
+ * When it was watched: the day (today, yesterday, the day before or any day from the calendar) and the time
+ * (just now, an hour or two ago, or any time from the clock). Picking a day keeps the time, picking a time keeps
+ * the day; nothing goes past now.
+ */
 @Composable
-fun WatchedOn(at: Long, onPick: (Long) -> Unit) {
+fun WatchedOn(at: Long, label: String = t("Когда смотрел", "Watched on"), onPick: (Long) -> Unit) {
     val ru = LocalRu.current
     val ctx = LocalContext.current
-    val now = System.currentTimeMillis()
+    // a minute's tick, so «just now» stays true to its word while the sheet is open
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { delay(60_000); now = System.currentTimeMillis() } }
     fun day(ms: Long) = Calendar.getInstance().apply { timeInMillis = ms }.let { it.get(Calendar.YEAR) * 400 + it.get(Calendar.DAY_OF_YEAR) }
     fun onDay(ms: Long) = Calendar.getInstance().apply { timeInMillis = at }.also { c ->
         val d = Calendar.getInstance().apply { timeInMillis = ms }
         c.set(d.get(Calendar.YEAR), d.get(Calendar.MONTH), d.get(Calendar.DAY_OF_MONTH))
-    }.timeInMillis.coerceAtMost(now)
-    val today = day(at) == day(now)
-    val yesterday = day(at) == day(now - DAY)
-    Text(t("Когда смотрел", "Watched on").uppercase(), style = T.Eyebrow)
+    }.timeInMillis.coerceAtMost(System.currentTimeMillis())
+    fun near(ms: Long) = kotlin.math.abs(at - ms) < 5 * 60_000L
+    val days = listOf(t("сегодня", "today") to now, t("вчера", "yesterday") to now - DAY, t("позавчера", "the day before") to now - 2 * DAY)
+    val onSome = days.indexOfFirst { day(at) == day(it.second) }
+    val ago = listOf(t("только что", "just now") to 0L, t("час назад", "an hour ago") to 3_600_000L, t("2 часа назад", "2 hours ago") to 7_200_000L)
+    val agoOn = ago.indexOfFirst { near(now - it.second) }
+    Text(label.uppercase(), style = T.Eyebrow)
     Flow {
-        Chip(t("сегодня", "today"), today, { onPick(onDay(now)) })
-        Chip(t("вчера", "yesterday"), yesterday, { onPick(onDay(now - DAY)) })
-        Chip(if (today || yesterday) t("другой день…", "another day…") else app.reelkin.ui.bill.date(at, ru), !today && !yesterday, {
+        days.forEachIndexed { i, (l, ms) -> Chip(l, onSome == i, { onPick(onDay(ms)) }) }
+        Chip(if (onSome >= 0) t("другой день…", "another day…") else app.reelkin.ui.bill.date(at, ru), onSome < 0, {
             val c = Calendar.getInstance().apply { timeInMillis = at }
             DatePickerDialog(ctx, { _, y, m, d -> onPick(onDay(Calendar.getInstance().apply { set(y, m, d) }.timeInMillis)) },
                 c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).apply { datePicker.maxDate = System.currentTimeMillis() }.show()
+        })
+    }
+    Flow {
+        ago.forEachIndexed { i, (l, back) -> Chip(l, agoOn == i, { onPick(System.currentTimeMillis() - back) }) }
+        Chip((if (ru) "в " else "at ") + android.text.format.DateFormat.getTimeFormat(ctx).format(java.util.Date(at)) + "…", agoOn < 0, {
+            val c = Calendar.getInstance().apply { timeInMillis = at }
+            TimePickerDialog(ctx, { _, h, m ->
+                onPick(Calendar.getInstance().apply { timeInMillis = at; set(Calendar.HOUR_OF_DAY, h); set(Calendar.MINUTE, m); set(Calendar.SECOND, 0) }.timeInMillis
+                    .let { if (it > System.currentTimeMillis()) it - DAY else it })
+            }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), android.text.format.DateFormat.is24HourFormat(ctx)).show()
         })
     }
 }
@@ -199,10 +218,15 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
         }
         app.reelkin.ui.bill.TicketBook(s)
         Text(t("Каждая серия — корешок абонемента и 3 попкорна. Последняя серия сезона сажает в зал зрителя.", "Each episode tears a ticket and gives 3 popcorn. A season's last episode seats a spectator."), style = T.Muted)
+        // an episode watched earlier – an hour ago, last night – is dated then; folded away until asked for
+        var at by remember(s.id) { mutableStateOf<Long?>(null) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Btn(t("+1 серия", "+1 episode"), { episode(s, nav, ctx, ru); nav.close() }, Modifier.weight(1f))
+            Btn(t("+1 серия", "+1 episode"), { episode(s, nav, ctx, ru, at ?: System.currentTimeMillis()); nav.close() }, Modifier.weight(1f))
             Btn(t("−1", "−1"), { co.write { office.undoEpisode(s) } }, kind = Kind.GHOST, enabled = s.episode > 0)
         }
+        val shown = at
+        if (shown == null) Flow { Chip(t("смотрел раньше…", "watched earlier…"), false, { at = System.currentTimeMillis() - 3_600_000L }) }
+        else WatchedOn(shown, t("Когда смотрел серию ${s.episode + 1}", "When you watched episode ${s.episode + 1}")) { at = it }
         PeopleBlock(s.director, s.cast, nav) { co.office.people(s) }
         Flow {
             Chip(if (s.cliff) t("на самом интересном ✓", "cliffhanger ✓") else t("на самом интересном!", "cliffhanger!"), s.cliff, { co.write { office.update(s.copy(cliff = !s.cliff)) } }, color = C.velvet)

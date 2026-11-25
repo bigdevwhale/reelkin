@@ -64,8 +64,8 @@ interface CinemaDao {
     @Insert suspend fun insert(e: Episode): Long
     @Insert suspend fun insertEpisodes(e: List<Episode>)
 
-    @Query("SELECT * FROM episodes WHERE series = :id ORDER BY at DESC LIMIT 1")
-    suspend fun lastEpisode(id: Long): Episode?
+    @Query("SELECT * FROM episodes WHERE series = :id AND season = :season AND number = :number ORDER BY id DESC LIMIT 1")
+    suspend fun episodeOf(id: Long, season: Int, number: Int): Episode?
 
     @Delete suspend fun delete(e: Episode)
 

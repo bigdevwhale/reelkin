@@ -424,12 +424,12 @@ fun SeriesRow(s: Title, nav: Nav) {
     }
 }
 
-/** One more episode, with the pet's joy and, at a season's end, a stub. */
-fun episode(s: Title, nav: Nav, ctx: android.content.Context, ru: Boolean) {
+/** One more episode, watched at [at], with the pet's joy and, at a season's end, a stub. */
+fun episode(s: Title, nav: Nav, ctx: android.content.Context, ru: Boolean, at: Long = System.currentTimeMillis()) {
     val co = ctx.container
     co.write {
         val before = cinema()
-        val stub = office.episode(s, ru)
+        val stub = office.episode(s, ru, at)
         if (stub == null) {
             nav.scene.hop(); nav.scene.mood(Mood.HAPPY, 1.5)
             nav.say(if (s.cliff) (if (ru) "Фух. Отпустило. Хотя…" else "Phew. That's settled. Or is it…") else (if (ru) "Серия ${s.episode + 1}. Ещё одну?" else "Episode ${s.episode + 1}. One more?"))
