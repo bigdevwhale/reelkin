@@ -2,7 +2,7 @@ name: Google Play
 
 # Uploads the AAB of a GitHub release to Google Play, with "What's new" taken
 # from the release notes: en-US from the visible text, ru-RU from the hidden
-# <!-- tg ... --> block. If the tag is already released on the track, only the
+# <!-- play-ru ... --> block, or else the <!-- tg ... --> one. If the tag is already released on the track, only the
 # notes are updated. Runs after every successful Release workflow, or by hand.
 # Auth is keyless (Workload Identity Federation) – no service account JSON.
 
@@ -90,7 +90,8 @@ jobs:
               return text[:limit - 1].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
 
           body = open("dist/notes.md", encoding="utf-8").read()
-          tg = re.search(r"<!--\s*tg\s*\n(.*?)-->", body, re.S)
+          # ru-RU: a <!-- play-ru ... --> block if there is one (a release not announced in the chat), else the chat's <!-- tg ... -->
+          tg = re.search(r"<!--\s*play-ru\s*\n(.*?)-->", body, re.S) or re.search(r"<!--\s*tg\s*\n(.*?)-->", body, re.S)
           lines = []
           for line in re.sub(r"<!--.*?-->", "", body, flags=re.S).splitlines():
               line = line.strip()

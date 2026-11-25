@@ -4,6 +4,18 @@
 Telegram: end each version's section with a hidden block for the StillCraft chat. Start it with a
 line "<!-- tg", then 2-4 short lines in Russian for users (what is new, what is fixed), no markdown,
 then close it like any HTML comment. The release notes carry it, and the chat bot posts those lines.
+A version not announced in the chat takes a "<!-- play-ru" block instead: Google Play's Russian notes only.
+-->
+
+## [2.9.1] - 2026-11-25
+
+### Fixed
+- **Four paws each:** the young detective cat no longer shows three front paws, the animator fox no longer five, and the little dragon has its front paws back.
+- **The ancient fox's pencil** is tucked into its beret, not stuck in its ear.
+
+<!-- play-ru
+У кота-сыщика, лисы-аниматора и дракончика теперь правильное число лап
+Карандаш у древней лисы перебрался из уха за берет
 -->
 
 ## [2.9.0] - 2026-11-25
