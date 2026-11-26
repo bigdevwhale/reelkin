@@ -67,7 +67,9 @@ object Reminders {
                     .setContentText(if (ru) "Фильм из твоей афиши уже в прокате. Попкорн готов." else "A film from your bill is out now. The popcorn's ready.")
                     .setContentIntent(open).setAutoCancel(true)
                     .build()
-                runCatching { NotificationManagerCompat.from(app).notify(("premiere" + t.id).hashCode(), n) }
+                // checked again right here, where lint can see it
+                if (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+                    runCatching { NotificationManagerCompat.from(app).notify(("premiere" + t.id).hashCode(), n) }
             }
         }
         // told even when notifications are off: no pile of old news once they're turned on
