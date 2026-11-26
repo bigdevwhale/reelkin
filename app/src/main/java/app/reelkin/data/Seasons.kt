@@ -36,6 +36,10 @@ object Seasons {
     /** How long a plan is trusted before it's asked for again. */
     const val FRESH = 2 * DAY
 
+    /** A season stub of the series [series]: «Name · сезон 2» or «Name · season 2». */
+    fun stubOf(stub: String, series: String): Boolean =
+        stub.startsWith("$series · ") && stub.substring(series.length + 3).let { r -> (r.startsWith("сезон ") || r.startsWith("season ")) && r.substringAfter(' ').toIntOrNull() != null }
+
     fun encode(l: List<SeasonPlan>): String = l.sortedBy { it.n }.joinToString(";") { "${it.n}:${it.episodes}:${it.premiere?.let { p -> Math.floorDiv(p, DAY) } ?: ""}" }
 
     fun decode(s: String): List<SeasonPlan> = if (s.isBlank()) emptyList() else s.split(';').mapNotNull { p ->

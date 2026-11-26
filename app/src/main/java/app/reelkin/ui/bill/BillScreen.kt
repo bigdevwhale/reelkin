@@ -149,6 +149,8 @@ fun BillScreen(c: Cinema, nav: Nav) {
         }
         // Lazy, so a collection of a thousand stubs only lays out the ones on screen; each page starts at its top.
         val list = remember(page) { LazyListState() }
+        // A film just put on the bill can land above the row in view (under «Coming soon», #14): near the top, show it.
+        LaunchedEffect(c.watch.size) { if (page == 0 && list.firstVisibleItemIndex <= 1) list.scrollToItem(0) }
         var open by rememberSaveable { mutableStateOf(false) }
         LazyColumn(Modifier.fillMaxSize(), list, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (q.isNotBlank()) item { Text(t("Искать «${q.trim()}» в каталоге ›", "Look «${q.trim()}» up in the catalogue ›"), style = T.Strong.copy(color = C.gold),
@@ -157,7 +159,18 @@ fun BillScreen(c: Cinema, nav: Nav) {
                 0 -> {
                     if (c.watch.isEmpty()) item { Empty(t("Афиша пуста. Найди фильм или сериал — и он появится здесь.", "The bill is empty. Find a film or a series and it shows up here."), t("Найти", "Find"), ::search) }
                     else if (watch.isEmpty()) item { Text(t("Под эти фильтры ничего не нашлось.", "Nothing fits these filters."), style = T.Muted) }
-                    items(watch.chunked(3), key = { r -> "w" + r.first().id }) { row ->
+                    // Films not out yet (#14) wait apart, the nearest first.
+                    val soon = app.reelkin.data.Premieres.soon(watch, c.now)
+                    val ready = if (soon.isEmpty()) watch else watch - soon.toSet()
+                    if (soon.isNotEmpty()) item { Text(t("Скоро выйдут · ${soon.size}", "Coming soon · ${soon.size}"), style = T.Muted) }
+                    items(soon.chunked(3), key = { r -> "p" + r.first().id }) { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            for (f in row) PosterTile(f, Modifier.weight(1f)) { nav.go(Overlay.Film(f.id)) }
+                            repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                        }
+                    }
+                    if (soon.isNotEmpty() && ready.isNotEmpty()) item { Text(t("Можно смотреть · ${ready.size}", "Ready to watch · ${ready.size}"), style = T.Muted) }
+                    items(ready.chunked(3), key = { r -> "w" + r.first().id }) { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             for (f in row) PosterTile(f, Modifier.weight(1f)) { nav.go(if (f.kind == app.reelkin.data.Kind.SERIES) Overlay.Series(f.id) else Overlay.Film(f.id)) }
                             repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
@@ -382,7 +395,9 @@ private fun PosterTile(f: Title, modifier: Modifier, onClick: () -> Unit) {
             PosterImage(f.title, f.genre, f.cover, 30, 44, Modifier.fillMaxSize(), scale = 3.6.dp)
         }
         Text(f.title, style = T.Small.copy(color = C.ink), textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(listOfNotNull(f.year?.toString(), f.minutes.takeIf { it > 0 }?.let { Words.hm(it) }).joinToString(" · "), style = T.Small)
+        val out = Words.comesOut(f, LocalRu.current)
+        if (out != null) Text(out, style = T.Small.copy(color = C.gold), textAlign = TextAlign.Center)
+        else Text(listOfNotNull(f.year?.toString(), f.minutes.takeIf { it > 0 }?.let { Words.hm(it) }).joinToString(" · "), style = T.Small)
     }
 }
 

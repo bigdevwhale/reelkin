@@ -14,10 +14,25 @@ class BoxOffice(private val ctx: Context, private val dao: CinemaDao, private va
 
     suspend fun update(t: Title) = dao.update(t)
 
+    /**
+     * Takes a title off for good. A series goes with everything it left (#26): its episodes and its season stubs, so
+     * nothing of it stays in the statistics, the pets' food or the goals.
+     */
     suspend fun remove(t: Title) {
         dao.delete(t)
+        if (t.kind == Kind.SERIES) {
+            dao.deleteEpisodesOf(t.id)
+            val seasons = dao.ticketList().filter { it.season && Seasons.stubOf(it.title, t.title) }
+            if (seasons.isNotEmpty()) dao.deleteTickets(seasons)
+            val kept = (dao.ticketList().mapNotNull { it.cover } + dao.titleList().mapNotNull { it.cover }).toHashSet()
+            for (c in (seasons.mapNotNull { it.cover } + listOfNotNull(t.cover)).toSet()) if (c !in kept) Covers.delete(ctx, c)
+            return
+        }
         if (t.cover != null && dao.ticketList().none { it.cover == t.cover }) Covers.delete(ctx, t.cover)
     }
+
+    /** Episodes left behind by series deleted before 2.10.0 (#26): they still counted in the statistics. */
+    suspend fun dropOrphanEpisodes() = dao.deleteOrphanEpisodes()
 
     /** Tears a stub; a film from the bill leaves it, a running seance ends. Returns the stub with its id. */
     suspend fun tear(t: Ticket, from: Long?): Ticket {

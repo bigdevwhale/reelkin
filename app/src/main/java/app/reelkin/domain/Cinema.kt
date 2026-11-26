@@ -97,6 +97,17 @@ class Cinema(val titles: List<Title>, val tickets: List<Ticket>, val episodes: L
     }
 
     fun title(id: Long) = titles.firstOrNull { it.id == id }
+
+    /**
+     * Subgenres put under [g] beyond the ones offered for it: typed by hand, or one of another genre's (#25). They're
+     * offered again next time, the most used first.
+     */
+    fun ownSubs(g: Genre): List<String> {
+        val offered = app.reelkin.data.Subgenres.of(g).map { it.key }.toHashSet()
+        return (titles.filter { it.genre == g }.map { it.sub } + tickets.filter { it.genre == g }.map { it.sub })
+            .flatMap { app.reelkin.data.Subgenres.split(it) }.filter { it !in offered }
+            .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
+    }
     private val seatIndex: Map<Long, Int> by lazy { HashMap<Long, Int>(seats.size * 2).also { m -> seats.forEachIndexed { i, t -> m[t.id] = i } } }
     fun seatOf(t: Ticket) = seatIndex[t.id] ?: -1
     fun has(d: Decor) = d.name in s.bought

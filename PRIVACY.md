@@ -1,6 +1,6 @@
 # Reelkin — Privacy Policy
 
-*Last updated: 6 November 2026*
+*Last updated: 26 November 2026*
 
 Reelkin is an Android diary of films and series with a pet in a projectionist's booth. It is
 published as open source at <https://github.com/bigdevwhale/reelkin>.
@@ -51,6 +51,9 @@ service's own privacy policy applies.
 ## Permissions
 
 - **Internet** — only for the requests described above.
+- **Notifications** — asked for only when you give a film on your bill the day it comes out, to remind you
+  that morning. The reminder is made on the phone; nothing is sent anywhere.
+- **Run at startup** — only to set that reminder again after the phone restarts.
 
 Pictures are picked with the system photo picker; the app has no access to your gallery.
 
@@ -70,7 +73,7 @@ Questions: open an issue at <https://github.com/bigdevwhale/reelkin/issues>.
 
 # Reelkin — Политика конфиденциальности
 
-*Обновлено: 6 ноября 2026*
+*Обновлено: 26 ноября 2026*
 
 Reelkin — приложение под Android: дневник фильмов и сериалов с питомцем в будке киномеханика.
 Код открыт: <https://github.com/bigdevwhale/reelkin>.
@@ -121,6 +124,9 @@ Reelkin — приложение под Android: дневник фильмов �
 ## Разрешения
 
 - **Интернет** — только для запросов, описанных выше.
+- **Уведомления** — запрашиваются, только когда вы указываете фильму в афише дату выхода, чтобы утром
+  в этот день напомнить о нём. Напоминание создаётся на телефоне, никуда ничего не отправляется.
+- **Запуск при включении** — только чтобы снова поставить это напоминание после перезагрузки телефона.
 
 Картинки выбираются через системный выбор фото; доступа к галерее у приложения нет.
 

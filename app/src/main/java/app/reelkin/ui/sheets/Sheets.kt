@@ -172,6 +172,11 @@ fun FilmSheet(c: Cinema, f: Title, nav: Nav) {
     var sure by remember { mutableStateOf(false) }
     Sheet(nav::close) {
         Hero(f.title, f.genre, f.cover, f.year, f.country, f.minutes, eyebrow = t("в афише", "on the bill"), sub = f.sub, also = f.also)
+        Words.comesOut(f, ru, c.now)?.let { out ->
+            val ctx = LocalContext.current
+            Text(out.replaceFirstChar { it.uppercase() } + if (app.reelkin.remind.Reminders.canNotify(ctx)) t(" · утром напомню", " · I'll remind you that morning") else "",
+                style = T.Small.copy(color = C.gold))
+        }
         app.reelkin.ui.components.FirstVisit(app.reelkin.ui.components.Tip.FILM, c.s)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("На проектор", "Put it on"), {
@@ -191,7 +196,7 @@ fun FilmSheet(c: Cinema, f: Title, nav: Nav) {
     }
 }
 
-fun Title.draft() = app.reelkin.data.Draft(kind, title, year, country, genre, minutes.takeIf { it > 0 }, perSeason, director = director.takeIf { it != "?" } ?: "", cast = cast, sub = sub, also = also)
+fun Title.draft() = app.reelkin.data.Draft(kind, title, year, country, genre, minutes.takeIf { it > 0 }, perSeason, director = director.takeIf { it != "?" } ?: "", cast = cast, sub = sub, also = also, premiere = premiere.takeIf { it > 0 })
 
 /* ---------------- a series ---------------- */
 
@@ -242,8 +247,12 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
         }, Modifier.fillMaxWidth(), kind = Kind.SOFT, small = true)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("Изменить", "Edit"), { nav.go(Overlay.NewTitle(s.draft(), s.id)) }, Modifier.weight(1f), kind = Kind.GHOST, small = true)
-            Btn(if (sure) t("Точно удалить?", "Sure?") else t("Удалить", "Delete"), { if (!sure) sure = true else { co.write { office.remove(s) }; nav.close() } }, Modifier.weight(1f), kind = Kind.GHOST, small = true)
+            Btn(if (sure) t("Точно удалить?", "Sure?") else t("Удалить", "Delete"), {
+                if (!sure) sure = true else { co.write { office.remove(s) }; nav.close()
+                    nav.toast(if (ru) "«${s.title}» удалён вместе с сериями и корешками сезонов." else "${s.title} is gone, with its episodes and season stubs.") }
+            }, Modifier.weight(1f), kind = Kind.GHOST, small = true)
         }
+        if (sure) Text(t("Вместе с сериалом уйдут его серии и корешки сезонов: из дневника, статистики и целей.", "Its episodes and season stubs go with it: from the diary, the statistics and the goals."), style = T.Small.copy(color = C.faint))
     }
 }
 
@@ -276,7 +285,7 @@ fun StubSheet(c: Cinema, tk: Ticket, nav: Nav) {
         }, style = T.Muted)
         WatchedOn(tk.at) { at -> co.write { office.update(tk.copy(at = at, words = words.trim())) } }
         AlsoPicker(tk.genre, tk.also) { a -> co.write { office.update(tk.copy(also = a, words = words.trim())) } }
-        SubPicker(tk.genre, tk.sub) { sub -> co.write { office.update(tk.copy(sub = sub, words = words.trim())) } }
+        SubPicker(tk.genre, tk.sub, c.ownSubs(tk.genre)) { sub -> co.write { office.update(tk.copy(sub = sub, words = words.trim())) } }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (!tk.season) Btn(t("Пересмотреть", "Watch again"), {
                 if (c.s.seance == null) { co.write { office.startSeance(tk.seance()) }; nav.tab(Tab.BOOTH) } else nav.toast(if (ru) "Сеанс уже идёт." else "A film is already on.")

@@ -36,6 +36,7 @@ import app.reelkin.data.Kind as TKind
 import app.reelkin.data.Seance
 import app.reelkin.data.Seasons
 import app.reelkin.data.Status
+import app.reelkin.data.Premieres
 import app.reelkin.data.Title
 import app.reelkin.domain.Cinema
 import app.reelkin.domain.Words
@@ -149,6 +150,11 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
     var watched by remember { mutableStateOf(old?.episode?.takeIf { it > 0 }?.toString() ?: "") }
     var cover by remember { mutableStateOf(old?.cover) }
     var bytes by remember { mutableStateOf<ByteArray?>(null) }
+    // The day a film not out yet comes out (#14): from the catalogue, or picked; 0 for none.
+    var premiere by remember { mutableStateOf(old?.premiere?.takeIf { it > 0 } ?: d.premiere ?: 0L) }
+    // Asked only when a film gets such a day: the reminder that morning needs it on Android 13 and later.
+    val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    fun remindable() { if (kind == TKind.FILM && premiere > 0 && !app.reelkin.remind.Reminders.canNotify(ctx)) askNotify.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
     LaunchedEffect(d.coverUrl) { if (old == null) d.coverUrl?.let { bytes = fetch(it) } }
     // The seasons from TVmaze: how many are out, how long each is, when the next one starts.
     var plan by remember { mutableStateOf(old?.plan ?: "") }
@@ -179,6 +185,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
             season = sn, episode = ep, perSeason = per(), cliff = same && old!!.cliff && ep == old.episode,
             plan = plan, planAt = planAt, show = show,
             director = director.trim().ifEmpty { old?.director ?: "" }, cast = cast.trim(), sub = sub, also = Genres.join(Genres.parse(also) - genre),
+            premiere = if (kind == TKind.FILM) premiere else 0,
         )
     }
     val sn = season.toIntOrNull()?.coerceIn(1, 99) ?: 1
@@ -203,6 +210,26 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
         Field(director, { director = it.take(80) }, t("режиссёр", "director"))
         Field(cast, { cast = it.take(160) }, t("в ролях, через запятую", "starring, comma-separated"))
         Flow { Chip(t("фильм", "film"), kind == TKind.FILM, { kind = TKind.FILM }); Chip(t("сериал", "series"), kind == TKind.SERIES, { kind = TKind.SERIES }) }
+        // A film not out yet (#14): offered for this year's films and later ones, and for those with no year.
+        val thisYear = java.time.LocalDate.now().year
+        if (kind == TKind.FILM && (premiere > 0 || year.toIntOrNull()?.let { it >= thisYear } != false)) {
+            fun pickDay() {
+                val tomorrow = java.time.LocalDate.now().plusDays(1)
+                val at = if (premiere > 0) java.time.LocalDate.ofEpochDay(Premieres.dayOf(premiere)) else tomorrow
+                android.app.DatePickerDialog(ctx, { _, y, m, dd ->
+                    premiere = Premieres.of(y, m + 1, dd)
+                    if (year.isBlank()) year = y.toString()
+                }, at.year, at.monthValue - 1, at.dayOfMonth).apply { datePicker.minDate = tomorrow.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() }.show()
+            }
+            val ahead = premiere > 0 && Premieres.dayOf(premiere) > Premieres.today(System.currentTimeMillis())
+            Flow {
+                if (ahead) {
+                    Chip((Words.comesOut(Title(title = "", premiere = premiere), ru) ?: "") + "…", true, ::pickDay, color = C.gold)
+                    Chip(t("уже вышел", "already out"), false, { premiere = 0 })
+                } else Chip(t("ещё не вышел…", "not out yet…"), false, ::pickDay)
+            }
+            if (ahead) Text(t("Подождёт в афише среди «Скоро выйдут», а утром в этот день я напомню.", "It waits on the bill under «Coming soon», and I'll remind you that morning."), style = T.Muted)
+        }
         if (kind == TKind.SERIES) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(t("смотрю сезон", "on season"), style = T.Small)
@@ -246,8 +273,9 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
         Text(t("Жанр — от него афиша, зритель в зале и черта питомца", "Genre: it sets the poster, the spectator and the pet's trait").uppercase(), style = T.Eyebrow)
         Flow { for (g in Genre.entries) Chip(Words.genre(g, ru), genre == g, { genre = g }, color = C.genre(g)) }
         AlsoPicker(genre, also) { also = it }
-        SubPicker(genre, sub) { sub = it }
+        SubPicker(genre, sub, c.ownSubs(genre)) { sub = it }
         if (old != null) Btn(t("Сохранить", "Save"), {
+            remindable()
             co.write { val cv = saveCover(); val tt = build(old.status).copy(cover = cv); office.update(tt); if (marks) office.earlierSeasons(tt, sn, ru, old.added) }; nav.close()
         }, Modifier.fillMaxWidth())
         else if (kind == TKind.SERIES) { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -274,6 +302,7 @@ fun DraftSheet(c: Cinema, d: Draft, edit: Long?, nav: Nav) {
         }
         else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("В афишу", "To the bill"), {
+                remindable()
                 co.write { val cv = saveCover(); office.add(build(Status.WATCH).copy(cover = cv)) }; nav.close()
                 nav.toast(if (ru) "«${title.trim()}» в афише." else "${title.trim()} is on the bill.")
             }, Modifier.weight(1f), kind = Kind.GHOST)

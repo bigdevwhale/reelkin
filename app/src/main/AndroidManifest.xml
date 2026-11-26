@@ -4,6 +4,10 @@
 
     <!-- The film search (Wikidata, Wikipedia posters), a series' seasons (TVmaze) and bringing a history over (MyShows, Kinopoisk). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- A reminder on the morning a film on the bill comes out (#14); asked for only when a film gets such a day. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Alarms don't outlive a reboot: the reminder is set again when the phone starts. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".ReelkinApp"
@@ -48,6 +52,15 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/files" />
         </provider>
+        <!-- The premiere reminder's alarm, and setting it again after a reboot or an update. -->
+        <receiver
+            android:name=".remind.PremiereReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
         <!-- Lingvale, the village of all the -ling pets, reads the pets and the days from here and can save or load a backup when the player asks it to; it checks who asks. -->
         <provider
             android:name=".bridge.VillageProvider"

@@ -169,6 +169,8 @@ fun ReelkinRoot(s: Settings, clock: Long? = null, tab0: Tab = Tab.BOOTH, overlay
         val goals by c.db.dao().goals().collectAsStateWithLifecycle(initialValue = null)
         // The one pet of 1.x moves into the pets table, with all it ate.
         LaunchedEffect(Unit) { c.office.bringOldPet(); c.office.bringYearGoals() }
+        // The morning reminder of the nearest film coming out (#14), set again as the bill changes.
+        LaunchedEffect(titles) { titles?.let { l -> runCatching { app.reelkin.remind.Reminders.schedule(c.app, l) } } }
         var now by remember { mutableLongStateOf(clock ?: System.currentTimeMillis()) }
         LaunchedEffect(Unit) { if (clock == null) while (true) { delay(30_000); now = System.currentTimeMillis() } }
         val cin = remember(titles, tickets, episodes, pets, goals, s, now) { if (titles == null || tickets == null || episodes == null || pets == null || goals == null) null else Cinema(titles!!, tickets!!, episodes!!, s, now, pets!!, goals!!) } ?: return@CompositionLocalProvider

@@ -33,6 +33,8 @@ data class Draft(
     val also: String = "",
     /** Where its seasons are, when the search already knows: «myshows:11945». */
     val show: String? = null,
+    /** A film not out yet: the day it comes out, as on a title ([Title.premiere]). */
+    val premiere: Long? = null,
 )
 
 /**
@@ -230,7 +232,7 @@ object Catalog {
 
         class Raw(val kind: Kind, val label: String, val year: Int?, val countries: List<String>, val genres: List<String>, val types: List<String>,
                   val minutes: Int?, val eps: Int?, val seasons: Int?, val en: String?, val ruw: String?, val tvmaze: Int?, val imdb: String?,
-                  val directors: List<String> = emptyList(), val cast: List<String> = emptyList())
+                  val directors: List<String> = emptyList(), val cast: List<String> = emptyList(), val premiere: Long? = null)
         val raws = ArrayList<Raw>()
         val known = series + films
         val odd = above(ids.mapNotNull { ents.optJSONObject(it)?.optJSONObject("claims")?.let { c -> ids(c, "P31") } }
@@ -256,7 +258,8 @@ object Catalog {
             val links = e.optJSONObject("sitelinks")
             raws += Raw(kind, label, time?.let { Regex("""(\d{4})""").find(it)?.value?.toIntOrNull() }, ids(c, "P495").take(1), ids(c, "P136").take(6), p31,
                 dur, amount(c, "P1113"), amount(c, "P2437"), links?.optJSONObject("enwiki")?.optString("title"), links?.optJSONObject("ruwiki")?.optString("title"),
-                string(c, "P8600")?.toIntOrNull(), string(c, "P345"), ids(c, "P57").take(2), ids(c, "P161").take(4))
+                string(c, "P8600")?.toIntOrNull(), string(c, "P345"), ids(c, "P57").take(2), ids(c, "P161").take(4),
+                if (kind == Kind.FILM) premiere(c, lang == "ru") else null)
             if (raws.size >= 8) break
         }
         val more = raws.flatMap { it.countries + it.genres + it.directors + it.cast }.distinct().take(150)
@@ -288,6 +291,7 @@ object Catalog {
                         about = r.genres.mapNotNull { names[it] }.take(2).joinToString(", "),
                         coverUrl = poster(r.ruw, "ru") ?: poster(r.en, "en"), tvmaze = r.tvmaze, imdb = r.imdb,
                         director = People.join(r.directors.mapNotNull { names[it] }), cast = People.join(r.cast.mapNotNull { names[it] }),
+                        premiere = r.premiere,
                     )
                 }
             }.awaitAll()
@@ -321,6 +325,27 @@ object Catalog {
         title ?: return null
         val body = get("https://$lang.wikipedia.org/api/rest_v1/page/summary/${enc(title.replace(' ', '_')).replace("+", "%20")}") ?: return null
         return JSONObject(body).optJSONObject("thumbnail")?.optString("source")?.ifBlank { null }
+    }
+
+    /**
+     * The day a film comes out (#14), if that's still ahead: its release dates to the day, the one in Russia (or the
+     * US) first when there is one, else the earliest. Null when it's out already or the date isn't to the day.
+     */
+    internal fun premiere(c: JSONObject, ru: Boolean, now: Long = System.currentTimeMillis()): Long? {
+        val a = c.optJSONArray("P577") ?: return null
+        val dates = (0 until a.length()).mapNotNull { i ->
+            val st = a.optJSONObject(i) ?: return@mapNotNull null
+            val v = st.optJSONObject("mainsnak")?.optJSONObject("datavalue")?.optJSONObject("value") ?: return@mapNotNull null
+            if (v.optInt("precision") < 11) return@mapNotNull null
+            val m = Regex("""^\+(\d{4})-(\d{2})-(\d{2})""").find(v.optString("time")) ?: return@mapNotNull null
+            val day = runCatching { Premieres.of(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt()) }.getOrNull() ?: return@mapNotNull null
+            val q = st.optJSONObject("qualifiers")?.optJSONArray("P291")
+            val places = q?.let { (0 until it.length()).mapNotNull { j -> it.optJSONObject(j)?.optJSONObject("datavalue")?.optJSONObject("value")?.optString("id") } }.orEmpty()
+            day to places
+        }
+        val home = if (ru) "Q159" else "Q30"
+        val day = (dates.filter { home in it.second }.ifEmpty { dates }).minOfOrNull { it.first } ?: return null
+        return day.takeIf { Premieres.dayOf(it) > Premieres.today(now) }
     }
 
     private fun first(a: JSONArray): JSONObject? = a.optJSONObject(0)?.optJSONObject("mainsnak")?.optJSONObject("datavalue")?.optJSONObject("value")

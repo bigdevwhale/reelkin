@@ -69,6 +69,13 @@ interface CinemaDao {
 
     @Delete suspend fun delete(e: Episode)
 
+    @Query("DELETE FROM episodes WHERE series = :id")
+    suspend fun deleteEpisodesOf(id: Long)
+
+    /** Episodes of a series no longer on the bill: left behind by deleting a series before 2.10.0 (#26). */
+    @Query("DELETE FROM episodes WHERE series NOT IN (SELECT id FROM titles)")
+    suspend fun deleteOrphanEpisodes(): Int
+
     @Query("SELECT COUNT(*) FROM tickets")
     suspend fun ticketCount(): Int
 
@@ -114,9 +121,9 @@ interface CinemaDao {
     }
 }
 
-@Database(entities = [Title::class, Ticket::class, Episode::class, Pet::class, Goal::class], version = 8, exportSchema = true,
+@Database(entities = [Title::class, Ticket::class, Episode::class, Pet::class, Goal::class], version = 9, exportSchema = true,
     autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5),
-        AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8)])
+        AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9)])
 abstract class CinemaDb : RoomDatabase() {
     abstract fun dao(): CinemaDao
 

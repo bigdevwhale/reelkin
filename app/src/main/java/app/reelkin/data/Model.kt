@@ -117,6 +117,8 @@ data class Title(
     @ColumnInfo(defaultValue = "") val sub: String = "",
     /** More genres besides [genre], by name, joined by commas: see [Genres]. */
     @ColumnInfo(defaultValue = "") val also: String = "",
+    /** A film not out yet (#14): the day it comes out, as UTC midnight; 0 when it's out or unknown. See [Premieres]. */
+    @ColumnInfo(defaultValue = "0") val premiere: Long = 0,
 ) {
     /** The genre and the ones besides it. */
     val genres: Set<Genre> get() = Genres.of(genre, also)

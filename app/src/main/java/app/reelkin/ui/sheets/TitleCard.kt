@@ -108,7 +108,7 @@ fun AlsoPicker(genre: Genre, also: String, onChange: (String) -> Unit) {
  * stay in front, so nothing ticked is hidden.
  */
 @Composable
-fun SubPicker(genre: Genre, sub: String, onChange: (String) -> Unit) {
+fun SubPicker(genre: Genre, sub: String, used: List<String> = emptyList(), onChange: (String) -> Unit) {
     val ru = LocalRu.current
     var own by remember { mutableStateOf("") }
     val tint = Color(0xFF000000 or genre.color.toLong())
@@ -117,6 +117,8 @@ fun SubPicker(genre: Genre, sub: String, onChange: (String) -> Unit) {
     Text(t("Поджанры", "Subgenres").uppercase(), style = T.Eyebrow)
     Flow {
         for (k in picked.filter { it !in offered }) Chip(Subgenres.name(k, ru) + " ×", true, { onChange(Subgenres.toggle(sub, k)) }, color = tint)
+        // your own ones, put under this genre before (#25): offered again, before the usual ones
+        for (k in used.filter { it !in picked && it !in offered }) Chip(Subgenres.name(k, ru), false, { onChange(Subgenres.toggle(sub, k)) }, color = tint)
         for (k in offered) Chip(Subgenres.name(k, ru), k in picked, { onChange(Subgenres.toggle(sub, k)) }, color = tint)
     }
     fun add() { if (own.isNotBlank()) { onChange(Subgenres.toggle(sub, own.trim().lowercase())); own = "" } }

@@ -48,7 +48,7 @@ object Backup {
             put(JSONObject().put("id", t.id).put("kind", t.kind.name).put("title", t.title).putOpt("year", t.year).put("country", t.country).put("genre", t.genre.name)
                 .put("minutes", t.minutes).put("status", t.status.name).putOpt("cover", t.cover).put("added", t.added).put("season", t.season).put("episode", t.episode)
                 .put("perSeason", t.perSeason).put("cliff", t.cliff).put("plan", t.plan).put("planAt", t.planAt).putOpt("show", t.show)
-                .put("director", t.director).put("cast", t.cast).put("sub", t.sub).put("also", t.also))
+                .put("director", t.director).put("cast", t.cast).put("sub", t.sub).put("also", t.also).put("premiere", t.premiere))
         } })
         .put("tickets", JSONArray().apply { e.tickets.forEach { t ->
             put(JSONObject().put("id", t.id).put("title", t.title).put("season", t.season).putOpt("year", t.year).put("country", t.country).put("genre", t.genre.name)
@@ -89,7 +89,7 @@ object Backup {
                 Title(t.getLong("id"), Kind.valueOf(t.getString("kind")), t.getString("title"), t.int("year"), t.optString("country"), Genre.valueOf(t.getString("genre")),
                     t.optInt("minutes"), Status.valueOf(t.getString("status")), t.str("cover"), t.getLong("added"), t.optInt("season", 1), t.optInt("episode"),
                     t.optInt("perSeason", 10), t.optBoolean("cliff"), t.optString("plan"), t.optLong("planAt"), t.str("show"),
-                    t.optString("director"), t.optString("cast"), t.optString("sub"), t.optString("also"))
+                    t.optString("director"), t.optString("cast"), t.optString("sub"), t.optString("also"), t.optLong("premiere"))
             }
             val tickets = objs("tickets").map { t ->
                 Ticket(t.getLong("id"), t.getString("title"), t.optBoolean("season"), t.int("year"), t.optString("country"), Genre.valueOf(t.getString("genre")),

@@ -362,6 +362,15 @@ object Words {
     fun day(ms: Long, ru: Boolean): String = java.text.SimpleDateFormat(if (ru) "d MMMM yyyy" else "MMM d, yyyy", if (ru) java.util.Locale.forLanguageTag("ru") else java.util.Locale.ENGLISH)
         .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }.format(java.util.Date(ms))
 
+    /** «выйдет 18 декабря» for a film not out yet (#14), the year added when it isn't this one; null when it's out. */
+    fun comesOut(t: Title, ru: Boolean, now: Long = System.currentTimeMillis()): String? {
+        if (!app.reelkin.data.Premieres.ahead(t, now)) return null
+        val sameYear = java.time.LocalDate.ofEpochDay(app.reelkin.data.Premieres.dayOf(t.premiere)).year == java.time.LocalDate.ofEpochDay(app.reelkin.data.Premieres.today(now)).year
+        val d = java.text.SimpleDateFormat(if (ru) (if (sameYear) "d MMMM" else "d MMMM yyyy") else (if (sameYear) "MMM d" else "MMM d, yyyy"),
+            if (ru) java.util.Locale.forLanguageTag("ru") else java.util.Locale.ENGLISH).apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }.format(java.util.Date(t.premiere))
+        return if (ru) "выйдет $d" else "out $d"
+    }
+
     /** What the season [n] of a series is waiting for, or null when it's out or nothing is known. */
     fun air(t: Title, ru: Boolean, now: Long = System.currentTimeMillis(), n: Int = t.season): String? = when (val a = Seasons.air(t, n, now)) {
         is Air.On -> if (ru) "сезон $n выйдет ${day(a.at, true)}" else "season $n comes out ${day(a.at, false)}"

@@ -186,4 +186,24 @@ class ReelkinTest {
         assertEquals(listOf(1, 0, 1, 0), st.lengths)
         assertEquals(listOf("France" to 2), st.countries)
     }
+
+    @Test fun aSeriesKnowsItsSeasonStubs() {
+        assertTrue(app.reelkin.data.Seasons.stubOf("Lost · сезон 2", "Lost"))
+        assertTrue(app.reelkin.data.Seasons.stubOf("Lost · season 10", "Lost"))
+        assertTrue(!app.reelkin.data.Seasons.stubOf("Lost · сезон 2", "Los"))
+        assertTrue(!app.reelkin.data.Seasons.stubOf("Lost Girl · сезон 2", "Lost"))
+        assertTrue(!app.reelkin.data.Seasons.stubOf("Lost · finale", "Lost"))
+    }
+
+    @Test fun ownSubgenresAreOfferedAgain() {
+        val c = cin(listOf(
+            Ticket(id = 1, title = "A", genre = Genre.COMEDY, sub = "новогодний,satire"),
+            Ticket(id = 2, title = "B", genre = Genre.COMEDY, sub = "новогодний,family"),
+            Ticket(id = 3, title = "C", genre = Genre.COMEDY, sub = "офисный"),
+            Ticket(id = 4, title = "D", genre = Genre.HORROR, sub = "деревенский"),
+        ))
+        // typed by hand or another genre's, most used first; the ones offered anyway and other genres' left out
+        assertEquals(listOf("новогодний", "family", "офисный"), c.ownSubs(Genre.COMEDY))
+        assertEquals(listOf("деревенский"), c.ownSubs(Genre.HORROR))
+    }
 }

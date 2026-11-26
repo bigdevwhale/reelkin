@@ -7,6 +7,21 @@ then close it like any HTML comment. The release notes carry it, and the chat bo
 A version not announced in the chat takes a "<!-- play-ru" block instead: Google Play's Russian notes only.
 -->
 
+## [2.10.0] - 2026-11-26
+
+### Added
+- **Films not out yet (#14):** a film can carry the day it comes out – the search fills it in, or pick it. It waits under «Coming soon» on the bill, and that morning a notification says it's out.
+- **Your own subgenres stay (#25):** one typed by hand is offered again for that genre.
+
+### Fixed
+- **A deleted series left the statistics (#26):** its episodes and season stubs go with it now.
+
+<!-- tg
+Ожидаемые фильмы: дата выхода в афише, раздел «Скоро выйдут» и уведомление утром в день премьеры
+Свои поджанры запоминаются и предлагаются снова
+Удалённый сериал больше не остаётся в статистике
+-->
+
 ## [2.9.1] - 2026-11-25
 
 ### Fixed
