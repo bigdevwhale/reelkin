@@ -91,7 +91,9 @@ import androidx.compose.runtime.mutableLongStateOf
 import java.util.Calendar
 
 fun Title.seance(rewatch: Boolean = false) = Seance(title, minutes, genre, year, country, cover, id, rewatch, System.currentTimeMillis(), sub, also)
-fun Ticket.seance() = Seance(title, minutes, genre, year, country, cover, -1, true, System.currentTimeMillis(), sub, also)
+/** The next episode of a series, on the projector. */
+fun Title.episodeSeance() = Seance(title, minutes, genre, year, country, cover, id, false, System.currentTimeMillis(), sub, also, episode = true)
+fun Ticket.seance() =Seance(title, minutes, genre, year, country, cover, -1, true, System.currentTimeMillis(), sub, also)
 
 @Composable
 fun BigPoster(title: String, genre: app.reelkin.data.Genre, cover: String?, scale: Float = 3.4f) {
@@ -226,7 +228,11 @@ fun SeriesSheet(c: Cinema, s: Title, nav: Nav) {
         // an episode watched earlier – an hour ago, last night – is dated then; folded away until asked for
         var at by remember(s.id) { mutableStateOf<Long?>(null) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Btn(t("+1 серия", "+1 episode"), { episode(s, nav, ctx, ru, at ?: System.currentTimeMillis()); nav.close() }, Modifier.weight(1f))
+            Btn(t("На проектор", "Put it on"), {
+                if (c.s.seance != null) nav.toast(if (ru) "Сеанс уже идёт." else "A show is already on.")
+                else { co.write { office.startSeance(s.episodeSeance()) }; nav.tab(Tab.BOOTH); nav.say(if (ru) "Серия ${s.episode + 1}! Я принёс плед." else "Episode ${s.episode + 1}! I've brought a blanket.") }
+            }, Modifier.weight(1f))
+            Btn(t("+1 серия", "+1 episode"), { episode(s, nav, ctx, ru, at ?: System.currentTimeMillis()); nav.close() }, Modifier.weight(1f), kind = Kind.GOLD)
             Btn(t("−1", "−1"), { co.write { office.undoEpisode(s) } }, kind = Kind.GHOST, enabled = s.episode > 0)
         }
         val shown = at
@@ -443,7 +449,7 @@ fun ChooseSheet(c: Cinema, log: Boolean, nav: Nav) {
     val co = ctx.container
     Sheet(nav::close) {
         Text(if (log) t("Что посмотрел?", "What did you watch?") else t("Что ставим на проектор?", "What goes on the projector?"), style = T.Title)
-        Text(if (log) t("Из афиши или найди новый.", "From the bill, or find another.") else t("Сеанс идёт столько, сколько длится фильм. Потом — корешок.", "The show runs as long as the film. Then a stub."), style = T.Muted)
+        Text(if (log) t("Из афиши или найди новый.", "From the bill, or find another.") else t("Сеанс идёт столько, сколько длится фильм или серия. Потом — корешок.", "The show runs as long as the film or the episode. Then a stub."), style = T.Muted)
         val films = c.watch.filter { it.kind == TKind.FILM }
         for (f in films) Row(Modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).clickable {
             if (log) nav.go(Overlay.Log(f.seance())) else { co.write { office.startSeance(f.seance()) }; nav.close(); nav.tab(Tab.BOOTH); nav.say(if (ru) "Гасим свет. Я сяду поближе к окошку." else "Lights down. I'll sit by the port.") }
@@ -451,12 +457,15 @@ fun ChooseSheet(c: Cinema, log: Boolean, nav: Nav) {
             PosterImage(f.title, f.genre, f.cover, 24, 34, Modifier.clip(R8.Sm), scale = 1.4.dp)
             Column(Modifier.weight(1f)) { Text(f.title, style = T.Name); Facts(f.year, f.country, f.minutes) }
         }
-        if (log) for (s in c.running) Row(Modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).clickable { episode(s, nav, ctx, ru); nav.close() }.padding(10.dp),
+        // A series: an episode counted now, or the next one on the projector.
+        for (s in c.running) Row(Modifier.fillMaxWidth().clip(R8.Md).background(C.surface2).clickable {
+            if (log) { episode(s, nav, ctx, ru); nav.close() } else { co.write { office.startSeance(s.episodeSeance()) }; nav.close(); nav.tab(Tab.BOOTH); nav.say(if (ru) "Серия ${s.episode + 1}! Я принёс плед." else "Episode ${s.episode + 1}! I've brought a blanket.") }
+        }.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PosterImage(s.title, s.genre, s.cover, 24, 34, Modifier.clip(R8.Sm), scale = 1.4.dp)
             Column(Modifier.weight(1f)) { Text(s.title, style = T.Name); Text(t("серия ${s.episode + 1} · сезон ${s.season}", "episode ${s.episode + 1} · season ${s.season}"), style = T.Muted) }
         }
-        val empty = films.isEmpty() && (!log || c.running.isEmpty())
+        val empty = films.isEmpty() && c.running.isEmpty()
         if (empty) Text(if (log) t("В афише пусто — найди фильм или сериал по названию.", "The bill is empty: find a film or a series by its name.")
             else t("В афише пока ничего не ждёт. Найди фильм — он встанет в афишу и сразу на проектор.", "Nothing waits on the bill yet. Find a film: it goes on the bill and straight onto the projector."), style = T.Body)
         Btn(if (empty) t("Найти фильм", "Find a film") else t("Найти другой", "Find another"), { nav.go(Overlay.Add()) }, Modifier.fillMaxWidth(), kind = Kind.GOLD)
@@ -655,6 +664,8 @@ internal fun lovesWhy(sp: app.reelkin.data.Species, ru: Boolean): String {
     return if (g.isNotEmpty()) (if (ru) "Каждый такой фильм или серия идёт в зачёт в полтора раза." else "Every such film or episode counts one and a half times.")
     else if (sp.anime) (if (ru) "Аниме — это мультфильм из Японии; остальное он ест как обычно, а такое аниме идёт в зачёт в полтора раза."
         else "Anime is animation from Japan; it eats anything else as usual, and such anime counts one and a half times.")
+    else if (sp.series) (if (ru) "Он со сериальной полки: фильмы ест как обычно, а такие серии идут в зачёт в полтора раза."
+        else "It's from the series shelf: it eats films as usual, and such episodes count one and a half times.")
     else if (ru) "Тут дело не в жанре, а в том, как ты смотришь: это засчитывается любому фильму." else "It's not about the genre but the way you watch: any film can count."
 }
 

@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.imageResource
 import androidx.compose.foundation.layout.size
 import app.reelkin.ui.components.Card
+import app.reelkin.ui.sheets.episodeSeance
 import app.reelkin.ui.sheets.seance
 import app.reelkin.container
+import app.reelkin.data.Status
 import app.reelkin.data.Stage
 import app.reelkin.data.Title
 import app.reelkin.domain.Cinema
@@ -387,13 +389,27 @@ private fun SeanceCard(c: Cinema, nav: Nav) {
     LaunchedEffect(s.started, s.on) { if (!Art.still && s.on) while (true) { now = System.currentTimeMillis(); delay(1_000) } }
     val min = (s.played(now) / 60_000).toInt()
     var asked by remember(s.started) { mutableStateOf(false) }
+    // An episode on the projector: the series as it stands, to count the episode on.
+    val series = if (s.episode) c.title(s.titleId) else null
+    val ctx = LocalContext.current
+    fun credits(next: Boolean = false) {
+        if (!s.episode) nav.go(Overlay.Log(s))
+        else if (series != null) episode(series, nav, ctx, ru, projected = true, next = next)
+        else co.write { office.stopSeance() }
+    }
     LaunchedEffect(min >= s.minutes) {
-        if (s.minutes > 0 && min >= s.minutes && !asked) { asked = true; nav.say(if (ru) "Титры! Сидим до конца — вдруг там что-то есть." else "Credits! Stay to the end, there might be something."); delay(1_200); nav.go(app.reelkin.ui.Overlay.Log(s)) }
+        if (s.minutes > 0 && min >= s.minutes && !asked) {
+            asked = true
+            // A film asks for its stub; an episode waits for a tap, since the next one may be on its way.
+            if (s.episode) nav.say(if (ru) "Титры! Засчитаем серию или сразу следующую?" else "Credits! Count it, or straight on to the next?")
+            else { nav.say(if (ru) "Титры! Сидим до конца — вдруг там что-то есть." else "Credits! Stay to the end, there might be something."); delay(1_200); nav.go(Overlay.Log(s)) }
+        }
     }
     Column(Modifier.fillMaxWidth().clip(R8.Lg).background(C.surface).border(1.dp, C.gold.copy(alpha = .5f), R8.Lg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text((if (s.on) t("Идёт сеанс · телефон можно положить экраном вниз", "Now showing · you can put the phone face down")
             else t("Антракт · фильм ждёт на этом кадре", "Interval · the film waits on this frame")).uppercase(), style = T.Eyebrow)
         Text(s.title, style = T.Title)
+        if (series != null) Text(t("сезон ${series.season} · серия ${series.episode + 1}", "season ${series.season} · episode ${series.episode + 1}"), style = T.Muted)
         Bar(if (s.minutes > 0) min / s.minutes.toFloat() else 0f, Modifier.fillMaxWidth())
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("${Words.hm(min.coerceAtMost(maxOf(s.minutes, min)))} ${t("из", "of")} ${Words.hm(s.minutes)}", style = T.Muted, modifier = Modifier.weight(1f))
@@ -402,7 +418,8 @@ private fun SeanceCard(c: Cinema, nav: Nav) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Btn(t("Прервать", "Stop"), { co.write { office.stopSeance() }; nav.say(if (ru) "Ладно, досмотрим потом. Я запомнил кадр." else "All right, later then. I've marked the frame.") }, kind = Kind.GHOST, small = true)
-            Btn(t("Титры", "Credits"), { nav.go(Overlay.Log(s)) }, kind = Kind.GOLD, small = true)
+            Btn(t("Титры", "Credits"), { credits() }, kind = Kind.GOLD, small = true)
+            if (series != null) Btn(t("Следующая", "Next"), { credits(next = true) }, kind = Kind.SOFT, small = true)
         }
     }
 }
@@ -424,15 +441,27 @@ fun SeriesRow(s: Title, nav: Nav) {
     }
 }
 
-/** One more episode, watched at [at], with the pet's joy and, at a season's end, a stub. */
-fun episode(s: Title, nav: Nav, ctx: android.content.Context, ru: Boolean, at: Long = System.currentTimeMillis()) {
+/**
+ * One more episode, watched at [at], with the pet's joy and, at a season's end, a stub. [projected]: it was on the
+ * projector, and the show ends; [next]: the episode after it goes straight on, if the series is still running.
+ */
+fun episode(s: Title, nav: Nav, ctx: android.content.Context, ru: Boolean, at: Long = System.currentTimeMillis(), projected: Boolean = false, next: Boolean = false) {
     val co = ctx.container
     co.write {
         val before = cinema()
         val stub = office.episode(s, ru, at)
+        var rolling = false
+        if (projected) {
+            office.stopSeance()
+            if (next) db.dao().title(s.id)?.takeIf { it.status == Status.RUNNING }?.let { office.startSeance(it.episodeSeance()); rolling = true }
+        }
         if (stub == null) {
             nav.scene.hop(); nav.scene.mood(Mood.HAPPY, 1.5)
-            nav.say(if (s.cliff) (if (ru) "Фух. Отпустило. Хотя…" else "Phew. That's settled. Or is it…") else (if (ru) "Серия ${s.episode + 1}. Ещё одну?" else "Episode ${s.episode + 1}. One more?"))
+            nav.say(when {
+                rolling -> if (ru) "Серия ${s.episode + 2} — не выключай свет!" else "Episode ${s.episode + 2}: keep the lights down!"
+                s.cliff -> if (ru) "Фух. Отпустило. Хотя…" else "Phew. That's settled. Or is it…"
+                else -> if (ru) "Серия ${s.episode + 1}. Ещё одну?" else "Episode ${s.episode + 1}. One more?"
+            })
             nav.toast(if (ru) "«${s.title}»: серия ${s.episode + 1} · +3 попкорна" else "${s.title}: episode ${s.episode + 1} · +3 popcorn")
         } else {
             val after = cinema()

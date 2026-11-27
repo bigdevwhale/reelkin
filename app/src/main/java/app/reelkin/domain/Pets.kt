@@ -47,6 +47,26 @@ class Watch(
     val animeGap: Int = 0,
     /** Genres besides the main one: a pet that loves one of them gets a quarter more, not half. */
     val also: Set<Genre> = emptySet(),
+    /** For an episode: its series, season and number. A whole season brought over has only its season. */
+    val series: Long = 0,
+    val seasonNo: Int = 0,
+    val number: Int = 0,
+    /** The last episode of its season. */
+    val finale: Boolean = false,
+    /** This series' episodes that day so far, this one too. */
+    val sameDay: Int = 0,
+    /** Different series with an episode that day. */
+    val seriesToday: Int = 0,
+    /** Whole days since the episode of this series before it; -1 for its first. */
+    val seriesGap: Int = -1,
+    /** Watched within a week of its season's first day. */
+    val premiereWeek: Boolean = false,
+    /** This series' episodes so far, this one too. */
+    val seriesEps: Int = 0,
+    /** Another genre than the episode before it. */
+    val switched: Boolean = false,
+    /** A series with a season stub of four popcorn and more. */
+    val loved: Boolean = false,
 ) {
     val late get() = hour >= 23 || hour < 4
     /** A full-length film, not an episode or a season. */
@@ -134,6 +154,27 @@ object Pets {
         Species.RYU -> w.anime && w.film && w.minutes >= 120
         Species.SUZUME -> w.anime && w.hour in 5..11
         Species.BAKU -> w.anime && w.animeGap >= 7
+        // The series shelf: episodes, by the way they're watched.
+        Species.HEDGEHOG -> w.episode && w.number == 1
+        Species.OTTER -> w.episode && w.finale
+        Species.BEAVER -> w.episode && w.sameDay >= 3
+        Species.OCTOPUS -> w.episode && w.seriesToday >= 2
+        Species.MAGPIE -> w.episode && w.premiereWeek
+        Species.SNAIL -> w.episode && w.seriesGap in 5..9
+        Species.BEE -> w.episode && !w.weekend && w.hour in 19..22
+        Species.ROOSTER -> w.episode && w.hour in 5..9
+        Species.CAPYBARA -> w.episode && w.minutes in 1..30
+        Species.WHALE -> w.episode && w.minutes >= 55
+        Species.ELEPHANT -> !w.film && w.seasonNo >= 4
+        Species.CROW -> !w.film && w.genre == Genre.NOIR
+        Species.LLAMA -> !w.film && w.genre == Genre.COMEDY
+        Species.JELLYFISH -> !w.film && w.genre == Genre.SCIFI
+        Species.PARROT -> !w.film && w.genre == Genre.REALITY
+        Species.BADGER -> w.episode && w.seriesGap >= 30
+        Species.FIREFLY -> w.episode && w.hour in 0..3
+        Species.KOALA -> w.episode && w.seriesEps > 30
+        Species.CHAMELEON -> w.episode && w.switched
+        Species.PEACOCK -> !w.film && w.loved
         else -> w.genre in genres(sp)
     }
 
@@ -150,13 +191,23 @@ object Pets {
     fun watches(c: Cinema): List<Watch> {
         val cal = Calendar.getInstance()
         fun dayOf(ms: Long): Int { cal.timeInMillis = ms; return (ms + cal.timeZone.getOffset(ms)).floorDiv(86_400_000L).toInt() }
-        class Raw(val at: Long, val minutes: Int, val ticket: app.reelkin.data.Ticket?, val title: app.reelkin.data.Title?)
+        class Raw(val at: Long, val minutes: Int, val ticket: app.reelkin.data.Ticket?, val title: app.reelkin.data.Title?, val ep: app.reelkin.data.Episode? = null)
         val raw = ArrayList<Raw>()
         for (t in c.seats) if (!t.season || t.whole) raw += Raw(t.at, t.minutes, t, null)
-        for (e in c.episodes) raw += Raw(e.at, e.minutes, null, c.title(e.series))
+        for (e in c.episodes) raw += Raw(e.at, e.minutes, null, c.title(e.series), e)
         raw.sortBy { it.at }
         val perDay = HashMap<Int, Int>()
         for (r in raw) perDay.merge(dayOf(r.at), r.minutes, Int::plus)
+        // For the series pets: which series were on each day, the season stubs torn with a season's last episode,
+        // and the series whose seasons got four popcorn and more.
+        val seriesOn = HashMap<Int, MutableSet<Long>>()
+        for (r in raw) r.ep?.let { seriesOn.getOrPut(dayOf(r.at)) { HashSet() } += it.series }
+        val torn = c.seats.filter { it.season && !it.whole }.map { it.at }.toHashSet()
+        val loved = c.seats.filter { it.season && it.stars >= 4 }.map { it.title.substringBeforeLast(" · ") }.toHashSet()
+        val plans = HashMap<Long, List<app.reelkin.data.SeasonPlan>>()
+        fun plan(t: app.reelkin.data.Title) = plans.getOrPut(t.id) { app.reelkin.data.Seasons.decode(t.plan) }
+        val lastOf = HashMap<Long, Int>(); val countOf = HashMap<Long, Int>(); val dayCount = HashMap<Pair<Long, Int>, Int>()
+        var lastGenre: Genre? = null
         val countries = HashSet<String>(); val decades = HashSet<Int>()
         var lastDay = Int.MIN_VALUE; var lastAnime = Int.MIN_VALUE
         return raw.map { r ->
@@ -173,6 +224,22 @@ object Pets {
             val anime = anime(genre, country)
             val animeGap = if (!anime || lastAnime == Int.MIN_VALUE) 0 else (day - lastAnime - 1).coerceAtLeast(0)
             if (anime) lastAnime = day
+            // The series side of it.
+            val e = r.ep
+            val name = r.title?.title ?: t?.takeIf { it.season }?.title?.substringBeforeLast(" · ")
+            var finale = false; var sameDay = 0; var gapS = -1; var fresh7 = false; var eps = 0; var switched = false
+            if (e != null) {
+                val st = r.title
+                val count = st?.let { s -> plan(s).firstOrNull { it.n == e.season }?.episodes?.takeIf { it > 0 } ?: s.perSeason.takeIf { e.season == s.season } }
+                finale = r.at in torn || (count != null && e.number >= count)
+                sameDay = dayCount.merge(e.series to day, 1, Int::plus) ?: 1
+                gapS = lastOf[e.series]?.let { (day - it - 1).coerceAtLeast(0) } ?: -1
+                lastOf[e.series] = day
+                eps = countOf.merge(e.series, 1, Int::plus) ?: 1
+                fresh7 = st?.let { s -> plan(s).firstOrNull { it.n == e.season }?.premiere?.let { p -> r.at >= p && r.at - p < 7 * app.reelkin.data.DAY } } == true
+                switched = lastGenre != null && lastGenre != genre
+                lastGenre = genre
+            }
             cal.timeInMillis = r.at
             val dow = cal.get(Calendar.DAY_OF_WEEK)
             Watch(r.at, r.minutes, genre, year, country, episode = t == null, season = t?.season == true,
@@ -181,7 +248,10 @@ object Pets {
                 hour = cal.get(Calendar.HOUR_OF_DAY), stars = t?.stars ?: 0, month = cal.get(Calendar.MONTH),
                 weekend = dow == Calendar.SATURDAY || dow == Calendar.SUNDAY, gap = gap, running = running,
                 anime = anime, fresh = year != null && year >= cal.get(Calendar.YEAR), animeGap = animeGap,
-                also = ((t?.genres ?: r.title?.genres).orEmpty() - genre))
+                also = ((t?.genres ?: r.title?.genres).orEmpty() - genre),
+                series = e?.series ?: 0, seasonNo = e?.season ?: t?.takeIf { it.season }?.title?.substringAfterLast(' ')?.toIntOrNull() ?: 0,
+                number = e?.number ?: 0, finale = finale, sameDay = sameDay, seriesToday = if (e != null) seriesOn[day]?.size ?: 0 else 0,
+                seriesGap = gapS, premiereWeek = fresh7, seriesEps = eps, switched = switched, loved = name != null && name in loved)
         }
     }
 
@@ -225,6 +295,12 @@ object Pets {
         var animeStreak = 0; run = 0; prev = Int.MIN_VALUE
         for (d in aw.map { day(it.at) }.distinct().sorted()) { run = if (d == prev + 1) run + 1 else 1; animeStreak = maxOf(animeStreak, run); prev = d }
         fun days(l: List<Watch>) = l.map { day(it.at) }.distinct().size
+        // The series shelf. A season brought from elsewhere stands for a dozen episodes, as for the kappa.
+        val sw = ws.filter { it.episode || it.season }
+        val ep = sw.filter { it.episode }
+        fun episodes(l: List<Watch>) = l.sumOf { if (it.season) 12 else 1 }
+        // Seasons gone through within a week of their first episode.
+        val quick = ep.groupBy { it.series to it.seasonNo }.values.count { l -> l.any { it.finale } && l.last().at - l.first().at <= 7 * app.reelkin.data.DAY }
         return Species.entries.map { sp ->
             when (sp) {
                 Species.CAT, Species.FOX, Species.OWL -> Hint(sp, 1, 1)
@@ -275,6 +351,26 @@ object Pets {
                 Species.RYU -> Hint(sp, aw.count { it.film && it.minutes >= 120 }, 2)
                 Species.SUZUME -> Hint(sp, days(aw.filter { it.hour in 5..11 }), 3)
                 Species.BAKU -> Hint(sp, aw.count { it.animeGap >= 14 }, 1)
+                Species.HEDGEHOG -> Hint(sp, ep.count { it.seasonNo == 1 && it.number == 1 }, 5)
+                Species.OTTER -> Hint(sp, quick, 2)
+                Species.BEAVER -> Hint(sp, ep.filter { it.sameDay >= 3 }.map { day(it.at) }.distinct().size, 5)
+                Species.OCTOPUS -> Hint(sp, ep.map { it.series }.distinct().size, 5)
+                Species.MAGPIE -> Hint(sp, ep.count { it.premiereWeek }, 5)
+                Species.SNAIL -> Hint(sp, ep.count { it.seriesGap in 5..9 }, 4)
+                Species.BEE -> Hint(sp, ep.count { !it.weekend && it.hour in 19..22 }, 10)
+                Species.ROOSTER -> Hint(sp, days(ep.filter { it.hour in 5..9 }), 5)
+                Species.CAPYBARA -> Hint(sp, ep.count { it.minutes in 1..30 }, 20)
+                Species.WHALE -> Hint(sp, ep.count { it.minutes >= 55 }, 10)
+                Species.ELEPHANT -> Hint(sp, sw.maxOfOrNull { it.seasonNo } ?: 0, 5)
+                Species.CROW -> Hint(sp, episodes(sw.filter { it.genre == Genre.NOIR }), 15)
+                Species.LLAMA -> Hint(sp, episodes(sw.filter { it.genre == Genre.COMEDY }), 15)
+                Species.JELLYFISH -> Hint(sp, episodes(sw.filter { it.genre == Genre.SCIFI }), 15)
+                Species.PARROT -> Hint(sp, episodes(sw.filter { it.genre == Genre.REALITY }), 10)
+                Species.BADGER -> Hint(sp, ep.count { it.seriesGap >= 30 }, 1)
+                Species.FIREFLY -> Hint(sp, days(ep.filter { it.hour in 0..3 }), 5)
+                Species.KOALA -> Hint(sp, ep.maxOfOrNull { it.seriesEps } ?: 0, 50)
+                Species.CHAMELEON -> Hint(sp, sw.map { it.genre }.distinct().size, 5)
+                Species.PEACOCK -> Hint(sp, c.seats.count { it.season && it.stars == 5 }, 3)
             }
         }
     }

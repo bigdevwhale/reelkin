@@ -35,4 +35,11 @@ class SeanceTest {
         // a seance saved before pauses existed runs
         assertTrue(Seance.of(s.json().replace(",\"p\":0", ""))!!.on)
     }
+
+    @Test fun anEpisodeStaysAnEpisode() {
+        val e = s.copy(episode = true, minutes = 45)
+        assertEquals(e, Seance.of(e.json()))
+        // a seance saved before episodes went on the projector is a film
+        assertFalse(Seance.of(s.json().replace(",\"ep\":false", ""))!!.episode)
+    }
 }

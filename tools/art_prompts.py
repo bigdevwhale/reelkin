@@ -161,6 +161,67 @@ PETS = [
     ("baku", "A cute baku (Japanese dream-eating spirit, like a small tapir with a short trunk), floating on a little cloud, who waits for you to come back to anime after a break.",
      "Baby: a tiny round tapir calf with a short trunk and white stripes. Young: a small dream cloud under it. Adult: a night-blue saddle cloth with stars, tiny tusks and a sleeping cap. Ancient: a starry-coated baku with golden tusks, swirling dream clouds and a crescent moon charm.",
      "Indigo and lavender body, white belly band, pink trunk tip, gold stars, soft cloud white."),
+    # The series shelf: pets that live on episodes.
+    ("hedgehog", "A cute little hedgehog who loves pilots, the very first episode of a series.",
+     "Baby: a tiny round hedgehog holding a small clapperboard marked with a single dot. Young: a little red ribbon like an opening-night sash. Adult: a pilot's leather cap with goggles pushed up and a film reel on its back among the spines. Ancient: silvered spines, round spectacles and a golden '1' medal on a ribbon.",
+     "Warm brown spines with cream tips, peach face and belly, red ribbon, brass goggles."),
+    ("otter", "A cute river otter who lives for season finales.",
+     "Baby: a tiny otter pup floating on its back hugging a pebble shaped like a film can. Young: a little blue bow tie. Adult: holds a small golden finale trophy shaped like a film reel, a velvet cape. Ancient: a grey-whiskered otter in a dark velvet cape with a star brooch and a tiny curtain-tassel belt.",
+     "Glossy chocolate brown fur, cream face and chest, blue bow tie, crimson velvet cape, gold accents."),
+    ("beaver", "A cute busy beaver who builds dams out of episodes, watching three in a row.",
+     "Baby: a tiny beaver kit gnawing a stick of film strip. Young: a little yellow hard hat. Adult: a tool belt and a small stack of film cans like logs beside its flat tail held in its arms. Ancient: a long grey beard, the hard hat with a lamp, and a tail patterned with film frames.",
+     "Rich brown fur, orange buck teeth, dark leathery tail, yellow hard hat, tan tool belt."),
+    ("octopus", "A cute little octopus who watches several series at once, a remote in every arm.",
+     "Baby: a tiny round octopus holding one small TV remote. Young: two remotes and a striped knitted beanie. Adult: three remotes and a little film strip wound round an arm. Ancient: a captain's hat, a monocle and remotes in many arms, with tiny glowing screens reflected on its round head.",
+     "Coral pink and lilac body, cream suckers, dark grey remotes with red buttons, navy beanie."),
+    ("magpie", "A cute magpie who collects fresh episodes the week they come out.",
+     "Baby: a tiny fluffy magpie chick holding a shiny new ticket in its beak. Young: a little newsboy cap. Adult: a satchel full of glittering film cans and a 'new' rosette. Ancient: long iridescent tail feathers, a gold pocket watch and a silver crown of film-reel spokes.",
+     "Glossy black and crisp white feathers with blue-green sheen, red cap, gold and silver accents."),
+    ("snail", "A cute snail who watches one episode a week, like on old television.",
+     "Baby: a tiny snail whose shell is a little round TV with a dark screen. Young: the shell-TV gets two thin antennae next to its own eye stalks. Adult: a cosy knitted scarf and a weekly TV guide leaflet. Ancient: a big wooden old-style television shell with brass knobs, a tiny calendar hanging from it and reading glasses.",
+     "Soft mint-green body, warm walnut wooden shell-TV, cream knitted scarf, brass knobs. It has exactly TWO eyes, both on its face; the two stalks on its head are plain short feelers with small round tips, with NO eyes on them – in every stage."),
+    ("bee", "A cute fuzzy bee who never misses prime time on weekday evenings.",
+     "Baby: a tiny round bee with stubby wings holding a little clock showing evening. Young: a tiny red bow tie like a TV presenter. Adult: a little microphone and a striped waistcoat. Ancient: a golden tuxedo jacket, a monocle and a small glowing 'ON AIR' style lamp shaped like a honeycomb – no letters on it.",
+     "Golden yellow and black stripes, translucent pale-blue wings, red bow tie, honey-gold accents."),
+    ("rooster", "A cute little rooster who watches an episode over breakfast.",
+     "Baby: a tiny fluffy yellow chick with a small red comb holding a mug of cocoa. Young: a striped dressing-gown collar. Adult: a proud rooster in a dressing gown with a breakfast tray holding a tiny TV and toast. Ancient: a grand rooster with a long flowing tail, slippers, a newspaper under its wing and a teapot.",
+     "Cream and chestnut feathers, bright red comb, teal tail, blue-white striped dressing gown. The background must be fully TRANSPARENT – no white, no grey, no glow or haze around the figures."),
+    ("capybara", "A cute calm capybara who loves short half-hour episodes and never hurries.",
+     "Baby: a tiny round capybara with a little orange on its head. Young: a small striped towel round its neck and a mini egg timer. Adult: sits in a little bath tub shaped like a popcorn bucket, a yuzu on its head. Ancient: a wise grey capybara in a kimono-like robe with a teacup and a tiny bird resting on its head.",
+     "Warm tan-brown fur, darker brown nose, orange citrus, white and red towel."),
+    ("whale", "A cute little whale, floating, who loves long episodes of an hour and more.",
+     "Baby: a tiny round blue whale calf with a small water spout. Young: a little sailor collar. Adult: a captain's cap and a film strip spouting from its blowhole like a fountain. Ancient: a huge-hearted old whale with barnacles shaped like film reels, a long white moustache and a ship's lantern.",
+     "Deep ocean blue back, pale sky-blue belly with grooves, white sailor collar, navy and gold cap."),
+    ("elephant", "A cute baby elephant who remembers every season of long-running series.",
+     "Baby: a tiny grey elephant calf holding a small film reel with its trunk. Young: a little embroidered headdress. Adult: a saddle blanket with a row of numbered season stripes (plain stripes, no digits) and a stack of film cans on its back. Ancient: long ivory tusks, a jewelled headdress, a tiny photo album hanging from its trunk.",
+     "Soft blue-grey skin, pink ears inside, red and gold embroidered cloth, ivory tusks."),
+    ("crow", "A cute clever crow, a detective of crime series.",
+     "Baby: a tiny round black crow chick holding a little magnifying glass. Young: a small deerstalker cap. Adult: a checked cape and a pipe-shaped film reel, a notebook under its wing. Ancient: a long grey trench coat, a silver-tipped cane and a corkboard pin with a red string on its lapel.",
+     "Glossy blue-black feathers, amber beak, brown checked deerstalker, grey trench coat."),
+    ("llama", "A cute fluffy llama who loves sitcoms and comedy series.",
+     "Baby: a tiny cream llama with a pom-pom hat and a little laughing-mask badge. Young: a colourful woven blanket. Adult: a party bow tie and a bucket of popcorn hanging from its neck. Ancient: a magnificent fluffy llama with a tassel crown, glasses with a fake moustache pushed up on its head and a rubber chicken prop dangling from a strap of its blanket. A llama has no hands: in every stage it stands on exactly four hooves and holds nothing, never a fifth leg or a raised hoof.",
+     "Cream and caramel wool, colourful red, yellow and teal woven blanket, pink pom-poms."),
+    ("jellyfish", "A cute little jellyfish, floating, who loves science-fiction series.",
+     "Baby: a tiny round glowing jellyfish with short tentacles and a small star in its bell. Young: a little silver antenna headband. Adult: a glass space helmet bubble around its bell and tentacles holding a tiny ray gun shaped like a film projector. Ancient: a grand glowing jellyfish with a ringed planet circling it and long trailing tentacles with tiny stars.",
+     "Translucent violet and teal bell, glowing pink inner light, silver antenna, cyan sparkles."),
+    ("parrot", "A cute chatty parrot who loves reality shows and talk shows.",
+     "Baby: a tiny green parrot chick holding a small microphone. Young: heart-shaped sunglasses. Adult: a sparkly presenter jacket and a little glowing phone in selfie pose. Ancient: a grand macaw with a feather boa, a golden microphone and a tiara.",
+     "Bright green, red and blue feathers, yellow beak band, pink sunglasses, gold sparkle."),
+    ("badger", "A cute badger who digs old series out of the cupboard after a long break.",
+     "Baby: a tiny badger cub peeking out of a small cardboard box of film cans. Young: a little miner's helmet with a lamp. Adult: it sits upright hugging a dusty film can to its chest with both front paws, a feather duster tucked into its neckerchief and a small shovel leaning against its side on the ground; its two hind feet sit side by side right under its body, small, neat and clearly joined to its legs – nothing else touches the ground. Ancient: a grey badger in a long cardigan with a ring of old keys hanging from its cardigan pocket and a tiny lantern standing on the ground beside it. It holds nothing: it sits upright with its hind legs folded under its body, hidden by the cardigan, and its two front paws rest on the ground in front of it, each one coming out of the ribbed cuff of a cardigan sleeve – the sleeve runs unbroken from the shoulder to the cuff and the paw sticks out of the cuff. Exactly two paws show.",
+     "Black and white striped face, grey body fur, brown cardboard box, yellow lamp light."),
+    ("firefly", "A cute little firefly, floating, who watches 'just one more episode' after midnight.",
+     "Baby: a tiny round firefly with a softly glowing tail and big sleepy eyes. Young: a small nightcap. Adult: a cosy blanket cape and a glowing tail like a little projector beam. Ancient: a wise firefly in pyjamas with a crescent-moon lantern and a sleep mask pushed up on its head.",
+     "Dark navy body, warm yellow-green glowing tail, pale blue wings, star-patterned nightcap."),
+    ("koala", "A cute koala who is loyal to one series for hundreds of episodes.",
+     "Baby: a tiny koala joey hugging a little film reel like a branch. Young: a small knitted cardigan with a heart on it. Adult: hugs a fluffy pillow with BOTH front paws, a tall stack of film cans standing on the ground beside it, and sits on its two hind feet only – exactly two feet on the ground, four paws in all. Ancient: a wise grey koala with a long scarf full of film-frame patterns, a eucalyptus crown and a gold loyalty medal.",
+     "Soft grey fur, white ear tufts, big dark nose, green eucalyptus leaves, warm red cardigan. All four paws and feet are the same soft grey as the body in EVERY stage, never white – they must look the same from baby to ancient."),
+    ("chameleon", "A cute little chameleon who switches genres from series to series, changing colour each time.",
+     "Baby: a tiny curly-tailed chameleon with a small paint brush. Young: a body striped in two colours and a little artist's beret. Adult: a body patched in rainbow colours and a painter's palette made of tiny film frames held in its two front feet, so it sits on its two hind feet only – exactly two feet on the ground, never three. Ancient: an old chameleon in a velvet smoking jacket with a monocle and colour-changing stripes like a film strip.",
+     "Leaf green with patches of pink, orange and blue, curled tail, black beret, purple velvet jacket."),
+    ("peacock", "A cute little peacock who only shows its tail for the best seasons of a series.",
+     "Baby: a tiny fluffy peachick with a little crest holding a single golden popcorn. Young: a small fan of tail feathers with film-reel eyespots. Adult: a full fan of tail feathers whose eyespots are tiny film reels, a golden collar. Ancient: a magnificent peacock with a huge shimmering tail, a crown crest and a star rosette.",
+     "Royal blue and teal feathers, emerald and gold eyespots, golden crest and collar."),
 ]
 
 PET_HEAD = """Use your image generation tool to create ONE image, then save it as PNG with transparency to the path given at the end (create folders if needed). The first attached picture is a sprite sheet from this game: match its style exactly. The second shows the cosy little cinema projection booth the pet lives in.
@@ -235,6 +296,26 @@ EGGS = {
     "ryu": "azure blue scaled tin with gold whiskers, clouds and a pearl on the label",
     "suzume": "chestnut and cream tin with a sunrise on the label and a straw hat on top",
     "baku": "indigo tin with gold stars, a crescent moon and a soft cloud band",
+    "hedgehog": "brown tin with short cream spines round the rim and a clapperboard on the label",
+    "otter": "chocolate brown tin with blue waves and a gold trophy on the label",
+    "beaver": "wooden log-textured tin with gnaw marks and a yellow hard-hat label",
+    "octopus": "coral pink tin with curling tentacles hugging it and a remote on the label",
+    "magpie": "black-and-white tin with a blue sheen and a shiny new ticket on the label",
+    "snail": "walnut wooden tin like an old TV set with two brass knobs and a spiral",
+    "bee": "yellow and black striped tin with a honeycomb label and little wings",
+    "rooster": "cream tin with a red comb on top and a sunrise and coffee cup on the label",
+    "capybara": "warm tan tin with an orange citrus on top and a little towel band",
+    "whale": "deep blue tin with a white sailor band and a water spout on top",
+    "elephant": "blue-grey tin with a red and gold embroidered band and a trunk on the label",
+    "crow": "glossy black tin with a brown checked band and a magnifying glass label",
+    "llama": "cream woolly tin with a colourful woven band and pink pom-poms",
+    "jellyfish": "translucent violet glass-like tin glowing teal with little stars",
+    "parrot": "bright green tin with red and blue feathers and a microphone label",
+    "badger": "black-and-white striped tin, dusty, in a little cardboard box band",
+    "firefly": "night-navy tin with a warm yellow-green glow and small stars",
+    "koala": "soft grey tin with eucalyptus leaves and a heart on the label",
+    "chameleon": "tin in rainbow patches of green, pink, orange and blue with a curled tail",
+    "peacock": "royal blue tin with emerald and gold eyespots and a crest on top",
 }
 
 BOOTH = {
@@ -273,14 +354,21 @@ Save the image to: art/hall/sheets/stage.png
 }
 
 
-# The pets before the anime shelf: their cans are drawn already, nine to a sheet, so the shelf starts a sheet of its own.
+# The pets before the anime shelf and before the series shelf: each shelf starts a sheet of cans of its own, so the
+# sheets drawn before it stay as they are.
 BASE = 32
+ANIME_END = 49
 
 
 def egg_sheets():
     """The species on each sheet of cans, in order: eggs1.png, eggs2.png…"""
     ids = [p[0] for p in PETS]
-    return [part[i:i + 9] for part in (ids[:BASE], ids[BASE:]) for i in range(0, len(part), 9)]
+    old = [part[i:i + 9] for part in (ids[:BASE], ids[BASE:ANIME_END]) for i in range(0, len(part), 9)]
+    # The series shelf: split evenly, at most nine to a sheet (20: 7, 7, 6).
+    series = ids[ANIME_END:]
+    n = -(-len(series) // 9)
+    step = -(-len(series) // n) if n else 0
+    return old + [series[i:i + step] for i in range(0, len(series), step)] if series else old
 
 
 def write(path, text):

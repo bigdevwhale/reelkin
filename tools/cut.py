@@ -26,7 +26,9 @@ SPECIES = ["cat", "fox", "owl", "bat", "coon", "hamster", "armadillo", "lovebird
            "ghost", "dragon", "unicorn", "phoenix", "kitsune", "yeti", "griffin", "golem", "robot", "fairy",
            "popkin", "gargoyle", "sphinx", "wisp",
            "tanuki", "koi", "kappa", "nekomata", "tengu", "slime", "mecha", "maneki", "daruma", "crane",
-           "shiba", "oni", "onigiri", "kirin", "ryu", "suzume", "baku"]
+           "shiba", "oni", "onigiri", "kirin", "ryu", "suzume", "baku",
+           "hedgehog", "otter", "beaver", "octopus", "magpie", "snail", "bee", "rooster", "capybara", "whale",
+           "elephant", "crow", "llama", "jellyfish", "parrot", "badger", "firefly", "koala", "chameleon", "peacock"]
 STAGES = ["baby", "young", "adult", "ancient"]
 # The app's pets are 64x64 art pixels; their pictures are FINE times finer (the app's Buf.FINE), and so are
 # the eye boxes in faces.txt.
@@ -43,6 +45,18 @@ EYES = {
     # The young cat's brim shades its left eye; the baby dragon's eyes are amber, too light for the finder.
     "cat_young": [(77, 119, 97, 133), (114, 112, 129, 127)],
     "dragon_baby": [(69, 127, 84, 142), (94, 127, 109, 142)],
+    # The capybara is drawn in profile: one eye shows. The rooster's eyes are light brown, the baby otter lies
+    # tilted on its back and the whale's cap shades its eyes: the finder misses them all.
+    "capybara_baby": [(96, 129, 112, 146)],
+    "capybara_young": [(96, 92, 115, 113)],
+    "capybara_adult": [(95, 77, 119, 101)],
+    "capybara_ancient": [(101, 55, 123, 82)],
+    "rooster_baby": [(76, 137, 86, 149), (96, 137, 108, 150)],
+    "rooster_young": [(63, 108, 77, 122), (87, 108, 102, 122)],
+    "rooster_adult": [(58, 81, 74, 96), (87, 80, 105, 96)],
+    "rooster_ancient": [(51, 59, 66, 74), (78, 60, 98, 79)],
+    "otter_baby": [(82, 118, 96, 133), (106, 126, 121, 140)],
+    "whale_adult": [(47, 120, 60, 133), (77, 124, 95, 141)],
 }
 
 

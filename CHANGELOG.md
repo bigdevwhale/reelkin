@@ -7,6 +7,18 @@ then close it like any HTML comment. The release notes carry it, and the chat bo
 A version not announced in the chat takes a "<!-- play-ru" block instead: Google Play's Russian notes only.
 -->
 
+## [2.11.0] - 2026-11-27
+
+### Added
+- **Series on the projector:** the next episode of a running series goes on the projector like a film. At the credits, count it or put on the next one straight away.
+- **A series shelf, 20 new pets:** a hedgehog, an otter, a beaver, a koala, a peacock and more, each loving its own way of watching series: pilots, finales, binges, premiere weeks, prime time, a return after a long break.
+
+<!-- tg
+Серии можно ставить на проектор, как фильмы: на титрах засчитать или сразу включить следующую
+Сериальная полка: 20 новых питомцев — ёжик, выдра, бобр, коала, павлин и другие
+Каждый любит свой способ смотреть сериалы: пилоты, финалы, запои, премьеры, прайм-тайм
+-->
+
 ## [2.10.0] - 2026-11-26
 
 ### Added

@@ -106,7 +106,43 @@ class ReelkinTest {
         assertTrue(!before.open(Species.BAT))
         assertTrue(after.open(Species.BAT))
         assertEquals(listOf(Species.BAT), gains(before, after, horror.last()).cans)
-        assertEquals(49, after.hints.size)
+        assertEquals(69, after.hints.size)
+    }
+
+    @Test fun seriesPetsEatEpisodesByTheWayTheyreWatched() {
+        val day = 86_400_000L
+        fun at(d: Int, h: Int = 0) = d * day + 12 * 3_600_000L + h * 60_000L
+        // Lost: a season of three, gone through in one day, then the next season's first a week later.
+        val lost = Title(id = 1, kind = Kind.SERIES, title = "Lost", genre = Genre.SCIFI, minutes = 45, season = 2, episode = 1, perSeason = 3, plan = "1:3:;2:3:")
+        val office = Title(id = 2, kind = Kind.SERIES, title = "The Office", genre = Genre.COMEDY, minutes = 22, season = 1, episode = 1, perSeason = 6)
+        val eps = listOf(
+            app.reelkin.data.Episode(1, 1, 1, 1, 45, at(0, 0)), app.reelkin.data.Episode(2, 1, 1, 2, 45, at(0, 50)),
+            app.reelkin.data.Episode(3, 1, 1, 3, 45, at(0, 100)), app.reelkin.data.Episode(4, 2, 1, 1, 22, at(0, 150)),
+            app.reelkin.data.Episode(5, 1, 2, 1, 45, at(7)),
+        )
+        val c = Cinema(listOf(lost, office), emptyList(), eps, Settings(), 0)
+        val ws = c.watches
+        fun loves(sp: Species) = ws.map { Pets.favourite(sp, it) }
+        // The pilots and a season's first; the third of Lost that day; its finale; the day with two series on.
+        assertEquals(listOf(true, false, false, true, true), loves(Species.HEDGEHOG))
+        assertEquals(listOf(false, false, true, false, false), loves(Species.BEAVER))
+        assertEquals(listOf(false, false, true, false, false), loves(Species.OTTER))
+        assertEquals(listOf(true, true, true, true, false), loves(Species.OCTOPUS))
+        // A week between two Lost episodes: six whole days, the snail's pace; the switch to a comedy and back.
+        assertEquals(listOf(false, false, false, false, true), loves(Species.SNAIL))
+        assertEquals(listOf(false, false, false, true, true), loves(Species.CHAMELEON))
+        assertEquals(listOf(false, false, false, true, false), loves(Species.CAPYBARA))
+        // Films don't feed it the bonus: only episodes.
+        assertTrue(!Pets.favourite(Species.CAPYBARA, app.reelkin.domain.Watch(0, 20, Genre.COMEDY, null, "")))
+        assertTrue(c.open(Species.OTTER).not())
+        val h = c.hints.associateBy { it.species }
+        assertEquals(1, h.getValue(Species.OTTER).have)
+        assertEquals(2, h.getValue(Species.HEDGEHOG).have)
+        assertEquals(2, h.getValue(Species.OCTOPUS).have)
+        assertEquals(1, h.getValue(Species.BEAVER).have)
+        assertEquals(2, h.getValue(Species.ELEPHANT).have)
+        assertEquals(2, h.getValue(Species.CHAMELEON).have)
+        assertTrue(Species.entries.count { it.series } == 20)
     }
 
     @Test fun animeIsAnimationFromJapanAndHasPetsAndFeatsOfItsOwn() {

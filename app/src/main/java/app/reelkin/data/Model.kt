@@ -32,8 +32,9 @@ enum class Genre(val color: Int, val who: Who, val form: Form) {
 /**
  * The pets, each asleep in a film can of its own. Three cans are there from the start; the rest open by the
  * way you watch. [floats]: it hovers instead of standing. [anime]: it lives on anime, animation from Japan.
+ * [series]: it lives on series, the way their episodes are watched.
  */
-enum class Species(val starter: Boolean = false, val floats: Boolean = false, val anime: Boolean = false) {
+enum class Species(val starter: Boolean = false, val floats: Boolean = false, val anime: Boolean = false, val series: Boolean = false) {
     CAT(true), FOX(true), OWL(true),
     BAT, COON, HAMSTER, ARMADILLO, LOVEBIRD, MONKEY, FROG,
     MOTH(floats = true), SLOTH, PENGUIN, REDPANDA, PUG, MOUSE, GOLDFISH(floats = true), SQUIRREL,
@@ -42,7 +43,11 @@ enum class Species(val starter: Boolean = false, val floats: Boolean = false, va
     TANUKI(anime = true), KOI(floats = true, anime = true), KAPPA(anime = true), NEKOMATA(anime = true), TENGU(anime = true),
     SLIME(anime = true), MECHA(anime = true), MANEKI(anime = true), DARUMA(anime = true), CRANE(floats = true, anime = true),
     SHIBA(anime = true), ONI(anime = true), ONIGIRI(anime = true), KIRIN(anime = true), RYU(anime = true), SUZUME(anime = true),
-    BAKU(floats = true, anime = true);
+    BAKU(floats = true, anime = true),
+    HEDGEHOG(series = true), OTTER(series = true), BEAVER(series = true), OCTOPUS(series = true), MAGPIE(series = true),
+    SNAIL(series = true), BEE(floats = true, series = true), ROOSTER(series = true), CAPYBARA(series = true), WHALE(floats = true, series = true),
+    ELEPHANT(series = true), CROW(series = true), LLAMA(series = true), JELLYFISH(floats = true, series = true), PARROT(series = true),
+    BADGER(series = true), FIREFLY(floats = true, series = true), KOALA(series = true), CHAMELEON(series = true), PEACOCK(series = true);
 
     val file get() = name.lowercase()
 }

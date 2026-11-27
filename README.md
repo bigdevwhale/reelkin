@@ -2,10 +2,10 @@
 
 **Films and series raise a small pet in a projectionist's booth.** · [Русская версия](README.ru.md)
 
-Something sleeps in every film can. Three are open from the start (a detective cat, an animator fox, a critic owl); the other 46 open by the way you watch: horror, westerns, films after midnight, old films, rewatches, series binged. Not only animals: a little dragon, a unicorn, a phoenix, a kitsune, a back-row ghost, a golem of film cans, and a whole anime shelf: a tanuki, a kappa, a nekomata, a mecha, a lucky cat. Every minute you watch helps the pet grow,
+Something sleeps in every film can. Three are open from the start (a detective cat, an animator fox, a critic owl); the other 66 open by the way you watch: horror, westerns, films after midnight, old films, rewatches, series binged. Not only animals: a little dragon, a unicorn, a phoenix, a kitsune, a back-row ghost, a golem of film cans, and a whole anime shelf: a tanuki, a kappa, a nekomata, a mecha, a lucky cat; and a series shelf of twenty: a hedgehog for pilots, an otter for finales, a beaver for binges, a koala for long runs. Every minute you watch helps the pet grow,
 and every film is a ticket stub and a spectator in a hundred-seat hall.
 
-- **The booth.** Put a film on the projector: the lights go down, the reels turn and the pet watches
+- **The booth.** Put a film or the next episode on the projector: the lights go down, the reels turn and the pet watches
   from the port, jumping at horror and laughing at comedy. When the credits roll you tear a stub:
   popcorn from one to five, three words, who you watched with, and whether there was a post-credits scene.
 - **Pets.** Each has favourite films that feed it one and a half times as much and pay popcorn, and a
